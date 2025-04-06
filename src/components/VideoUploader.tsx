@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Upload, Video, X, Play, CheckCircle, LoaderCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 interface VideoUploaderProps {
   onUploadComplete: (data: {
@@ -24,6 +25,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
@@ -68,11 +70,12 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       return;
     }
     
-    // Check file size (50MB max)
-    if (file.size > 50 * 1024 * 1024) {
+    // Check file size (200MB max)
+    const maxSize = 200 * 1024 * 1024; // 200MB in bytes
+    if (file.size > maxSize) {
       toast({
         title: "Error",
-        description: "El archivo es demasiado grande. Por favor, sube un archivo menor a 50MB.",
+        description: "El archivo es demasiado grande. Por favor, sube un archivo menor a 200MB.",
         variant: "destructive"
       });
       return;
@@ -95,6 +98,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     setVideoSrc(null);
     setTitle("");
     setDescription("");
+    setUploadProgress(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -132,6 +136,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     }
     
     setIsUploading(true);
+    setUploadProgress(0);
     
     try {
       const formData = new FormData();
@@ -139,32 +144,55 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       formData.append("title", title);
       formData.append("description", description);
       
-      const response = await fetch(
-        "https://primary-production-9b33.up.railway.app/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab",
-        {
-          method: "POST",
-          body: formData,
+      // Create XMLHttpRequest for upload with progress tracking
+      const xhr = new XMLHttpRequest();
+      
+      xhr.open("POST", "https://primary-production-9b33.up.railway.app/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab", true);
+      
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percentComplete);
         }
-      );
+      };
       
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
-      }
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          let responseData;
+          try {
+            responseData = JSON.parse(xhr.responseText);
+          } catch {
+            responseData = { message: 'Success' };
+          }
+          
+          toast({
+            title: "¡Video subido!",
+            description: "Tu reel ha sido enviado para análisis.",
+          });
+          
+          onUploadComplete({
+            video: videoFile,
+            title,
+            description,
+            response: responseData,
+          });
+        } else {
+          throw new Error(`Error: ${xhr.status}`);
+        }
+        setIsUploading(false);
+      };
       
-      const data = await response.json();
+      xhr.onerror = () => {
+        console.error("Error uploading video:", xhr.statusText);
+        toast({
+          title: "Error de subida",
+          description: "Hubo un problema al subir tu video. Por favor, inténtalo de nuevo.",
+          variant: "destructive",
+        });
+        setIsUploading(false);
+      };
       
-      toast({
-        title: "¡Video subido!",
-        description: "Tu reel ha sido enviado para análisis.",
-      });
-      
-      onUploadComplete({
-        video: videoFile,
-        title,
-        description,
-        response: data,
-      });
-      
+      xhr.send(formData);
     } catch (error) {
       console.error("Error uploading video:", error);
       toast({
@@ -172,7 +200,6 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         description: "Hubo un problema al subir tu video. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
-    } finally {
       setIsUploading(false);
     }
   };
@@ -206,7 +233,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
                   <span className="text-primary font-semibold">Haz clic para subir</span> o arrastra y suelta
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Formatos: MP4, WebM, MOV (máx. 50MB)
+                  Formatos: MP4, WebM, MOV (máx. 200MB)
                 </p>
               </div>
             </div>
@@ -258,6 +285,16 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
             />
           </div>
         </div>
+
+        {isUploading && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Subiendo...</span>
+              <span>{uploadProgress}%</span>
+            </div>
+            <Progress value={uploadProgress} className="h-2" />
+          </div>
+        )}
 
         <div className="flex justify-end">
           <Button 
