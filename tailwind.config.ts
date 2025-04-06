@@ -64,6 +64,12 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				// Paleta personalizada
+				flow: {
+					blue: '#7DCFF9',
+					light: '#D4F0FF',
+					dark: '#1A242C',
+					accent: '#4DBCE9'
+				},
 				reel: {
 					purple: '#8B5CF6',
 					pink: '#D946EF',
@@ -94,19 +100,24 @@ export default {
 					}
 				},
 				'pulse-border': {
-					'0%, 100%': { borderColor: 'rgba(139, 92, 246, 0.3)' },
-					'50%': { borderColor: 'rgba(139, 92, 246, 0.9)' },
+					'0%, 100%': { borderColor: 'rgba(125, 207, 249, 0.3)' },
+					'50%': { borderColor: 'rgba(125, 207, 249, 0.9)' },
 				},
 				'fade-in': {
 					'0%': { opacity: '0' },
 					'100%': { opacity: '1' },
+				},
+				'flow-wave': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-5px)' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'pulse-border': 'pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-				'fade-in': 'fade-in 0.5s ease-out'
+				'fade-in': 'fade-in 0.5s ease-out',
+				'flow-wave': 'flow-wave 3s ease-in-out infinite'
 			}
 		}
 	},

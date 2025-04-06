@@ -1,15 +1,19 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { VideoIcon, HistoryIcon, HomeIcon } from "lucide-react";
+import { VideoIcon, HistoryIcon, HomeIcon, Instagram, MonitorSmartphone } from "lucide-react";
 
 const Header = () => {
   return (
-    <header className="sticky top-0 z-10 bg-white/80 dark:bg-reel-dark/80 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 z-10 bg-white/80 dark:bg-flow-dark/80 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2">
-          <VideoIcon className="h-6 w-6 text-reel-purple" />
-          <span className="font-bold text-xl bg-gradient-to-r from-reel-purple to-reel-pink bg-clip-text text-transparent">
+          <img 
+            src="/lovable-uploads/23bce40c-310f-4879-a62c-17047b61ab18.png" 
+            alt="Flow Logo" 
+            className="h-8" 
+          />
+          <span className="font-bold text-xl bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">
             ReelAI
           </span>
         </Link>
@@ -36,6 +40,15 @@ const Header = () => {
             <HistoryIcon className="h-4 w-4" />
             <span>Historial</span>
           </Link>
+          <a 
+            href="https://instagram.com/janmoliner.ai" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
+          >
+            <Instagram className="h-4 w-4" />
+            <span>@janmoliner.ai</span>
+          </a>
           <Button>
             Comenzar
           </Button>
