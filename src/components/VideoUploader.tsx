@@ -184,7 +184,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       // Create XMLHttpRequest for upload with progress tracking
       const xhr = new XMLHttpRequest();
       
-      xhr.open("POST", "https://primary-production-9b33.up.railway.app/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab", true);
+      xhr.open("POST", "https://primary-production-bb50.up.railway.app/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab", true);
       
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
