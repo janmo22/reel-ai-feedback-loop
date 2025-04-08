@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -75,7 +74,6 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   };
   
   const handleFile = (file: File) => {
-    // Check if file is a video
     if (!file.type.startsWith('video/')) {
       toast({
         title: "Error",
@@ -85,8 +83,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       return;
     }
     
-    // Check file size (200MB max)
-    const maxSize = 200 * 1024 * 1024; // 200MB in bytes
+    const maxSize = 200 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: "Error",
@@ -100,7 +97,6 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     const url = URL.createObjectURL(file);
     setVideoSrc(url);
     
-    // Auto-generate title from filename
     const fileName = file.name.replace(/\.[^/.]+$/, "");
     setTitle(fileName);
   };
@@ -181,10 +177,9 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       formData.append("missions", JSON.stringify(missions));
       formData.append("mainMessage", mainMessage);
       
-      // Create XMLHttpRequest for upload with progress tracking
       const xhr = new XMLHttpRequest();
       
-      xhr.open("POST", "https://primary-production-bb50.up.railway.app/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab", true);
+      xhr.open("POST", "https://hazloconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab", true);
       
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
