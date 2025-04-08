@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
 import { Upload, Video, X, Play, CheckCircle, LoaderCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +15,8 @@ interface VideoUploaderProps {
     video: File;
     title: string;
     description: string;
+    missions: string[];
+    mainMessage: string;
     response: any;
   }) => void;
 }
@@ -24,6 +27,8 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [mainMessage, setMainMessage] = useState("");
+  const [missions, setMissions] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -57,6 +62,16 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     if (e.target.files && e.target.files[0]) {
       handleFile(e.target.files[0]);
     }
+  };
+  
+  const handleMissionChange = (mission: string) => {
+    setMissions(prev => {
+      if (prev.includes(mission)) {
+        return prev.filter(m => m !== mission);
+      } else {
+        return [...prev, mission];
+      }
+    });
   };
   
   const handleFile = (file: File) => {
@@ -98,6 +113,8 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     setVideoSrc(null);
     setTitle("");
     setDescription("");
+    setMainMessage("");
+    setMissions([]);
     setUploadProgress(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -135,6 +152,24 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       return;
     }
     
+    if (missions.length === 0) {
+      toast({
+        title: "Error",
+        description: "Por favor, selecciona al menos una misión para tu reel.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!mainMessage.trim()) {
+      toast({
+        title: "Error",
+        description: "Por favor, ingresa el mensaje principal de tu reel.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsUploading(true);
     setUploadProgress(0);
     
@@ -143,6 +178,8 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       formData.append("video", videoFile);
       formData.append("title", title);
       formData.append("description", description);
+      formData.append("missions", JSON.stringify(missions));
+      formData.append("mainMessage", mainMessage);
       
       // Create XMLHttpRequest for upload with progress tracking
       const xhr = new XMLHttpRequest();
@@ -174,6 +211,8 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
             video: videoFile,
             title,
             description,
+            missions,
+            mainMessage,
             response: responseData,
           });
         } else {
@@ -225,12 +264,12 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
               onChange={handleChange}
             />
             <div className="flex flex-col items-center justify-center space-y-4 py-6">
-              <div className="rounded-full bg-primary/10 p-3">
-                <Upload className="h-8 w-8 text-primary" />
+              <div className="rounded-full bg-flow-electric/10 p-3">
+                <Upload className="h-8 w-8 text-flow-electric" />
               </div>
               <div className="text-center">
                 <p className="text-sm font-medium">
-                  <span className="text-primary font-semibold">Haz clic para subir</span> o arrastra y suelta
+                  <span className="electric-text font-semibold">Haz clic para subir</span> o arrastra y suelta
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Formatos: MP4, WebM, MOV (máx. 200MB)
@@ -263,36 +302,99 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="title">Título</Label>
+            <Label htmlFor="title" className="font-satoshi">Título</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Título de tu reel"
-              className="mt-1"
+              className="mt-1 font-satoshi"
             />
           </div>
 
           <div>
-            <Label htmlFor="description">Descripción</Label>
+            <Label htmlFor="description" className="font-satoshi">Descripción</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe de qué trata tu reel (opcional)"
-              className="mt-1"
+              className="mt-1 font-satoshi"
               rows={3}
+            />
+          </div>
+
+          <div>
+            <Label className="font-satoshi mb-2 block">Misión del Reel</Label>
+            <p className="text-sm text-muted-foreground mb-3 font-satoshi">
+              Selecciona uno o más objetivos para tu reel
+            </p>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="mission-educate" 
+                  checked={missions.includes('educar')}
+                  onCheckedChange={() => handleMissionChange('educar')}
+                  className="border-flow-electric data-[state=checked]:bg-flow-electric"
+                />
+                <Label 
+                  htmlFor="mission-educate" 
+                  className="font-satoshi cursor-pointer"
+                >
+                  Educar - Compartir conocimientos o enseñar algo nuevo
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="mission-entertain" 
+                  checked={missions.includes('entretener')}
+                  onCheckedChange={() => handleMissionChange('entretener')}
+                  className="border-flow-electric data-[state=checked]:bg-flow-electric"
+                />
+                <Label 
+                  htmlFor="mission-entertain" 
+                  className="font-satoshi cursor-pointer"
+                >
+                  Entretener - Divertir o captar la atención de la audiencia
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="mission-inspire" 
+                  checked={missions.includes('inspirar')}
+                  onCheckedChange={() => handleMissionChange('inspirar')}
+                  className="border-flow-electric data-[state=checked]:bg-flow-electric"
+                />
+                <Label 
+                  htmlFor="mission-inspire" 
+                  className="font-satoshi cursor-pointer"
+                >
+                  Inspirar - Motivar o transmitir un mensaje emocional
+                </Label>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="mainMessage" className="font-satoshi">Mensaje Principal</Label>
+            <Textarea
+              id="mainMessage"
+              value={mainMessage}
+              onChange={(e) => setMainMessage(e.target.value)}
+              placeholder="¿Cuál es el mensaje principal que quieres transmitir con este reel?"
+              className="mt-1 font-satoshi"
+              rows={2}
             />
           </div>
         </div>
 
         {isUploading && (
           <div className="space-y-2">
-            <div className="flex justify-between text-sm text-muted-foreground">
+            <div className="flex justify-between text-sm text-muted-foreground font-satoshi">
               <span>Subiendo...</span>
               <span>{uploadProgress}%</span>
             </div>
-            <Progress value={uploadProgress} className="h-2" />
+            <Progress value={uploadProgress} className="h-2 bg-muted [&>div]:bg-flow-electric" />
           </div>
         )}
 
@@ -300,7 +402,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
           <Button 
             type="submit" 
             disabled={!videoFile || isUploading}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto bg-flow-electric hover:bg-flow-electric/90 font-satoshi"
           >
             {isUploading ? (
               <>

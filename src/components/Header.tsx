@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { VideoIcon, HistoryIcon, HomeIcon, Instagram, MonitorSmartphone } from "lucide-react";
+import { VideoIcon, HistoryIcon, HomeIcon, Instagram } from "lucide-react";
 
 const Header = () => {
   return (
@@ -13,7 +13,7 @@ const Header = () => {
             alt="Flow Logo" 
             className="h-8" 
           />
-          <span className="font-bold text-xl bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">
+          <span className="font-tt-travel font-bold text-xl electric-text">
             ReelAI
           </span>
         </Link>
@@ -21,35 +21,35 @@ const Header = () => {
         <nav className="hidden md:flex gap-6 items-center">
           <Link 
             to="/" 
-            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
+            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1 font-satoshi"
           >
             <HomeIcon className="h-4 w-4" />
             <span>Inicio</span>
           </Link>
           <Link 
             to="/upload" 
-            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
+            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1 font-satoshi"
           >
             <VideoIcon className="h-4 w-4" />
             <span>Subir Reel</span>
           </Link>
           <Link 
             to="/history" 
-            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
+            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1 font-satoshi"
           >
             <HistoryIcon className="h-4 w-4" />
             <span>Historial</span>
           </Link>
           <a 
-            href="https://instagram.com/janmoliner.ai" 
+            href="https://instagram.com/janmoliner.ia" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1"
+            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1 font-satoshi"
           >
             <Instagram className="h-4 w-4" />
-            <span>@janmoliner.ai</span>
+            <span>@janmoliner.ia</span>
           </a>
-          <Button>
+          <Button className="bg-flow-electric hover:bg-flow-electric/90">
             Comenzar
           </Button>
         </nav>
