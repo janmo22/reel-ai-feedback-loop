@@ -177,8 +177,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       formData.append("missions", JSON.stringify(missions));
       formData.append("mainMessage", mainMessage);
       
-      const randomHex = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-      const webhookUrl = `https://hazloconflow.app.n8n.cloud/webhook-test/video-upload-${randomHex}`;
+      const webhookUrl = "https://hazloconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
       
       const xhr = new XMLHttpRequest();
       
