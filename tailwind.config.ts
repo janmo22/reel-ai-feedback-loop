@@ -69,7 +69,7 @@ export default {
 					light: '#D4F0FF',
 					dark: '#1A242C',
 					accent: '#4DBCE9',
-					electric: '#005DFF' // Añadido color azul eléctrico
+					electric: '#005DFF'
 				},
 				reel: {
 					purple: '#8B5CF6',
@@ -79,7 +79,6 @@ export default {
 				}
 			},
 			fontFamily: {
-				'tt-travel': ['TT Travel Next', 'sans-serif'],
 				'satoshi': ['Satoshi', 'sans-serif']
 			},
 			borderRadius: {

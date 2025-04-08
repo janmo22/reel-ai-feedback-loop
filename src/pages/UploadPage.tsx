@@ -105,7 +105,7 @@ const UploadPage = () => {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-flow-electric/10 mb-6">
                   <div className="w-8 h-8 border-4 border-t-flow-electric border-r-flow-electric border-b-flow-electric/30 border-l-flow-electric/30 rounded-full animate-spin"></div>
                 </div>
-                <h2 className="text-2xl font-semibold mb-2 font-tt-travel">PROCESANDO TU REEL</h2>
+                <h2 className="text-2xl font-semibold mb-2">PROCESANDO TU REEL</h2>
                 <p className="text-muted-foreground max-w-md mx-auto mb-4 font-satoshi">
                   Nuestro modelo de IA está analizando tu video. Esto puede tomar unos minutos.
                 </p>
@@ -120,7 +120,7 @@ const UploadPage = () => {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-6">
                   <Check className="h-8 w-8 text-green-500" />
                 </div>
-                <h2 className="text-2xl font-semibold mb-2 font-tt-travel">¡REEL PROCESADO CON ÉXITO!</h2>
+                <h2 className="text-2xl font-semibold mb-2">¡REEL PROCESADO CON ÉXITO!</h2>
                 <p className="text-muted-foreground max-w-md mx-auto mb-6 font-satoshi">
                   Tu video ha sido procesado y los resultados están listos para ser visualizados.
                 </p>

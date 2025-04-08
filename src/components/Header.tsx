@@ -13,7 +13,7 @@ const Header = () => {
             alt="Flow Logo" 
             className="h-8" 
           />
-          <span className="font-tt-travel font-bold text-xl electric-text">
+          <span className="font-bold text-xl electric-text">
             ReelAI
           </span>
         </Link>

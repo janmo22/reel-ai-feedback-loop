@@ -8,7 +8,7 @@
 
 @layer base {
   :root {
-    --background: 200 40% 98%;
+    --background: 0 0% 100%;
     --foreground: 200 10% 10%;
 
     --card: 0 0% 100%;
@@ -17,10 +17,10 @@
     --popover: 0 0% 100%;
     --popover-foreground: 200 10% 10%;
 
-    --primary: 200 90% 60%;
+    --primary: 217 100% 50%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 84% 60%;
+    --secondary: 199 98% 48%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 200 20% 96%;
@@ -34,7 +34,7 @@
 
     --border: 200 20% 86%;
     --input: 200 20% 86%;
-    --ring: 200 90% 60%;
+    --ring: 217 100% 50%;
 
     --radius: 0.5rem;
 
@@ -58,10 +58,10 @@
     --popover: 200 20% 12%;
     --popover-foreground: 200 10% 95%;
 
-    --primary: 200 90% 60%;
+    --primary: 217 100% 50%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 84% 60%;
+    --secondary: 199 98% 48%;
     --secondary-foreground: 210 40% 98%;
 
     --muted: 200 20% 20%;
@@ -75,7 +75,7 @@
 
     --border: 200 20% 26%;
     --input: 200 20% 26%;
-    --ring: 200 90% 60%;
+    --ring: 217 100% 50%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -97,7 +97,7 @@
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-tt-travel uppercase;
+    @apply font-bold;
   }
   
   .drop-zone {
@@ -105,14 +105,14 @@
   }
   
   .drop-zone-active {
-    @apply border-flow-blue bg-flow-light/30;
+    @apply border-flow-electric bg-flow-light/30;
   }
   
   .electric-gradient {
-    @apply bg-gradient-to-r from-flow-blue to-flow-electric;
+    @apply bg-gradient-to-r from-flow-light to-flow-electric;
   }
   
   .electric-text {
-    @apply bg-gradient-to-r from-flow-blue to-flow-electric bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-flow-light to-flow-electric bg-clip-text text-transparent;
   }
 }
