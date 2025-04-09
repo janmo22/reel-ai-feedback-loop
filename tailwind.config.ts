@@ -63,13 +63,13 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Paleta personalizada
+				// Paleta actualizada para Flow
 				flow: {
-					blue: '#7DCFF9',
-					light: '#D4F0FF',
-					dark: '#1A242C',
-					accent: '#4DBCE9',
-					electric: '#005DFF'
+					blue: '#005DFF',     // Azul Flow principal (más oscuro y vibrante)
+					light: '#7DCFF9',    // Azul claro Flow
+					dark: '#1A242C',     // Color oscuro para contraste
+					accent: '#4DBCE9',    // Color de acento
+					electric: '#005DFF'   // Azul eléctrico (antes más claro)
 				},
 				reel: {
 					purple: '#8B5CF6',
@@ -79,7 +79,8 @@ export default {
 				}
 			},
 			fontFamily: {
-				'satoshi': ['Satoshi', 'sans-serif']
+				'satoshi': ['Satoshi', 'sans-serif'],
+				'tt-travels': ['"TT Travels Next Trial"', 'sans-serif']
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -104,8 +105,8 @@ export default {
 					}
 				},
 				'pulse-border': {
-					'0%, 100%': { borderColor: 'rgba(125, 207, 249, 0.3)' },
-					'50%': { borderColor: 'rgba(125, 207, 249, 0.9)' },
+					'0%, 100%': { borderColor: 'rgba(0, 93, 255, 0.3)' },
+					'50%': { borderColor: 'rgba(0, 93, 255, 0.9)' },
 				},
 				'fade-in': {
 					'0%': { opacity: '0' },

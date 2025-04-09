@@ -15,20 +15,20 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
   const [messageIndex, setMessageIndex] = useState(0);
   
   const funMessages = [
-    "Analizando tu reel con la precisión de alguien que ha pasado demasiado tiempo en TikTok...",
-    "Descifrando el algoritmo como si fuera el código Da Vinci...",
-    "Preguntándole a ChatGPT si tu video le da FOMO...",
-    "Enviando tu contenido a influencers virtuales para su aprobación...",
-    "Calculando tu potencial viral con matemáticas avanzadas (y un poco de magia)...",
-    "Midiendo el ratio sonrisa-por-segundo de tu reel...",
-    "Buscando el punto exacto donde la gente dejará de hacer scroll...",
-    "Convirtiendo tu creatividad en datos que ni Wall Street entendería...",
-    "Analizando si tu hook es tan bueno como para competir con gatos haciendo cosas raras...",
-    "Consultando con la IA que predijo todos los trends del año pasado...",
-    "Comparando tu contenido con 10,000 videos de bailes que nadie puede replicar...",
-    "Procesando tu video más rápido que un usuario intentando entender los cambios de Instagram...",
-    "Preguntándole a la nube si tu contenido es el próximo trend...",
-    "Calculando cuántos followers ganarías si existiera justicia en el algoritmo...",
+    "Analizando tu reel con precisión algorítmica...",
+    "Procesando cada frame para detectar patrones de engagement...",
+    "Comparando tu contenido con millones de ejemplos de éxito...",
+    "Evaluando el potencial de retención de audiencia...",
+    "Decodificando las claves visuales de tu contenido...",
+    "Midiendo el ritmo narrativo de tu reel...",
+    "Calculando la efectividad de tus transiciones visuales...",
+    "Analizando el equilibrio entre información y entretenimiento...",
+    "Evaluando la coherencia estética de tu contenido...",
+    "Determinando puntos óptimos para llamadas a la acción...",
+    "Calibrando métricas de impacto visual y auditivo...",
+    "Procesando elementos de storytelling para maximizar impacto...",
+    "Aplicando modelos predictivos de comportamiento de audiencia...",
+    "Optimizando recomendaciones basadas en tendencias actuales...",
   ];
   
   useEffect(() => {
@@ -48,40 +48,40 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
   if (currentStep === "processing") {
     return (
       <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-flow-electric/10 mb-6">
-          <div className="w-8 h-8 border-4 border-t-flow-electric border-r-flow-electric border-b-flow-electric/30 border-l-flow-electric/30 rounded-full animate-spin"></div>
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-flow-blue/10 mb-8">
+          <div className="w-8 h-8 border-4 border-t-flow-blue border-r-flow-blue border-b-flow-blue/20 border-l-flow-blue/20 rounded-full animate-spin"></div>
         </div>
-        <h2 className="text-2xl font-semibold mb-2">PROCESANDO TU REEL</h2>
-        <p className="text-muted-foreground max-w-md mx-auto mb-4 font-satoshi">
+        <h2 className="text-2xl font-bold mb-3 tracking-tight">PROCESANDO TU REEL</h2>
+        <p className="text-muted-foreground max-w-md mx-auto mb-4">
           Nuestro modelo de IA está analizando tu video. Esto puede tomar entre 1-2 minutos.
         </p>
         
         {/* Fun animated message */}
-        <div className="max-w-md mx-auto mt-4 mb-6 min-h-[80px] flex items-center justify-center">
-          <p className="text-flow-electric font-medium animate-fade-in italic">
+        <div className="max-w-md mx-auto mt-6 mb-8 min-h-[60px] flex items-center justify-center">
+          <p className="text-flow-blue font-medium animate-fade-in text-sm">
             {funMessages[messageIndex]}
           </p>
         </div>
         
         {/* Animated elements to show AI processing */}
-        <div className="max-w-md mx-auto mt-8 mb-6 relative">
+        <div className="max-w-md mx-auto mt-8 mb-8 relative">
           <div className="absolute inset-0 flex items-center justify-center">
-            <BrainCircuit className="h-10 w-10 text-flow-electric animate-pulse" />
+            <BrainCircuit className="h-10 w-10 text-flow-blue animate-pulse" />
           </div>
           
           <div className="grid grid-cols-3 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div 
                 key={i} 
-                className="h-10 bg-muted rounded-md animate-pulse"
+                className="h-8 bg-muted rounded-md animate-pulse"
                 style={{ animationDelay: `${i * 0.15}s` }}
               ></div>
             ))}
           </div>
         </div>
         
-        <div className="h-2 w-64 bg-muted rounded-full mx-auto overflow-hidden">
-          <div className="h-full bg-flow-electric rounded-full animate-progress"></div>
+        <div className="h-1.5 w-64 bg-muted rounded-full mx-auto overflow-hidden">
+          <div className="h-full bg-flow-blue rounded-full animate-progress"></div>
         </div>
         
         <style>
@@ -117,16 +117,16 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
   if (currentStep === "complete") {
     return (
       <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-6">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-8">
           <Check className="h-8 w-8 text-green-500" />
         </div>
-        <h2 className="text-2xl font-semibold mb-2">¡REEL PROCESADO CON ÉXITO!</h2>
-        <p className="text-muted-foreground max-w-md mx-auto mb-6 font-satoshi">
+        <h2 className="text-2xl font-bold mb-3 tracking-tight">ANÁLISIS COMPLETADO</h2>
+        <p className="text-muted-foreground max-w-md mx-auto mb-8">
           Tu video ha sido procesado y los resultados están listos para ser visualizados.
         </p>
         <button
           onClick={onContinue}
-          className="bg-flow-electric text-white hover:bg-flow-electric/90 px-6 py-3 rounded-md font-medium inline-flex items-center font-satoshi"
+          className="bg-flow-blue text-white hover:bg-flow-blue/90 px-6 py-3 rounded-md font-medium inline-flex items-center"
         >
           Ver resultados
           <ArrowRight className="ml-2 h-4 w-4" />
