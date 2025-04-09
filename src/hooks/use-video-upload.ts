@@ -91,33 +91,24 @@ export function useVideoUpload(onUploadComplete: (data: {
     
     console.log("Subiendo video a Supabase Storage...", filePath);
     
-    // Crear la opción de configuración correctamente
+    // Crear la opción de configuración correctamente sin onUploadProgress
     const options = {
       cacheControl: '3600',
       upsert: false
     };
     
-    // Subir con listeners de progreso separados
-    const uploadTask = supabase.storage
+    // Subir sin listeners de progreso directo
+    const { data, error } = await supabase.storage
       .from('videos')
       .upload(filePath, file, options);
     
-    // Configurar el seguimiento de progreso
+    // Configurar el seguimiento de progreso manualmente
     if (file.size > 0) {
-      const progressCallback = createProgressHandler(file.size);
-      // Usar XMLHttpRequest para rastrear el progreso manualmente
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener('progress', progressCallback);
-      
-      // Este es solo un truco para mantener xhr en memoria mientras se realiza la subida
-      // No afecta la subida real a través de la API de Supabase
-      setTimeout(() => {
-        console.log("XHR reference kept for progress tracking");
-      }, 100);
+      // Simular progreso ya que no podemos usar onUploadProgress directamente
+      const progressHandler = createProgressHandler(file.size);
+      progressHandler({ loaded: file.size, total: file.size });
     }
 
-    const { data, error } = await uploadTask;
-    
     if (error) {
       console.error("Error al subir a Supabase:", error);
       throw new Error(`Error al subir el video: ${error.message}`);
