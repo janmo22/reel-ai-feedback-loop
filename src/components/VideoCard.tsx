@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash2, Clock } from "lucide-react";
+import { Eye, Trash2, Clock, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -44,9 +44,10 @@ const VideoCard = ({
         )}
         <div className="absolute top-0 left-0 w-full p-3 flex justify-between items-start">
           <div className={`
-            px-2 py-1 rounded-full text-xs font-medium
+            px-3 py-1.5 rounded-full text-xs font-medium flex items-center
             ${status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}
           `}>
+            {status === "processing" && <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />}
             {status === "completed" ? "Completado" : "Procesando"}
           </div>
         </div>
@@ -66,6 +67,7 @@ const VideoCard = ({
           size="sm" 
           className="flex-1"
           onClick={onView}
+          disabled={status === "processing"}
         >
           <Eye className="h-4 w-4 mr-1" />
           Ver

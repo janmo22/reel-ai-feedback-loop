@@ -27,6 +27,21 @@ const HistoryPage = () => {
     }
   }, [user]);
   
+  // Fetch videos with polling to update status
+  useEffect(() => {
+    if (user) {
+      // Initial fetch
+      fetchUserVideos();
+      
+      // Set up polling for video status updates
+      const pollingInterval = setInterval(fetchUserVideos, 30000); // Poll every 30 seconds
+      
+      return () => {
+        clearInterval(pollingInterval);
+      };
+    }
+  }, [user]);
+  
   const fetchUserVideos = async () => {
     try {
       const { data, error } = await supabase
@@ -51,6 +66,18 @@ const HistoryPage = () => {
   };
   
   const handleViewFeedback = (videoId: string) => {
+    // Check if video has completed processing
+    const video = videos.find(v => v.id === videoId);
+    
+    if (video?.status === "processing") {
+      toast({
+        title: "Análisis en proceso",
+        description: "Este análisis aún está siendo procesado. Por favor, inténtalo más tarde.",
+        variant: "warning"
+      });
+      return;
+    }
+    
     navigate(`/results`, { state: { videoId } });
   };
   

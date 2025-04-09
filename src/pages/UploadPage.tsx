@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import VideoUploader from "@/components/video-upload/VideoUploader";
@@ -11,8 +11,16 @@ const UploadPage = () => {
   const [uploadStep, setUploadStep] = useState<"upload" | "processing" | "complete">("upload");
   const [uploadData, setUploadData] = useState<any>(null);
   const [feedbackData, setFeedbackData] = useState<any>(null);
+  const [processingTimer, setProcessingTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Clean up timer when component unmounts
+  useEffect(() => {
+    return () => {
+      if (processingTimer) clearTimeout(processingTimer);
+    };
+  }, [processingTimer]);
   
   const handleUploadComplete = (data: any) => {
     setUploadData(data);
@@ -23,11 +31,8 @@ const UploadPage = () => {
     // En un escenario real, la respuesta del webhook debería activar un cambio de estado
     // Por ahora, simulamos el tiempo de procesamiento para la demo
     
-    // Simulación del tiempo de procesamiento (entre 1-2 minutos)
-    // En producción, esto sería reemplazado por un listener o webhook real
-    const processingTime = 60000; // Fijamos en 60 segundos para que sea consistente
-    
-    setTimeout(() => {
+    // Simulación del tiempo de procesamiento (60 segundos)
+    const timer = setTimeout(() => {
       // Simular que el webhook devuelve datos de análisis
       const sampleFeedback = [
         {
@@ -85,7 +90,9 @@ const UploadPage = () => {
         description: "El análisis de tu reel ha sido completado con éxito.",
       });
       
-    }, processingTime);
+    }, 60000);
+    
+    setProcessingTimer(timer);
   };
   
   const handleContinue = () => {
@@ -96,7 +103,7 @@ const UploadPage = () => {
           feedback: feedbackData,
           videoData: {
             title: uploadData?.title || "Video sin título",
-            // Eliminamos la URL del video para que no se muestre en resultados
+            // No enviamos la URL del video
           }
         } 
       });
@@ -130,10 +137,12 @@ const UploadPage = () => {
               <VideoUploader onUploadComplete={handleUploadComplete} />
             )}
             
-            <ProcessingSteps 
-              currentStep={uploadStep} 
-              onContinue={handleContinue} 
-            />
+            {(uploadStep === "processing" || uploadStep === "complete") && (
+              <ProcessingSteps 
+                currentStep={uploadStep} 
+                onContinue={handleContinue} 
+              />
+            )}
           </div>
         </div>
       </main>

@@ -132,7 +132,7 @@ export function useVideoUpload(onUploadComplete: (data: {
     try {
       const videoId = uuidv4();
       
-      // Guardar solo los metadatos en la base de datos
+      // Guardar los metadatos en la base de datos con estado "processing"
       console.log("Guardando metadatos en Supabase...");
       try {
         await supabase
@@ -180,12 +180,27 @@ export function useVideoUpload(onUploadComplete: (data: {
         
         console.log("Datos enviados al webhook", response);
         
+        // Actualizamos el estado del video en la base de datos pero seguimos mostrando 'processing'
+        try {
+          await supabase
+            .from('videos')
+            .update({ status: 'processing' })
+            .eq('id', videoId);
+          
+          console.log("Estado del video actualizado en Supabase");
+        } catch (updateError) {
+          console.error("Error actualizando estado:", updateError);
+        }
+        
         // Simulamos una respuesta exitosa ya que no podemos obtener la respuesta real con no-cors
         stopSimulation(100);
         toast({
           title: "¡Video enviado!",
           description: "Tu reel ha sido enviado para análisis.",
         });
+        
+        // Notificar que la carga se ha completado
+        setIsUploading(false);
         
         onUploadComplete({
           video: videoFile,
@@ -198,6 +213,7 @@ export function useVideoUpload(onUploadComplete: (data: {
       } catch (error) {
         console.error("Error en la conexión con el webhook", error);
         stopSimulation(0);
+        setIsUploading(false);
         throw new Error(`Error en la conexión con el webhook: ${error}`);
       }
       
