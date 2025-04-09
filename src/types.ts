@@ -23,6 +23,7 @@ export interface Feedback {
 export interface VideoUploadResponse {
   status: string;
   videoId: string;
+  message?: string; // Added the message property as optional
 }
 
 // Define the AIFeedbackResponse interface to match the webhook response structure
