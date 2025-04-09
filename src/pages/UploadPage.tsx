@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import VideoUploader from "@/components/VideoUploader";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, BrainCircuit } from "lucide-react";
 
 const UploadPage = () => {
   const [uploadStep, setUploadStep] = useState<"upload" | "processing" | "complete">("upload");
@@ -168,9 +168,42 @@ const UploadPage = () => {
                 <p className="text-muted-foreground max-w-md mx-auto mb-4 font-satoshi">
                   Nuestro modelo de IA está analizando tu video. Esto puede tomar unos minutos.
                 </p>
-                <div className="h-2 w-64 bg-muted rounded-full mx-auto overflow-hidden">
-                  <div className="h-full bg-flow-electric rounded-full w-1/2 animate-pulse"></div>
+                
+                {/* New animated elements to show AI processing */}
+                <div className="max-w-md mx-auto mt-8 mb-6 relative">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <BrainCircuit className="h-10 w-10 text-flow-electric animate-pulse" />
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div 
+                        key={i} 
+                        className="h-10 bg-muted rounded-md animate-pulse"
+                        style={{ animationDelay: `${i * 0.15}s` }}
+                      ></div>
+                    ))}
+                  </div>
                 </div>
+                
+                <div className="h-2 w-64 bg-muted rounded-full mx-auto overflow-hidden">
+                  <div className="h-full bg-flow-electric rounded-full animate-progress"></div>
+                </div>
+                
+                <style jsx>{`
+                  @keyframes progress {
+                    0% { width: 5%; }
+                    20% { width: 25%; }
+                    40% { width: 42%; }
+                    60% { width: 58%; }
+                    80% { width: 75%; }
+                    95% { width: 92%; }
+                    100% { width: 98%; }
+                  }
+                  .animate-progress {
+                    animation: progress 2.5s ease-in-out infinite;
+                  }
+                `}</style>
               </div>
             )}
             
