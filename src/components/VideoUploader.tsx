@@ -42,8 +42,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
   const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
-  
-  
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -210,11 +209,10 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         // Continue with webhook upload even if Supabase fails
       }
       
-      console.log("Preparando envío al webhook:", WEBHOOK_URL);
+      console.log("Preparando envío directo al webhook:", WEBHOOK_URL);
+      
       const formData = new FormData();
-      
       formData.append("video", videoFile);
-      
       formData.append("videoId", videoId);
       formData.append("userId", user.id);
       formData.append("title", title);
@@ -224,69 +222,44 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       
       console.log("Enviando video al webhook PRODUCCIÓN. Tamaño:", (videoFile.size / (1024 * 1024)).toFixed(2), "MB");
       
-      const xhr = new XMLHttpRequest();
-      
-      xhr.upload.addEventListener("progress", (event) => {
-        if (event.lengthComputable) {
-          const progressPercentage = Math.round((event.loaded / event.total) * 100);
-          console.log("Progreso de subida:", progressPercentage, "%");
-          setUploadProgress(progressPercentage);
-        }
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        body: formData,
+        // No need to set content-type as it's automatically set with FormData
       });
       
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          console.log("Video enviado correctamente al webhook de PRODUCCIÓN");
-          setUploadProgress(100);
-          
-          toast({
-            title: "¡Video enviado!",
-            description: "Tu reel ha sido enviado para análisis.",
-          });
-          
-          onUploadComplete({
-            video: videoFile,
-            title,
-            description,
-            missions,
-            mainMessage,
-            response: { status: "success", videoId },
-          });
-        } else {
-          console.error("Error en la respuesta del webhook:", xhr.status, xhr.statusText);
-          handleUploadError(new Error(`Error en el servidor: ${xhr.status}`));
-        }
-      };
-      
-      xhr.onerror = () => {
-        console.error("Error de red al enviar el video al webhook");
-        handleUploadError(new Error("Error de red al enviar el video. Comprueba tu conexión e intenta de nuevo."));
-      };
-      
-      xhr.ontimeout = () => {
-        console.error("Tiempo de espera agotado al enviar el video al webhook");
-        handleUploadError(new Error("El servidor tardó demasiado en responder. Inténtalo de nuevo más tarde."));
-      };
-      
-      xhr.timeout = 180000;
-      
-      xhr.open("POST", WEBHOOK_URL);
-      xhr.send(formData);
+      if (response.ok) {
+        console.log("Video enviado correctamente al webhook de PRODUCCIÓN");
+        setUploadProgress(100);
+        
+        toast({
+          title: "¡Video enviado!",
+          description: "Tu reel ha sido enviado para análisis.",
+        });
+        
+        onUploadComplete({
+          video: videoFile,
+          title,
+          description,
+          missions,
+          mainMessage,
+          response: { status: "success", videoId },
+        });
+      } else {
+        console.error("Error en la respuesta del webhook:", response.status);
+        throw new Error(`Error en el servidor: ${response.status}`);
+      }
     } catch (error: any) {
-      handleUploadError(error);
+      console.error("Error en la subida:", error);
+      toast({
+        title: "Error de subida",
+        description: error.message || "Hubo un problema al subir tu video. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+      setIsUploading(false);
     }
   };
 
-  const handleUploadError = (error: Error) => {
-    console.error("Error en la subida:", error);
-    toast({
-      title: "Error de subida",
-      description: error.message || "Hubo un problema al subir tu video. Por favor, inténtalo de nuevo.",
-      variant: "destructive",
-    });
-    setIsUploading(false);
-  };
-  
   return (
     <Card className="w-full max-w-3xl mx-auto p-6">
       <form onSubmit={handleSubmit} className="space-y-6">
