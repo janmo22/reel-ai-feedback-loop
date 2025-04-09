@@ -157,6 +157,7 @@ export function useVideoUpload(onUploadComplete: (data: {
       // Enviar el video y los metadatos al webhook
       console.log("Enviando datos al webhook:", WEBHOOK_URL);
       
+      // Crear un objeto FormData y añadir todos los datos
       const formData = new FormData();
       formData.append("videoId", videoId);
       formData.append("userId", user.id);
@@ -165,38 +166,60 @@ export function useVideoUpload(onUploadComplete: (data: {
       formData.append("missions", JSON.stringify(missions));
       formData.append("mainMessage", mainMessage);
       
-      // Aquí enviamos el archivo de video en binario al webhook
+      // Añadir el archivo de video al FormData
       formData.append("video", videoFile);
       
       console.log("Enviando datos y video en binario al webhook");
       
-      const response = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        body: formData,
-      });
+      // Usar XMLHttpRequest en lugar de fetch para mejor soporte de grandes archivos
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", WEBHOOK_URL, true);
       
-      if (response.ok) {
-        stopSimulation(100); // Completamos la simulación de progreso
-        console.log("Datos enviados correctamente al webhook");
-        
-        toast({
-          title: "¡Video enviado!",
-          description: "Tu reel ha sido enviado para análisis.",
-        });
-        
-        onUploadComplete({
-          video: videoFile,
-          title,
-          description,
-          missions,
-          mainMessage,
-          response: { status: "success", videoId },
-        });
-      } else {
-        console.error("Error en la respuesta del webhook:", response.status);
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          stopSimulation(percentComplete);
+        }
+      };
+      
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          stopSimulation(100);
+          console.log("Datos enviados correctamente al webhook");
+          
+          toast({
+            title: "¡Video enviado!",
+            description: "Tu reel ha sido enviado para análisis.",
+          });
+          
+          onUploadComplete({
+            video: videoFile,
+            title,
+            description,
+            missions,
+            mainMessage,
+            response: { status: "success", videoId },
+          });
+        } else {
+          console.error("Error en la respuesta del webhook:", xhr.status);
+          stopSimulation(0);
+          throw new Error(`Error en el servidor: ${xhr.status}`);
+        }
+      };
+      
+      xhr.onerror = function() {
+        console.error("Error en la conexión con el webhook");
         stopSimulation(0);
-        throw new Error(`Error en el servidor: ${response.status}`);
-      }
+        toast({
+          title: "Error",
+          description: "No se pudo conectar con el servidor. Por favor, inténtalo de nuevo.",
+          variant: "destructive",
+        });
+        setIsUploading(false);
+      };
+      
+      xhr.send(formData);
+      
     } catch (error: any) {
       console.error("Error en el proceso:", error);
       stopSimulation(0);
