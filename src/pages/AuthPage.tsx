@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle, Mail } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -51,11 +53,14 @@ const AuthPage = () => {
     
     try {
       await signUp(registerEmail, registerPassword, firstName, lastName);
-      // After successful signup, we redirect to login
-      toast({
-        title: "¡Registro exitoso!",
-        description: "Ahora puedes iniciar sesión con tu cuenta.",
-      });
+      // After successful signup, show confirmation message
+      setRegistrationSuccess(true);
+      // Clear form
+      setRegisterEmail("");
+      setRegisterPassword("");
+      setConfirmPassword("");
+      setFirstName("");
+      setLastName("");
     } finally {
       setIsLoading(false);
     }
@@ -116,73 +121,92 @@ const AuthPage = () => {
             </TabsContent>
             
             <TabsContent value="register">
-              <form onSubmit={handleRegister}>
+              {registrationSuccess ? (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">Nombre</Label>
-                      <Input
-                        id="firstName"
-                        placeholder="Juan"
-                        required
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Apellido</Label>
-                      <Input
-                        id="lastName"
-                        placeholder="Pérez"
-                        required
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="registerEmail">Email</Label>
-                    <Input
-                      id="registerEmail"
-                      type="email"
-                      placeholder="ejemplo@email.com"
-                      required
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="registerPassword">Contraseña</Label>
-                    <Input
-                      id="registerPassword"
-                      type="password"
-                      required
-                      value={registerPassword}
-                      onChange={(e) => setRegisterPassword(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
-                  </div>
-                  <Button className="w-full" type="submit" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Cargando...
-                      </>
-                    ) : (
-                      "Crear cuenta"
-                    )}
+                  <Alert className="bg-green-50 border-green-200">
+                    <Mail className="h-5 w-5 text-green-600" />
+                    <AlertTitle className="text-green-800">Registro exitoso</AlertTitle>
+                    <AlertDescription className="text-green-700">
+                      Se ha enviado un correo de confirmación a tu email. 
+                      Por favor, verifica tu bandeja de entrada y confirma tu cuenta para continuar.
+                    </AlertDescription>
+                  </Alert>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => setRegistrationSuccess(false)}
+                  >
+                    Registrar otra cuenta
                   </Button>
                 </div>
-              </form>
+              ) : (
+                <form onSubmit={handleRegister}>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">Nombre</Label>
+                        <Input
+                          id="firstName"
+                          placeholder="Juan"
+                          required
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Apellido</Label>
+                        <Input
+                          id="lastName"
+                          placeholder="Pérez"
+                          required
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="registerEmail">Email</Label>
+                      <Input
+                        id="registerEmail"
+                        type="email"
+                        placeholder="ejemplo@email.com"
+                        required
+                        value={registerEmail}
+                        onChange={(e) => setRegisterEmail(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="registerPassword">Contraseña</Label>
+                      <Input
+                        id="registerPassword"
+                        type="password"
+                        required
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
+                    </div>
+                    <Button className="w-full" type="submit" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Cargando...
+                        </>
+                      ) : (
+                        "Crear cuenta"
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              )}
             </TabsContent>
           </CardContent>
           

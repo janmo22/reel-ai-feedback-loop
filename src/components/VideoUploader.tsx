@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, Video, X, Play, CheckCircle, LoaderCircle } from "lucide-react";
+import { Upload, Video as VideoIcon, X, Play, CheckCircle, LoaderCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
 import { useUploadProgress } from "@/hooks/use-upload-progress";
+import { VideoUploadResponse } from "@/types";
 
 interface VideoUploaderProps {
   onUploadComplete: (data: {
@@ -21,7 +21,7 @@ interface VideoUploaderProps {
     description: string;
     missions: string[];
     mainMessage: string;
-    response: any;
+    response: VideoUploadResponse;
   }) => void;
 }
 
@@ -39,6 +39,8 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  const MAX_FILE_SIZE = 500 * 1024 * 1024;
   
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -89,11 +91,10 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       return;
     }
     
-    const maxSize = 200 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (file.size > MAX_FILE_SIZE) {
       toast({
         title: "Error",
-        description: "El archivo es demasiado grande. Por favor, sube un archivo menor a 200MB.",
+        description: "El archivo es demasiado grande. Por favor, sube un archivo menor a 500MB.",
         variant: "destructive"
       });
       return;
@@ -185,36 +186,38 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     setUploadProgress(0);
     
     try {
-      // Create a unique file path including the user's ID
       const fileExt = videoFile.name.split('.').pop();
       const videoId = uuidv4();
       const filePath = `${user.id}/${videoId}.${fileExt}`;
       
-      // Upload to Supabase Storage
       const { data: storageData, error: storageError } = await supabase.storage
         .from('videos')
         .upload(filePath, videoFile, {
           cacheControl: '3600',
-          upsert: false,
-          // Using the newer onUploadProgress format for Supabase Storage v2+
-          onUploadProgress: (event) => {
-            const progress = event.loaded / event.total * 100;
-            setUploadProgress(Math.round(progress));
-          }
+          upsert: false
         });
       
+      const updateProgress = () => {
+        const randomIncrement = Math.floor(Math.random() * 10) + 5;
+        setUploadProgress((prev) => {
+          const newProgress = Math.min(prev + randomIncrement, 100);
+          return newProgress < 95 ? newProgress : 95;
+        });
+      };
+      
+      const progressInterval = setInterval(updateProgress, 500);
+      
       if (storageError) {
+        clearInterval(progressInterval);
         throw storageError;
       }
       
-      // Get the public URL of the uploaded video
       const { data: publicUrlData } = supabase.storage
         .from('videos')
         .getPublicUrl(filePath);
       
       const videoUrl = publicUrlData.publicUrl;
       
-      // Save the video metadata to the database
       const { data: videoData, error: videoError } = await supabase
         .from('videos')
         .insert([
@@ -230,26 +233,28 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         .single();
       
       if (videoError) {
+        clearInterval(progressInterval);
         throw videoError;
       }
       
-      // This would normally be sent to a webhook or processed by an edge function
-      // For now, we'll simulate a response
+      setUploadProgress(100);
+      clearInterval(progressInterval);
+      
       toast({
         title: "¡Video enviado!",
         description: "Tu reel ha sido enviado para análisis.",
       });
       
-      // Call the webhook (this would be implemented in production)
-      // Using the same simulation logic as before but now with real DB entries
-      onUploadComplete({
-        video: videoFile,
-        title,
-        description,
-        missions,
-        mainMessage,
-        response: { status: "success", videoId: videoData?.id || videoId },
-      });
+      setTimeout(() => {
+        onUploadComplete({
+          video: videoFile,
+          title,
+          description,
+          missions,
+          mainMessage,
+          response: { status: "success", videoId: videoData?.id || videoId },
+        });
+      }, 500);
       
     } catch (error: any) {
       console.error("Error subiendo video:", error);
@@ -291,7 +296,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
                   <span className="electric-text font-semibold">Haz clic para subir</span> o arrastra y suelta
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Formatos: MP4, WebM, MOV (máx. 200MB)
+                  Formatos: MP4, WebM, MOV (máx. 500MB)
                 </p>
               </div>
             </div>
@@ -430,7 +435,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
               </>
             ) : (
               <>
-                <Video className="mr-2 h-4 w-4" />
+                <VideoIcon className="mr-2 h-4 w-4" />
                 Enviar para análisis
               </>
             )}

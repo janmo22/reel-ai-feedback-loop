@@ -10,27 +10,7 @@ import { Video as VideoIcon, HistoryIcon, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
-
-// Define types for the video and feedback data
-interface Video {
-  id: string;
-  title: string;
-  description: string | null;
-  video_url: string;
-  thumbnail_url: string | null;
-  status: string;
-  created_at: string | null;
-  updated_at: string | null;
-  user_id: string;
-}
-
-interface Feedback {
-  id: string;
-  video_id: string;
-  overall_score: number;
-  feedback_data: any;
-  created_at: string | null;
-}
+import { Video, Feedback } from "@/types";
 
 const HistoryPage = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -119,7 +99,7 @@ const HistoryPage = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
       <main className="flex-1 py-8 px-4">
@@ -152,22 +132,19 @@ const HistoryPage = () => {
               icon={<HistoryIcon className="h-12 w-12 text-muted-foreground" />}
               title="No hay reels"
               description="Aún no has subido ningún reel para análisis"
-              action={
-                <Button 
-                  onClick={() => navigate('/upload')}
-                  className="bg-flow-electric hover:bg-flow-electric/90"
-                >
-                  <VideoIcon className="mr-2 h-4 w-4" />
-                  Subir mi primer reel
-                </Button>
-              }
+              onAction={() => navigate('/upload')}
+              actionText="Subir mi primer reel"
+              actionIcon={<VideoIcon className="mr-2 h-4 w-4" />}
             />
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {videos.map((video) => (
                 <VideoCard
                   key={video.id}
-                  video={video}
+                  title={video.title}
+                  thumbnailUrl={video.thumbnail_url}
+                  status={video.status}
+                  createdAt={video.created_at}
                   onView={() => handleViewFeedback(video.id)}
                   onDelete={() => confirmDeleteVideo(video)}
                 />

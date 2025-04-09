@@ -1,41 +1,41 @@
 
-import { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import React from 'react';
 import { Button } from "@/components/ui/button";
 
-interface EmptyStateProps {
-  icon: ReactNode;
+export interface EmptyStateProps {
+  icon: React.ReactNode;
   title: string;
   description: string;
-  actionLabel?: string;
-  actionLink?: string;
   onAction?: () => void;
+  actionText?: string;
+  actionIcon?: React.ReactNode;
 }
 
-const EmptyState = ({
-  icon,
-  title,
-  description,
-  actionLabel,
-  actionLink,
-  onAction
+const EmptyState = ({ 
+  icon, 
+  title, 
+  description, 
+  onAction,
+  actionText,
+  actionIcon
 }: EmptyStateProps) => {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-      <div className="rounded-full bg-muted p-6 mb-4">
+    <div className="flex flex-col items-center justify-center text-center py-16 px-4 border rounded-lg bg-background/50">
+      <div className="bg-muted rounded-full p-4 mb-6">
         {icon}
       </div>
       <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-muted-foreground mb-6 max-w-md">{description}</p>
-      
-      {actionLabel && (actionLink || onAction) && (
-        actionLink ? (
-          <Button asChild>
-            <Link to={actionLink}>{actionLabel}</Link>
-          </Button>
-        ) : (
-          <Button onClick={onAction}>{actionLabel}</Button>
-        )
+      <p className="text-muted-foreground max-w-md mb-6">
+        {description}
+      </p>
+      {onAction && actionText && (
+        <Button 
+          onClick={onAction}
+          className="bg-flow-electric hover:bg-flow-electric/90"
+        >
+          {actionIcon}
+          {actionText}
+        </Button>
       )}
     </div>
   );
