@@ -24,3 +24,46 @@ export interface VideoUploadResponse {
   status: string;
   videoId: string;
 }
+
+// Define the AIFeedbackResponse interface to match the webhook response structure
+export interface AIFeedbackResponse {
+  generalStudy: string;
+  contentType: string;
+  engagementPotential: {
+    interaction: string;
+    watchTime: string;
+  };
+  nativeCodes: string;
+  overallEvaluation: {
+    score: number;
+    suggestions: string[];
+  };
+  seo: {
+    keywordAnalysis: string;
+    suggestedCopy: string;
+    suggestedText: string;
+    clarity: string;
+  };
+  structure?: {
+    hook?: {
+      general: string;
+      spoken: string;
+      auditory: string;
+      visual: string;
+      clarity: string;
+      feel: string;
+      invitation: string;
+      patternBreak: string;
+      strengths: string;
+      weaknesses: string;
+      score: number;
+    };
+    buildUp?: string;
+    value?: {
+      comment: string;
+      score: number;
+      function: string;
+    };
+    cta?: string;
+  };
+}

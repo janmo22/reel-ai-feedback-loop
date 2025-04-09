@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "@/components/Header";
@@ -10,49 +9,7 @@ import EmptyState from "@/components/EmptyState";
 import { Loader } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-// Definición de la estructura de datos del feedback de la IA
-interface AIFeedbackResponse {
-  generalStudy: string;
-  contentType: string;
-  engagementPotential: {
-    interaction: string;
-    watchTime: string;
-  };
-  nativeCodes: string;
-  overallEvaluation: {
-    score: number;
-    suggestions: string[];
-  };
-  seo: {
-    keywordAnalysis: string;
-    suggestedCopy: string;
-    suggestedText: string;
-    clarity: string;
-  };
-  structure: {
-    hook: {
-      general: string;
-      spoken: string;
-      auditory: string;
-      visual: string;
-      clarity: string;
-      feel: string;
-      invitation: string;
-      patternBreak: string;
-      strengths: string;
-      weaknesses: string;
-      score: number;
-    };
-    buildUp: string;
-    value: {
-      comment: string;
-      score: number;
-      function: string;
-    };
-    cta: string;
-  };
-}
+import { AIFeedbackResponse } from "@/types";
 
 const ResultsPage = () => {
   const navigate = useNavigate();
@@ -68,7 +25,7 @@ const ResultsPage = () => {
     
     if (state && state.feedback) {
       // Si ya tenemos feedback en el state, lo usamos directamente
-      setFeedback(state.feedback);
+      setFeedback(state.feedback as AIFeedbackResponse[]);
       setVideoData(state.videoData);
       setLoading(false);
       console.log("Usando datos de feedback del state:", state.feedback);
@@ -101,7 +58,7 @@ const ResultsPage = () => {
               // No mostramos error, simplemente dejamos loading en true
             } else if (feedbackData) {
               // Convertimos los datos de feedback al formato esperado
-              const formattedFeedback = [feedbackData.feedback_data];
+              const formattedFeedback = feedbackData.feedback_data as AIFeedbackResponse[];
               setFeedback(formattedFeedback);
               setLoading(false);
               console.log("Datos de feedback obtenidos de la BD:", formattedFeedback);
@@ -167,6 +124,33 @@ const ResultsPage = () => {
   // Get the first feedback item
   const feedbackItem = feedback[0];
   
+  // Check if structure property exists, if not, initialize with default structure
+  const feedbackWithStructure = {
+    ...feedbackItem,
+    structure: feedbackItem.structure || {
+      hook: {
+        general: "No disponible",
+        spoken: "No disponible",
+        visual: "No disponible",
+        strengths: "No disponible",
+        weaknesses: "No disponible",
+        score: 0,
+        auditory: "No disponible",
+        clarity: "No disponible",
+        feel: "No disponible",
+        invitation: "No disponible",
+        patternBreak: "No disponible"
+      },
+      buildUp: "No disponible",
+      value: {
+        comment: "No disponible",
+        score: 0,
+        function: "No disponible"
+      },
+      cta: "No disponible"
+    }
+  };
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -219,97 +203,103 @@ const ResultsPage = () => {
             <div className="md:col-span-2">
               <AIFeedbackCard feedback={feedbackItem} />
               
-              {/* Convert categories from feedbackItem to the format expected by FeedbackCard */}
-              <div className="mt-6 space-y-6">
-                <FeedbackCard
-                  title="Evaluación del Hook"
-                  overallScore={feedbackItem.structure.hook.score}
-                  categories={[
-                    {
-                      name: "General",
-                      score: feedbackItem.structure.hook.score,
-                      feedback: feedbackItem.structure.hook.general
-                    },
-                    {
-                      name: "Verbal",
-                      score: feedbackItem.structure.hook.score,
-                      feedback: feedbackItem.structure.hook.spoken
-                    },
-                    {
-                      name: "Visual",
-                      score: feedbackItem.structure.hook.score,
-                      feedback: feedbackItem.structure.hook.visual
-                    },
-                    {
-                      name: "Fortalezas y Debilidades",
-                      score: feedbackItem.structure.hook.score,
-                      feedback: `Fortalezas: ${feedbackItem.structure.hook.strengths}. Debilidades: ${feedbackItem.structure.hook.weaknesses}.`
-                    }
-                  ]}
-                />
-                
-                <FeedbackCard
-                  title="Evaluación de Valor y Estructura"
-                  overallScore={feedbackItem.structure.value.score}
-                  categories={[
-                    {
-                      name: "Valor principal",
-                      score: feedbackItem.structure.value.score,
-                      feedback: feedbackItem.structure.value.comment,
-                      suggestions: [`Función: ${feedbackItem.structure.value.function}`]
-                    },
-                    {
-                      name: "Desarrollo",
-                      score: 7,
-                      feedback: feedbackItem.structure.buildUp
-                    },
-                    {
-                      name: "Call to Action (CTA)",
-                      score: 6,
-                      feedback: feedbackItem.structure.cta
-                    }
-                  ]}
-                />
-                
-                <FeedbackCard
-                  title="SEO y Códigos Nativos"
-                  overallScore={7}
-                  categories={[
-                    {
-                      name: "Análisis de palabras clave",
-                      score: 7,
-                      feedback: feedbackItem.seo.keywordAnalysis
-                    },
-                    {
-                      name: "Claridad temática",
-                      score: 8,
-                      feedback: feedbackItem.seo.clarity
-                    },
-                    {
-                      name: "Códigos nativos",
-                      score: 7,
-                      feedback: feedbackItem.nativeCodes
-                    }
-                  ]}
-                />
-                
-                <FeedbackCard
-                  title="Potencial de Engagement"
-                  overallScore={7}
-                  categories={[
-                    {
-                      name: "Interacción",
-                      score: 7,
-                      feedback: feedbackItem.engagementPotential.interaction
-                    },
-                    {
-                      name: "Tiempo de visualización",
-                      score: 7,
-                      feedback: feedbackItem.engagementPotential.watchTime
-                    }
-                  ]}
-                />
-              </div>
+              {/* Only show additional feedback cards if structure is available */}
+              {feedbackWithStructure.structure && (
+                <div className="mt-6 space-y-6">
+                  {feedbackWithStructure.structure.hook && (
+                    <FeedbackCard
+                      title="Evaluación del Hook"
+                      overallScore={feedbackWithStructure.structure.hook.score}
+                      categories={[
+                        {
+                          name: "General",
+                          score: feedbackWithStructure.structure.hook.score,
+                          feedback: feedbackWithStructure.structure.hook.general
+                        },
+                        {
+                          name: "Verbal",
+                          score: feedbackWithStructure.structure.hook.score,
+                          feedback: feedbackWithStructure.structure.hook.spoken
+                        },
+                        {
+                          name: "Visual",
+                          score: feedbackWithStructure.structure.hook.score,
+                          feedback: feedbackWithStructure.structure.hook.visual
+                        },
+                        {
+                          name: "Fortalezas y Debilidades",
+                          score: feedbackWithStructure.structure.hook.score,
+                          feedback: `Fortalezas: ${feedbackWithStructure.structure.hook.strengths}. Debilidades: ${feedbackWithStructure.structure.hook.weaknesses}.`
+                        }
+                      ]}
+                    />
+                  )}
+                  
+                  {(feedbackWithStructure.structure.value || feedbackWithStructure.structure.buildUp || feedbackWithStructure.structure.cta) && (
+                    <FeedbackCard
+                      title="Evaluación de Valor y Estructura"
+                      overallScore={feedbackWithStructure.structure.value?.score || 0}
+                      categories={[
+                        ...(feedbackWithStructure.structure.value ? [{
+                          name: "Valor principal",
+                          score: feedbackWithStructure.structure.value.score,
+                          feedback: feedbackWithStructure.structure.value.comment,
+                          suggestions: [`Función: ${feedbackWithStructure.structure.value.function}`]
+                        }] : []),
+                        ...(feedbackWithStructure.structure.buildUp ? [{
+                          name: "Desarrollo",
+                          score: 7,
+                          feedback: feedbackWithStructure.structure.buildUp
+                        }] : []),
+                        ...(feedbackWithStructure.structure.cta ? [{
+                          name: "Call to Action (CTA)",
+                          score: 6,
+                          feedback: feedbackWithStructure.structure.cta
+                        }] : [])
+                      ]}
+                    />
+                  )}
+                  
+                  <FeedbackCard
+                    title="SEO y Códigos Nativos"
+                    overallScore={7}
+                    categories={[
+                      {
+                        name: "Análisis de palabras clave",
+                        score: 7,
+                        feedback: feedbackItem.seo.keywordAnalysis
+                      },
+                      {
+                        name: "Claridad temática",
+                        score: 8,
+                        feedback: feedbackItem.seo.clarity
+                      },
+                      {
+                        name: "Códigos nativos",
+                        score: 7,
+                        feedback: feedbackItem.nativeCodes
+                      }
+                    ]}
+                  />
+                  
+                  <FeedbackCard
+                    title="Potencial de Engagement"
+                    overallScore={7}
+                    categories={[
+                      {
+                        name: "Interacción",
+                        score: 7,
+                        feedback: feedbackItem.engagementPotential.interaction
+                      },
+                      {
+                        name: "Tiempo de visualización",
+                        score: 7,
+                        feedback: feedbackItem.engagementPotential.watchTime
+                      }
+                    ]}
+                  />
+                </div>
+              )}
             </div>
           </div>
           
