@@ -5,12 +5,14 @@ import Header from "@/components/Header";
 import VideoUploader from "@/components/video-upload/VideoUploader";
 import ProgressSteps from "@/components/video-upload/ProgressSteps";
 import ProcessingSteps from "@/components/video-upload/ProcessingSteps";
+import { useToast } from "@/components/ui/use-toast";
 
 const UploadPage = () => {
   const [uploadStep, setUploadStep] = useState<"upload" | "processing" | "complete">("upload");
   const [uploadData, setUploadData] = useState<any>(null);
   const [feedbackData, setFeedbackData] = useState<any>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const handleUploadComplete = (data: any) => {
     setUploadData(data);
@@ -18,10 +20,15 @@ const UploadPage = () => {
     
     console.log("Información enviada correctamente, procesando análisis...");
     
-    // Simulate processing time and receiving webhook response
-    // In a real app, this would come from the server response
+    // En un escenario real, la respuesta del webhook debería activar un cambio de estado
+    // Por ahora, simulamos el tiempo de procesamiento para la demo
+    
+    // Simulación del tiempo de procesamiento (entre 1-2 minutos)
+    // En producción, esto sería reemplazado por un listener o webhook real
+    const processingTime = Math.floor(Math.random() * (120000 - 60000 + 1)) + 60000;
+    
     setTimeout(() => {
-      // Mock feedback data that would come from webhook
+      // Simular que el webhook devuelve datos de análisis
       const sampleFeedback = [
         {
           "generalStudy": "El video explica cómo usar eficientemente los diferentes modelos de ChatGPT para mejorar la productividad. Se centra en la elección del modelo adecuado según la tarea, dividiéndolos en dos grupos: los que razonan y los que no.",
@@ -72,21 +79,34 @@ const UploadPage = () => {
       
       setFeedbackData(sampleFeedback);
       setUploadStep("complete");
-    }, 10000); // Reducido a 10 segundos para mejor experiencia de usuario
+      
+      toast({
+        title: "¡Análisis completado!",
+        description: "El análisis de tu reel ha sido completado con éxito.",
+      });
+      
+    }, processingTime);
   };
   
   const handleContinue = () => {
-    // Navigate to the results page with the feedback data
-    navigate("/results", { 
-      state: { 
-        feedback: feedbackData,
-        videoData: {
-          title: uploadData?.title || "Video sin título",
-          // Ya no enviamos la URL del video porque no lo estamos subiendo
-          videoUrl: null
-        }
-      } 
-    });
+    // Solo navegamos a la página de resultados si realmente tenemos datos de feedback
+    if (feedbackData) {
+      navigate("/results", { 
+        state: { 
+          feedback: feedbackData,
+          videoData: {
+            title: uploadData?.title || "Video sin título",
+            // Eliminamos la URL del video para que no se muestre en resultados
+          }
+        } 
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "No se han recibido datos del análisis todavía. Por favor, espera a que se complete el proceso.",
+        variant: "destructive"
+      });
+    }
   };
   
   return (

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import FeedbackCard from "@/components/FeedbackCard";
 import { ArrowLeft, BookmarkPlus, Share2 } from "lucide-react";
 import AIFeedbackCard from "@/components/AIFeedbackCard";
+import EmptyState from "@/components/EmptyState";
+import { Loader } from "lucide-react";
 
 // Sample data structure that would come from the webhook
 interface AIFeedbackResponse {
@@ -58,73 +60,17 @@ const ResultsPage = () => {
   const [videoData, setVideoData] = useState<any>(null);
   
   useEffect(() => {
-    // In a real app, this data would come from the location state or API
-    // For now, we'll simulate getting it from the location state
+    // Solo usar los datos si vienen del webhook/location state
     const state = location.state;
     
     if (state && state.feedback) {
       setFeedback(state.feedback);
       setVideoData(state.videoData);
-    } else {
-      // For demo purposes, load sample data if none is provided
-      const sampleFeedback = [
-        {
-          "generalStudy": "El video explica cómo usar eficientemente los diferentes modelos de ChatGPT para mejorar la productividad. Se centra en la elección del modelo adecuado según la tarea, dividiéndolos en dos grupos: los que razonan y los que no.",
-          "contentType": "Content Series",
-          "engagementPotential": {
-            "interaction": "El video invita a la interacción al plantear una pregunta inicial sobre el uso de ChatGPT. Además, anima a guardar el video para futuras consultas, lo que incrementa el potencial de \"saves\".  La temática es relevante para una audiencia amplia interesada en productividad y tecnología.",
-            "watchTime": "El dinamismo del presentador, los ejemplos prácticos y la promesa de valor (\"usar bien ChatGPT\") contribuyen a un buen potencial de watch time. La duración del video es adecuada para el formato corto de redes sociales."
-          },
-          "nativeCodes": "El video utiliza texto en pantalla, cambios de ritmo y un estilo de edición dinámico, propio de las plataformas como TikTok e Instagram. La inclusión de un dibujo animado en el hook es un elemento nativo que funciona bien. El uso de la pantalla del móvil y del ordenador también se adapta al formato.",
-          "overallEvaluation": {
-            "score": 7,
-            "suggestions": [
-              "Incluir una CTA más específica al final, como invitar a seguir al creador para más consejos de productividad.",
-              "Mostrar ejemplos concretos de cómo usar cada modelo de ChatGPT en situaciones cotidianas.",
-              "Añadir subtítulos para mejorar la accesibilidad y el engagement en usuarios que ven videos sin sonido."
-            ]
-          },
-          "seo": {
-            "keywordAnalysis": "El video utiliza palabras clave relevantes como ChatGPT, productividad, IA, modelos de lenguaje, optimización, etc. Se podrían reforzar con sinónimos y términos relacionados.",
-            "suggestedCopy": "Aprende a usar ChatGPT como un PRO y dispara tu productividad. Descubre los diferentes modelos y elige el perfecto para cada tarea. #ChatGPT #Productividad #IA #InteligenciaArtificial #Tecnología #Emprendimiento #Consejos",
-            "suggestedText": "Domina ChatGPT",
-            "clarity": "La temática del video es clara tanto para los algoritmos como para los usuarios. El título y la descripción refuerzan el tema principal."
-          },
-          "structure": {
-            "hook": {
-              "general": "El hook es efectivo al plantear un problema común en el uso de ChatGPT y prometer una solución.",
-              "spoken": "El presentador plantea una pregunta directa y genera curiosidad sobre cómo usar correctamente ChatGPT.",
-              "auditory": "El inicio del video utiliza la voz del presentador para plantear una pregunta directa al usuario, lo que capta la atención.",
-              "visual": "El hook visual muestra la interfaz de ChatGPT y al presentador hablando a cámara. La inclusión del dibujo animado añade un toque original.",
-              "clarity": "El mensaje del hook es claro y conciso: si no cambias el modelo de ChatGPT, lo estás usando mal.",
-              "feel": "El hook se siente natural y no forzado. La entonación del presentador transmite interés y cercanía.",
-              "invitation": "El hook invita a seguir viendo al prometer revelar información valiosa sobre cómo usar correctamente la herramienta.",
-              "patternBreak": "El video utiliza la ruptura de patrón al mostrar la pantalla de ChatGPT y luego al presentador con un dibujo. Esto crea dinamismo y ayuda a mantener la atención.",
-              "strengths": "Claridad del mensaje, dinamismo visual, uso de preguntas directas.",
-              "weaknesses": "Se podría mejorar la calidad de la imagen y la iluminación.",
-              "score": 8
-            },
-            "buildUp": "El video mantiene el interés al presentar la información de forma organizada y con ejemplos visuales. La analogía de la maratón y los zapatos ayuda a comprender la importancia de elegir el modelo correcto.",
-            "value": {
-              "comment": "El valor principal del video es la explicación clara y concisa de los diferentes modelos de ChatGPT y su uso. La información es relevante para cualquier persona que utilice la herramienta.",
-              "score": 8,
-              "function": "Educar"
-            },
-            "cta": "La CTA es guardar el video para referencia futura, lo cual es útil para el usuario. Sin embargo, se podría complementar con una CTA más orientada a la interacción, como seguir al creador o dejar un comentario con su modelo favorito de ChatGPT."
-          }
-        }
-      ];
-      setFeedback(sampleFeedback);
-      setVideoData({
-        title: "Cómo usar ChatGPT correctamente",
-        videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
-      });
-    }
-    
-    // Simulate loading time
-    setTimeout(() => {
       setLoading(false);
-    }, 1000);
+    } else {
+      // Si no hay datos, mantenemos el estado de carga
+      setLoading(true);
+    }
   }, [location]);
   
   if (loading) {
@@ -132,10 +78,14 @@ const ResultsPage = () => {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 py-8 px-4 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-t-flow-electric border-r-flow-electric border-b-flow-electric/30 border-l-flow-electric/30 rounded-full animate-spin mx-auto mb-6"></div>
-            <h2 className="text-2xl font-semibold">Cargando resultados...</h2>
-          </div>
+          <EmptyState 
+            icon={<Loader className="h-6 w-6 animate-spin text-flow-blue" />}
+            title="Esperando resultados"
+            description="Estamos a la espera de recibir el análisis de tu reel. Por favor, regresa a la página de carga o intenta más tarde."
+            actionText="Volver a subida"
+            onAction={() => navigate('/upload')}
+            actionIcon={<ArrowLeft className="mr-2 h-4 w-4" />}
+          />
         </main>
       </div>
     );
@@ -151,7 +101,7 @@ const ResultsPage = () => {
             <div className="text-center py-12">
               <h2 className="text-2xl font-semibold mb-4">No se encontraron resultados</h2>
               <p className="text-muted-foreground mb-6">No pudimos encontrar los resultados para este video.</p>
-              <Button onClick={() => navigate(-1)}>Volver</Button>
+              <Button onClick={() => navigate('/upload')}>Volver</Button>
             </div>
           </div>
         </main>
@@ -185,31 +135,28 @@ const ResultsPage = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Video preview */}
+            {/* Quitamos la previsualización del video y mostramos acciones */}
             <div className="md:col-span-1">
-              {videoData && videoData.videoUrl ? (
-                <div className="rounded-lg overflow-hidden aspect-[9/16] bg-black">
-                  <video 
-                    src={videoData.videoUrl} 
-                    controls 
-                    className="w-full h-full object-contain"
-                  />
+              <div className="bg-muted/30 rounded-lg p-6 h-full">
+                <h3 className="text-lg font-semibold mb-4">Acciones</h3>
+                <div className="flex flex-col space-y-3">
+                  <Button className="w-full">
+                    <BookmarkPlus className="mr-2 h-4 w-4" />
+                    Guardar análisis
+                  </Button>
+                  <Button variant="outline" className="w-full">
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Compartir resultados
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    className="w-full"
+                    onClick={() => navigate('/upload')}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Volver a subir
+                  </Button>
                 </div>
-              ) : (
-                <div className="rounded-lg bg-muted aspect-[9/16] flex items-center justify-center">
-                  <p className="text-muted-foreground">Vista previa no disponible</p>
-                </div>
-              )}
-              
-              <div className="mt-4 flex flex-col space-y-2">
-                <Button className="w-full">
-                  <BookmarkPlus className="mr-2 h-4 w-4" />
-                  Guardar análisis
-                </Button>
-                <Button variant="outline" className="w-full">
-                  <Share2 className="mr-2 h-4 w-4" />
-                  Compartir resultados
-                </Button>
               </div>
             </div>
             
@@ -313,7 +260,7 @@ const ResultsPage = () => {
           
           <div className="bg-muted/30 rounded-lg p-6 mt-8">
             <h3 className="text-xl font-semibold mb-4">Copia sugerida para publicación</h3>
-            <div className="bg-white p-4 rounded-md border mb-4">
+            <div className="bg-white p-4 rounded-md border mb-4 dark:bg-sidebar-accent">
               <p className="font-medium text-lg mb-2">{feedbackItem.seo.suggestedText}</p>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{feedbackItem.seo.suggestedCopy}</p>
             </div>
