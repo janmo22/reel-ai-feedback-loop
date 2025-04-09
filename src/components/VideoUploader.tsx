@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -187,6 +188,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     setUploadProgress(0);
     
     try {
+      // Simulate progress for UI feedback
       const updateProgress = () => {
         const randomIncrement = Math.floor(Math.random() * 10) + 5;
         setUploadProgress((prev) => {
@@ -198,77 +200,65 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       const progressInterval = setInterval(updateProgress, 1000);
       
       const videoId = uuidv4();
-      let videoUrl = "";
-      let storageError = null;
       
       try {
-        const fileExt = videoFile.name.split('.').pop();
-        const filePath = `${user.id}/${videoId}.${fileExt}`;
-        
-        const { data: storageData, error } = await supabase.storage
+        // Save metadata to Supabase database (not the video file)
+        await supabase
           .from('videos')
-          .upload(filePath, videoFile, {
-            cacheControl: '3600',
-            upsert: false
-          });
+          .insert([
+            {
+              user_id: user.id,
+              title,
+              description,
+              video_url: "webhook_processed", // Placeholder since actual video is sent to webhook
+              status: 'processing'
+            }
+          ]);
         
-        if (error) {
-          console.warn("Storage upload failed:", error);
-          storageError = error;
-        } else {
-          const { data: publicUrlData } = supabase.storage
-            .from('videos')
-            .getPublicUrl(filePath);
-          
-          videoUrl = publicUrlData.publicUrl;
-          
-          try {
-            await supabase
-              .from('videos')
-              .insert([
-                {
-                  user_id: user.id,
-                  title,
-                  description,
-                  video_url: videoUrl,
-                  status: 'processing'
-                }
-              ])
-              .select();
-          } catch (dbError) {
-            console.warn("Database error:", dbError);
-          }
-        }
-      } catch (error) {
-        console.warn("Storage error:", error);
-        storageError = error;
+        console.log("Metadata saved to database");
+      } catch (dbError) {
+        console.warn("Database error:", dbError);
+        // Continue even if database insert fails - the webhook is the priority
       }
 
-      const webhookData = {
+      // Create a FormData object to send the video file directly to the webhook
+      const formData = new FormData();
+      formData.append("video", videoFile);
+      formData.append("videoId", videoId);
+      formData.append("userId", user.id);
+      formData.append("title", title);
+      formData.append("description", description || "");
+      formData.append("missions", JSON.stringify(missions));
+      formData.append("mainMessage", mainMessage);
+      
+      console.log("Enviando video directamente al webhook:", WEBHOOK_URL);
+      console.log("FormData creado con el video:", videoFile.name, videoFile.size, "bytes");
+      
+      // Also prepare a JSON payload as backup in case FormData doesn't work as expected
+      const jsonData = {
         videoId: videoId,
         userId: user.id,
-        videoUrl,
         title,
         description,
         missions,
         mainMessage,
         timestamp: new Date().toISOString(),
-        storageError: storageError ? String(storageError) : null
+        videoInfo: {
+          name: videoFile.name,
+          type: videoFile.type,
+          size: videoFile.size
+        }
       };
 
-      console.log("Enviando video al webhook:", WEBHOOK_URL);
-      
       try {
+        // First attempt: Try sending with FormData (with the actual video file)
         const webhookResponse = await fetch(WEBHOOK_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(webhookData),
+          body: formData,
         });
         
         if (!webhookResponse.ok) {
-          console.error("Error en la respuesta del webhook:", webhookResponse.status, webhookResponse.statusText);
+          console.error("Error en la respuesta del webhook con FormData:", webhookResponse.status, webhookResponse.statusText);
           throw new Error(`Error del webhook: ${webhookResponse.status}`);
         }
         
@@ -292,19 +282,46 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
           response: { status: "success", videoId },
         });
       } catch (webhookError) {
-        console.error('Error al enviar al webhook:', webhookError);
+        console.error('Error al enviar al webhook con FormData:', webhookError);
+        
+        // Fallback: Try sending with JSON (metadata only)
+        try {
+          console.log("Intentando enviar solo metadatos al webhook como JSON");
+          const fallbackResponse = await fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(jsonData),
+          });
+          
+          if (!fallbackResponse.ok) {
+            throw new Error(`Error del webhook: ${fallbackResponse.status}`);
+          }
+          
+          const fallbackData = await fallbackResponse.text();
+          console.log('Metadatos enviados exitosamente al webhook. Respuesta:', fallbackData);
+          
+          toast({
+            title: "¡Video enviado!",
+            description: "Tu reel ha sido enviado para análisis (solo metadatos).",
+          });
+          
+          onUploadComplete({
+            video: videoFile,
+            title,
+            description,
+            missions,
+            mainMessage,
+            response: { status: "success", videoId },
+          });
+        } catch (fallbackError) {
+          console.error('Error al enviar metadatos al webhook:', fallbackError);
+          throw fallbackError;
+        }
+      } finally {
         clearInterval(progressInterval);
-        
-        toast({
-          title: "Error al enviar",
-          description: "Hubo un problema al enviar tu video. Por favor, inténtalo de nuevo.",
-          variant: "destructive",
-        });
-        
-        setIsUploading(false);
-        throw webhookError;
       }
-      
     } catch (error: any) {
       console.error("Error general al subir video:", error);
       toast({

@@ -15,6 +15,8 @@ const UploadPage = () => {
     setUploadData(data);
     setUploadStep("processing");
     
+    console.log("Procesando video enviado al webhook, aguardando respuesta...");
+    
     // Simulate processing time and receiving webhook response
     // In a real app, this would come from the server response
     setTimeout(() => {
