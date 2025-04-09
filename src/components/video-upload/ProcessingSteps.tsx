@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Check, BrainCircuit } from "lucide-react";
 import { ArrowRight } from "lucide-react";
 
@@ -12,6 +12,35 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
   currentStep,
   onContinue
 }) => {
+  const [messageIndex, setMessageIndex] = useState(0);
+  
+  const funMessages = [
+    "Analizando tu reel con la precisión de alguien que ha pasado demasiado tiempo en TikTok...",
+    "Descifrando el algoritmo como si fuera el código Da Vinci...",
+    "Preguntándole a ChatGPT si tu video le da FOMO...",
+    "Enviando tu contenido a influencers virtuales para su aprobación...",
+    "Calculando tu potencial viral con matemáticas avanzadas (y un poco de magia)...",
+    "Midiendo el ratio sonrisa-por-segundo de tu reel...",
+    "Buscando el punto exacto donde la gente dejará de hacer scroll...",
+    "Convirtiendo tu creatividad en datos que ni Wall Street entendería...",
+    "Analizando si tu hook es tan bueno como para competir con gatos haciendo cosas raras...",
+    "Consultando con la IA que predijo todos los trends del año pasado...",
+    "Comparando tu contenido con 10,000 videos de bailes que nadie puede replicar...",
+    "Procesando tu video más rápido que un usuario intentando entender los cambios de Instagram...",
+    "Preguntándole a la nube si tu contenido es el próximo trend...",
+    "Calculando cuántos followers ganarías si existiera justicia en el algoritmo...",
+  ];
+  
+  useEffect(() => {
+    if (currentStep === "processing") {
+      const interval = setInterval(() => {
+        setMessageIndex((prevIndex) => (prevIndex + 1) % funMessages.length);
+      }, 4000); // Cambiar mensaje cada 4 segundos
+      
+      return () => clearInterval(interval);
+    }
+  }, [currentStep]);
+  
   if (currentStep === "upload") {
     return null;
   }
@@ -24,8 +53,15 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
         </div>
         <h2 className="text-2xl font-semibold mb-2">PROCESANDO TU REEL</h2>
         <p className="text-muted-foreground max-w-md mx-auto mb-4 font-satoshi">
-          Nuestro modelo de IA está analizando tu video. Esto puede tomar unos minutos.
+          Nuestro modelo de IA está analizando tu video. Esto puede tomar entre 1-2 minutos.
         </p>
+        
+        {/* Fun animated message */}
+        <div className="max-w-md mx-auto mt-4 mb-6 min-h-[80px] flex items-center justify-center">
+          <p className="text-flow-electric font-medium animate-fade-in italic">
+            {funMessages[messageIndex]}
+          </p>
+        </div>
         
         {/* Animated elements to show AI processing */}
         <div className="max-w-md mx-auto mt-8 mb-6 relative">
@@ -61,6 +97,16 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
             }
             .animate-progress {
               animation: progress 90s ease-in-out forwards;
+            }
+            
+            @keyframes fade-in {
+              0% { opacity: 0; transform: translateY(10px); }
+              10% { opacity: 1; transform: translateY(0); }
+              90% { opacity: 1; transform: translateY(0); }
+              100% { opacity: 0; transform: translateY(-10px); }
+            }
+            .animate-fade-in {
+              animation: fade-in 4s ease-in-out;
             }
           `}
         </style>
