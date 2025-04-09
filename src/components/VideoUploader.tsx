@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -41,6 +42,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const { user } = useAuth();
   
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
+  // Fixed webhook URL to use the test endpoint
   const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
   
   const handleDrag = (e: React.DragEvent) => {
@@ -187,9 +189,10 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     setUploadProgress(0);
     
     try {
+      // Use this for simulating upload progress
       const updateProgress = () => {
-        const randomIncrement = Math.floor(Math.random() * 10) + 5;
         setUploadProgress((prev) => {
+          const randomIncrement = Math.floor(Math.random() * 10) + 5;
           const newProgress = Math.min(prev + randomIncrement, 100);
           return newProgress < 90 ? newProgress : 90;
         });
@@ -200,7 +203,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       const videoId = uuidv4();
       
       try {
-        console.log("Guardando metadata en Supabase...");
+        console.log("Guardando SOLO metadatos en Supabase (no video)...");
         await supabase
           .from('videos')
           .insert([
@@ -208,19 +211,27 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
               user_id: user.id,
               title,
               description,
-              video_url: "webhook_processed",
-              status: 'processing'
+              video_url: "webhook_processed", // Placeholder, as video is not stored in Supabase
+              status: 'processing',
+              main_message: mainMessage, // Store the main message
+              missions: missions // Store the missions
             }
           ]);
         
-        console.log("Metadata guardada en Supabase correctamente");
+        console.log("Metadatos guardados en Supabase correctamente");
       } catch (dbError) {
         console.error("Error guardando en Supabase:", dbError);
+        // Continue with webhook upload even if Supabase fails
       }
 
-      console.log("Preparando FormData con video para webhook...");
+      // Create a fresh FormData object
+      console.log("Preparando FormData para webhook...");
       const formData = new FormData();
+      
+      // Add the video file - make sure the field name is correct
       formData.append("video", videoFile);
+      
+      // Add all the metadata fields
       formData.append("videoId", videoId);
       formData.append("userId", user.id);
       formData.append("title", title);
@@ -230,52 +241,62 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       
       console.log("Enviando video al webhook:", WEBHOOK_URL);
       console.log("Tamaño del video:", (videoFile.size / (1024 * 1024)).toFixed(2), "MB");
-
-      try {
-        const webhookResponse = await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          body: formData,
-        });
-        
-        console.log("Respuesta del servidor webhook:", webhookResponse.status);
-        
-        if (!webhookResponse.ok) {
-          throw new Error(`Error en la respuesta del webhook: ${webhookResponse.status}`);
+      
+      // Using XMLHttpRequest for better progress tracking and error handling
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100);
+          setUploadProgress(percentComplete > 90 ? 90 : percentComplete);
         }
-        
-        try {
-          const responseText = await webhookResponse.text();
-          console.log('Video enviado exitosamente. Respuesta:', responseText);
-        } catch (parseError) {
-          console.log('No se pudo leer la respuesta pero el envío fue exitoso');
-        }
-        
+      };
+      
+      xhr.onload = function() {
         clearInterval(progressInterval);
-        setUploadProgress(100);
         
+        if (xhr.status >= 200 && xhr.status < 300) {
+          console.log('Video enviado exitosamente. Respuesta:', xhr.responseText);
+          setUploadProgress(100);
+          
+          toast({
+            title: "¡Video enviado!",
+            description: "Tu reel ha sido enviado para análisis.",
+          });
+          
+          onUploadComplete({
+            video: videoFile,
+            title,
+            description,
+            missions,
+            mainMessage,
+            response: { status: "success", videoId },
+          });
+        } else {
+          console.error('Error en respuesta del servidor:', xhr.status, xhr.statusText);
+          toast({
+            title: "Error de comunicación",
+            description: `Error en el servidor: ${xhr.status}. Por favor, inténtalo de nuevo.`,
+            variant: "destructive",
+          });
+          setIsUploading(false);
+        }
+      };
+      
+      xhr.onerror = function() {
+        clearInterval(progressInterval);
+        console.error('Error de red al enviar al webhook');
         toast({
-          title: "¡Video enviado!",
-          description: "Tu reel ha sido enviado para análisis.",
-        });
-        
-        onUploadComplete({
-          video: videoFile,
-          title,
-          description,
-          missions,
-          mainMessage,
-          response: { status: "success", videoId },
-        });
-      } catch (webhookError) {
-        console.error('Error al enviar al webhook con FormData:', webhookError);
-        toast({
-          title: "Error de comunicación",
-          description: "Hubo un problema al enviar el video. Por favor, inténtalo de nuevo.",
+          title: "Error de conexión",
+          description: "Hubo un problema al enviar el video. Verifica tu conexión e inténtalo de nuevo.",
           variant: "destructive",
         });
         setIsUploading(false);
-        clearInterval(progressInterval);
-      }
+      };
+      
+      xhr.open('POST', WEBHOOK_URL, true);
+      xhr.send(formData);
+      
     } catch (error: any) {
       console.error("Error general al subir video:", error);
       toast({
