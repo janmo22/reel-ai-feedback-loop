@@ -16,7 +16,7 @@ const UploadPage = () => {
     setUploadData(data);
     setUploadStep("processing");
     
-    console.log("Video enviado correctamente, procesando...");
+    console.log("Información enviada correctamente, procesando análisis...");
     
     // Simulate processing time and receiving webhook response
     // In a real app, this would come from the server response
@@ -72,7 +72,7 @@ const UploadPage = () => {
       
       setFeedbackData(sampleFeedback);
       setUploadStep("complete");
-    }, 90000); // Mantener en 90000ms (1 minuto y 30 segundos)
+    }, 10000); // Reducido a 10 segundos para mejor experiencia de usuario
   };
   
   const handleContinue = () => {
@@ -82,7 +82,8 @@ const UploadPage = () => {
         feedback: feedbackData,
         videoData: {
           title: uploadData?.title || "Video sin título",
-          videoUrl: uploadData?.video ? URL.createObjectURL(uploadData.video) : null
+          // Ya no enviamos la URL del video porque no lo estamos subiendo
+          videoUrl: null
         }
       } 
     });
@@ -95,7 +96,7 @@ const UploadPage = () => {
       <main className="flex-1 py-8 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold mb-2 electric-text">SUBIR REEL</h1>
+            <h1 className="text-3xl font-bold mb-2 electric-text">ENVIAR REEL PARA ANÁLISIS</h1>
             <p className="text-muted-foreground font-satoshi">
               Sube tu reel para recibir feedback personalizado de IA
             </p>

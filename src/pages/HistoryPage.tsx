@@ -42,7 +42,7 @@ const HistoryPage = () => {
       console.error('Error fetching videos:', error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los videos.",
+        description: "No se pudieron cargar los análisis.",
         variant: "destructive"
       });
     } finally {
@@ -63,15 +63,7 @@ const HistoryPage = () => {
     if (!selectedVideo) return;
     
     try {
-      // Delete from storage first
-      const filePath = selectedVideo.video_url.split('/').slice(-2).join('/');
-      const { error: storageError } = await supabase.storage
-        .from('videos')
-        .remove([filePath]);
-      
-      if (storageError) throw storageError;
-      
-      // Then delete from the database
+      // Solo eliminamos de la base de datos ya que no hay video en Supabase Storage
       const { error: dbError } = await supabase
         .from('videos')
         .delete()
@@ -82,14 +74,14 @@ const HistoryPage = () => {
       // Update the UI
       setVideos(prevVideos => prevVideos.filter(v => v.id !== selectedVideo.id));
       toast({
-        title: "Video eliminado",
-        description: "El video ha sido eliminado correctamente."
+        title: "Análisis eliminado",
+        description: "El análisis ha sido eliminado correctamente."
       });
     } catch (error: any) {
-      console.error('Error deleting video:', error);
+      console.error('Error deleting analysis:', error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar el video.",
+        description: "No se pudo eliminar el análisis.",
         variant: "destructive"
       });
     } finally {
@@ -108,10 +100,10 @@ const HistoryPage = () => {
             <div>
               <h1 className="text-3xl font-bold mb-2 flex items-center">
                 <HistoryIcon className="mr-2 h-6 w-6 text-flow-electric" />
-                Historial de Reels
+                Historial de Análisis
               </h1>
               <p className="text-muted-foreground">
-                Revisa tus reels subidos anteriormente
+                Revisa tus análisis anteriores
               </p>
             </div>
             <Button 
@@ -119,7 +111,7 @@ const HistoryPage = () => {
               className="bg-flow-electric hover:bg-flow-electric/90"
             >
               <VideoIcon className="mr-2 h-4 w-4" />
-              Nuevo Reel
+              Nuevo Análisis
             </Button>
           </div>
           
@@ -130,10 +122,10 @@ const HistoryPage = () => {
           ) : videos.length === 0 ? (
             <EmptyState
               icon={<HistoryIcon className="h-12 w-12 text-muted-foreground" />}
-              title="No hay reels"
+              title="No hay análisis"
               description="Aún no has subido ningún reel para análisis"
               onAction={() => navigate('/upload')}
-              actionText="Subir mi primer reel"
+              actionText="Enviar mi primer reel"
               actionIcon={<VideoIcon className="mr-2 h-4 w-4" />}
             />
           ) : (
@@ -142,7 +134,7 @@ const HistoryPage = () => {
                 <VideoCard
                   key={video.id}
                   title={video.title}
-                  thumbnailUrl={video.thumbnail_url}
+                  thumbnailUrl={video.thumbnail_url || "/placeholder.svg"}
                   status={video.status}
                   createdAt={video.created_at}
                   onView={() => handleViewFeedback(video.id)}
@@ -157,9 +149,9 @@ const HistoryPage = () => {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent className="max-w-md">
           <div className="space-y-4 p-2">
-            <h3 className="text-lg font-medium">¿Eliminar video?</h3>
+            <h3 className="text-lg font-medium">¿Eliminar análisis?</h3>
             <p className="text-sm text-muted-foreground">
-              ¿Estás seguro que quieres eliminar el video "{selectedVideo?.title}"? Esta acción no se puede deshacer.
+              ¿Estás seguro que quieres eliminar el análisis "{selectedVideo?.title}"? Esta acción no se puede deshacer.
             </p>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>

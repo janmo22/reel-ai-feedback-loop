@@ -45,7 +45,7 @@ export function useUploadProgress() {
     }
   };
 
-  // Create a proper SupabaseProgressCallback
+  // Create a proper progress handler function if needed
   const createProgressHandler = (totalSize: number) => {
     return (progress: { loaded: number; total: number }) => {
       trackProgress(progress.loaded, totalSize);

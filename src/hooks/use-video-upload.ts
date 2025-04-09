@@ -22,8 +22,7 @@ export function useVideoUpload(onUploadComplete: (data: {
   const [mainMessage, setMainMessage] = useState("");
   const [missions, setMissions] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
-  const { progress: uploadProgress, createProgressHandler, isComplete } = useUploadProgress();
+  const { progress: uploadProgress, startSimulation, stopSimulation, isComplete } = useUploadProgress();
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -77,53 +76,6 @@ export function useVideoUpload(onUploadComplete: (data: {
     setDescription("");
     setMainMessage("");
     setMissions([]);
-    setUploadedVideoUrl(null);
-  };
-
-  /**
-   * Sube el video a Supabase Storage y devuelve la URL pública
-   */
-  const uploadVideoToSupabase = async (file: File, videoId: string): Promise<string> => {
-    if (!user) throw new Error("Usuario no autenticado");
-
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${user.id}/${videoId}.${fileExt}`;
-    
-    console.log("Subiendo video a Supabase Storage...", filePath);
-    
-    // Crear la opción de configuración correctamente sin onUploadProgress
-    const options = {
-      cacheControl: '3600',
-      upsert: false
-    };
-    
-    // Subir sin listeners de progreso directo
-    const { data, error } = await supabase.storage
-      .from('videos')
-      .upload(filePath, file, options);
-    
-    // Configurar el seguimiento de progreso manualmente
-    if (file.size > 0) {
-      // Simular progreso ya que no podemos usar onUploadProgress directamente
-      const progressHandler = createProgressHandler(file.size);
-      progressHandler({ loaded: file.size, total: file.size });
-    }
-
-    if (error) {
-      console.error("Error al subir a Supabase:", error);
-      throw new Error(`Error al subir el video: ${error.message}`);
-    }
-    
-    console.log("Video subido a Supabase:", data);
-    
-    // Obtener la URL pública
-    const { data: publicUrlData } = supabase.storage
-      .from('videos')
-      .getPublicUrl(filePath);
-    
-    console.log("URL pública del video:", publicUrlData.publicUrl);
-    
-    return publicUrlData.publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -175,20 +127,14 @@ export function useVideoUpload(onUploadComplete: (data: {
     }
     
     setIsUploading(true);
+    startSimulation(); // Iniciamos una simulación de progreso
     
     try {
       const videoId = uuidv4();
       
-      // Paso 1: Subir el video a Supabase Storage
-      console.log("Iniciando proceso de subida a Supabase...");
-      const videoUrl = await uploadVideoToSupabase(videoFile, videoId);
-      setUploadedVideoUrl(videoUrl);
-      
-      console.log("Video subido exitosamente a Supabase:", videoUrl);
-      
+      // Guardar solo los metadatos en la base de datos
+      console.log("Guardando metadatos en Supabase...");
       try {
-        // Paso 2: Guardar los metadatos en la base de datos de Supabase
-        console.log("Guardando metadatos en Supabase...");
         await supabase
           .from('videos')
           .insert([
@@ -197,7 +143,7 @@ export function useVideoUpload(onUploadComplete: (data: {
               user_id: user.id,
               title,
               description,
-              video_url: videoUrl,
+              video_url: "placeholder-url", // URL placeholder ya que no subimos el video
               status: 'processing'
             }
           ]);
@@ -205,10 +151,10 @@ export function useVideoUpload(onUploadComplete: (data: {
         console.log("Metadatos guardados en Supabase correctamente");
       } catch (dbError) {
         console.error("Error guardando en Supabase:", dbError);
-        // Continuar con el webhook incluso si falla Supabase
+        throw new Error(`Error guardando metadatos: ${dbError}`);
       }
       
-      // Paso 3: Enviar los metadatos y la URL del video al webhook para procesamiento
+      // Enviar los metadatos al webhook para procesamiento de texto
       console.log("Enviando datos al webhook:", WEBHOOK_URL);
       
       const formData = new FormData();
@@ -218,9 +164,9 @@ export function useVideoUpload(onUploadComplete: (data: {
       formData.append("description", description || "");
       formData.append("missions", JSON.stringify(missions));
       formData.append("mainMessage", mainMessage);
-      formData.append("videoUrl", videoUrl);
       
-      console.log("Enviando metadatos al webhook con URL del video:", videoUrl);
+      // En lugar de enviar el video, enviamos solo la información de texto
+      console.log("Enviando metadatos al webhook sin video");
       
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
@@ -228,11 +174,12 @@ export function useVideoUpload(onUploadComplete: (data: {
       });
       
       if (response.ok) {
+        stopSimulation(100); // Completamos la simulación de progreso
         console.log("Datos enviados correctamente al webhook");
         
         toast({
-          title: "¡Video enviado!",
-          description: "Tu reel ha sido enviado para análisis.",
+          title: "¡Información enviada!",
+          description: "Tu información ha sido enviada para análisis.",
         });
         
         onUploadComplete({
@@ -245,13 +192,15 @@ export function useVideoUpload(onUploadComplete: (data: {
         });
       } else {
         console.error("Error en la respuesta del webhook:", response.status);
+        stopSimulation(0);
         throw new Error(`Error en el servidor: ${response.status}`);
       }
     } catch (error: any) {
-      console.error("Error en la subida:", error);
+      console.error("Error en el proceso:", error);
+      stopSimulation(0);
       toast({
-        title: "Error de subida",
-        description: error.message || "Hubo un problema al subir tu video. Por favor, inténtalo de nuevo.",
+        title: "Error",
+        description: error.message || "Hubo un problema al procesar tu solicitud. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
       setIsUploading(false);
