@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
-import VideoUploader from "@/components/VideoUploader";
-import { Check, ArrowRight, BrainCircuit } from "lucide-react";
+import VideoUploader from "@/components/video-upload/VideoUploader";
+import ProgressSteps from "@/components/video-upload/ProgressSteps";
+import ProcessingSteps from "@/components/video-upload/ProcessingSteps";
 
 const UploadPage = () => {
   const [uploadStep, setUploadStep] = useState<"upload" | "processing" | "complete">("upload");
@@ -101,133 +103,16 @@ const UploadPage = () => {
           
           <div className="max-w-3xl mx-auto">
             {/* Progress Steps */}
-            <div className="mb-10">
-              <div className="flex items-center justify-center space-x-4 sm:space-x-8">
-                <div className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    uploadStep === "upload" 
-                      ? "bg-flow-electric text-white" 
-                      : "bg-flow-electric/20 text-flow-electric"
-                  }`}>
-                    {uploadStep !== "upload" ? (
-                      <Check className="h-5 w-5" />
-                    ) : (
-                      <span>1</span>
-                    )}
-                  </div>
-                  <span className="ml-2 font-medium text-sm font-satoshi">Subir</span>
-                </div>
-                
-                <div className="h-0.5 w-12 sm:w-24 bg-border"></div>
-                
-                <div className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    uploadStep === "processing" 
-                      ? "bg-flow-electric text-white" 
-                      : uploadStep === "complete" 
-                        ? "bg-flow-electric/20 text-flow-electric" 
-                        : "bg-muted text-muted-foreground"
-                  }`}>
-                    {uploadStep === "complete" ? (
-                      <Check className="h-5 w-5" />
-                    ) : (
-                      <span>2</span>
-                    )}
-                  </div>
-                  <span className={`ml-2 font-medium text-sm font-satoshi ${
-                    uploadStep === "upload" ? "text-muted-foreground" : ""
-                  }`}>Procesando</span>
-                </div>
-                
-                <div className="h-0.5 w-12 sm:w-24 bg-border"></div>
-                
-                <div className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    uploadStep === "complete" 
-                      ? "bg-flow-electric text-white" 
-                      : "bg-muted text-muted-foreground"
-                  }`}>
-                    <span>3</span>
-                  </div>
-                  <span className={`ml-2 font-medium text-sm font-satoshi ${
-                    uploadStep !== "complete" ? "text-muted-foreground" : ""
-                  }`}>Completado</span>
-                </div>
-              </div>
-            </div>
+            <ProgressSteps currentStep={uploadStep} />
             
             {uploadStep === "upload" && (
               <VideoUploader onUploadComplete={handleUploadComplete} />
             )}
             
-            {uploadStep === "processing" && (
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-flow-electric/10 mb-6">
-                  <div className="w-8 h-8 border-4 border-t-flow-electric border-r-flow-electric border-b-flow-electric/30 border-l-flow-electric/30 rounded-full animate-spin"></div>
-                </div>
-                <h2 className="text-2xl font-semibold mb-2">PROCESANDO TU REEL</h2>
-                <p className="text-muted-foreground max-w-md mx-auto mb-4 font-satoshi">
-                  Nuestro modelo de IA está analizando tu video. Esto puede tomar unos minutos.
-                </p>
-                
-                {/* New animated elements to show AI processing */}
-                <div className="max-w-md mx-auto mt-8 mb-6 relative">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <BrainCircuit className="h-10 w-10 text-flow-electric animate-pulse" />
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-3">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className="h-10 bg-muted rounded-md animate-pulse"
-                        style={{ animationDelay: `${i * 0.15}s` }}
-                      ></div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="h-2 w-64 bg-muted rounded-full mx-auto overflow-hidden">
-                  <div className="h-full bg-flow-electric rounded-full animate-progress"></div>
-                </div>
-                
-                <style>
-                  {`
-                    @keyframes progress {
-                      0% { width: 5%; }
-                      20% { width: 25%; }
-                      40% { width: 42%; }
-                      60% { width: 58%; }
-                      80% { width: 75%; }
-                      95% { width: 92%; }
-                      100% { width: 98%; }
-                    }
-                    .animate-progress {
-                      animation: progress 90s ease-in-out forwards;
-                    }
-                  `}
-                </style>
-              </div>
-            )}
-            
-            {uploadStep === "complete" && (
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-6">
-                  <Check className="h-8 w-8 text-green-500" />
-                </div>
-                <h2 className="text-2xl font-semibold mb-2">¡REEL PROCESADO CON ÉXITO!</h2>
-                <p className="text-muted-foreground max-w-md mx-auto mb-6 font-satoshi">
-                  Tu video ha sido procesado y los resultados están listos para ser visualizados.
-                </p>
-                <button
-                  onClick={handleContinue}
-                  className="bg-flow-electric text-white hover:bg-flow-electric/90 px-6 py-3 rounded-md font-medium inline-flex items-center font-satoshi"
-                >
-                  Ver resultados
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </button>
-              </div>
-            )}
+            <ProcessingSteps 
+              currentStep={uploadStep} 
+              onContinue={handleContinue} 
+            />
           </div>
         </div>
       </main>
