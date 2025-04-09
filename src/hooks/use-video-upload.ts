@@ -154,7 +154,7 @@ export function useVideoUpload(onUploadComplete: (data: {
         throw new Error(`Error guardando metadatos: ${dbError}`);
       }
       
-      // Enviar los metadatos al webhook para procesamiento de texto
+      // Enviar el video y los metadatos al webhook
       console.log("Enviando datos al webhook:", WEBHOOK_URL);
       
       const formData = new FormData();
@@ -165,8 +165,10 @@ export function useVideoUpload(onUploadComplete: (data: {
       formData.append("missions", JSON.stringify(missions));
       formData.append("mainMessage", mainMessage);
       
-      // En lugar de enviar el video, enviamos solo la información de texto
-      console.log("Enviando metadatos al webhook sin video");
+      // Aquí enviamos el archivo de video en binario al webhook
+      formData.append("video", videoFile);
+      
+      console.log("Enviando datos y video en binario al webhook");
       
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
@@ -178,8 +180,8 @@ export function useVideoUpload(onUploadComplete: (data: {
         console.log("Datos enviados correctamente al webhook");
         
         toast({
-          title: "¡Información enviada!",
-          description: "Tu información ha sido enviada para análisis.",
+          title: "¡Video enviado!",
+          description: "Tu reel ha sido enviado para análisis.",
         });
         
         onUploadComplete({
