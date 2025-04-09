@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, Video as VideoIcon, X, LoaderCircle } from "lucide-react";
+import { Upload, Video as VideoIcon, X, LoaderCircle, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +35,8 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const [mainMessage, setMainMessage] = useState("");
   const [missions, setMissions] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const { progress: uploadProgress, setProgress: setUploadProgress } = useUploadProgress();
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+  const { progress: uploadProgress, trackProgress, isComplete } = useUploadProgress();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
@@ -119,7 +121,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     setDescription("");
     setMainMessage("");
     setMissions([]);
-    setUploadProgress(0);
+    setUploadedVideoUrl(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -133,6 +135,45 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         videoRef.current.pause();
       }
     }
+  };
+
+  /**
+   * Sube el video a Supabase Storage y devuelve la URL pública
+   */
+  const uploadVideoToSupabase = async (file: File, videoId: string): Promise<string> => {
+    if (!user) throw new Error("Usuario no autenticado");
+
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${user.id}/${videoId}.${fileExt}`;
+    
+    console.log("Subiendo video a Supabase Storage...", filePath);
+    
+    // Subir el archivo a Supabase Storage con seguimiento del progreso
+    const { data, error } = await supabase.storage
+      .from('videos')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+        onUploadProgress: (progress) => {
+          trackProgress(progress.loaded, progress.total);
+        }
+      });
+
+    if (error) {
+      console.error("Error al subir a Supabase:", error);
+      throw new Error(`Error al subir el video: ${error.message}`);
+    }
+    
+    console.log("Video subido a Supabase:", data);
+    
+    // Obtener la URL pública
+    const { data: publicUrlData } = supabase.storage
+      .from('videos')
+      .getPublicUrl(filePath);
+    
+    console.log("URL pública del video:", publicUrlData.publicUrl);
+    
+    return publicUrlData.publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -184,21 +225,29 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     }
     
     setIsUploading(true);
-    setUploadProgress(0);
     
     try {
       const videoId = uuidv4();
       
+      // Paso 1: Subir el video a Supabase Storage
+      console.log("Iniciando proceso de subida a Supabase...");
+      const videoUrl = await uploadVideoToSupabase(videoFile, videoId);
+      setUploadedVideoUrl(videoUrl);
+      
+      console.log("Video subido exitosamente a Supabase:", videoUrl);
+      
       try {
-        console.log("Guardando metadatos en Supabase (solo texto, no video)...");
+        // Paso 2: Guardar los metadatos en la base de datos de Supabase
+        console.log("Guardando metadatos en Supabase...");
         await supabase
           .from('videos')
           .insert([
             {
+              id: videoId,
               user_id: user.id,
               title,
               description,
-              video_url: "webhook_processing",
+              video_url: videoUrl,
               status: 'processing'
             }
           ]);
@@ -206,31 +255,30 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         console.log("Metadatos guardados en Supabase correctamente");
       } catch (dbError) {
         console.error("Error guardando en Supabase:", dbError);
-        // Continue with webhook upload even if Supabase fails
+        // Continuar con el webhook incluso si falla Supabase
       }
       
-      console.log("Preparando envío directo al webhook:", WEBHOOK_URL);
+      // Paso 3: Enviar los metadatos y la URL del video al webhook para procesamiento
+      console.log("Enviando datos al webhook:", WEBHOOK_URL);
       
       const formData = new FormData();
-      formData.append("video", videoFile);
       formData.append("videoId", videoId);
       formData.append("userId", user.id);
       formData.append("title", title);
       formData.append("description", description || "");
       formData.append("missions", JSON.stringify(missions));
       formData.append("mainMessage", mainMessage);
+      formData.append("videoUrl", videoUrl);
       
-      console.log("Enviando video al webhook PRODUCCIÓN. Tamaño:", (videoFile.size / (1024 * 1024)).toFixed(2), "MB");
+      console.log("Enviando metadatos al webhook PRODUCCIÓN con URL del video:", videoUrl);
       
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         body: formData,
-        // No need to set content-type as it's automatically set with FormData
       });
       
       if (response.ok) {
-        console.log("Video enviado correctamente al webhook de PRODUCCIÓN");
-        setUploadProgress(100);
+        console.log("Datos enviados correctamente al webhook de PRODUCCIÓN");
         
         toast({
           title: "¡Video enviado!",
@@ -408,7 +456,14 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         {isUploading && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground font-satoshi">
-              <span>Enviando video a producción...</span>
+              <div className="flex items-center gap-2">
+                <span>
+                  {isComplete 
+                    ? "Video subido correctamente" 
+                    : "Subiendo video a la nube..."}
+                </span>
+                {isComplete && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+              </div>
               <span>{uploadProgress}%</span>
             </div>
             <Progress value={uploadProgress} className="h-2 bg-muted [&>div]:bg-flow-electric" />
@@ -424,7 +479,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
             {isUploading ? (
               <>
                 <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                Enviando...
+                Procesando...
               </>
             ) : (
               <>

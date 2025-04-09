@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 export function useUploadProgress() {
   const [progress, setProgress] = useState(0);
   const [simulationActive, setSimulationActive] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
   
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -25,17 +26,23 @@ export function useUploadProgress() {
   
   const startSimulation = () => {
     setProgress(0);
+    setIsComplete(false);
     setSimulationActive(true);
   };
   
   const stopSimulation = (finalValue = 100) => {
     setSimulationActive(false);
     setProgress(finalValue);
+    setIsComplete(finalValue === 100);
   };
   
   const trackProgress = (bytesUploaded: number, totalBytes: number) => {
     const percentage = Math.round((bytesUploaded / totalBytes) * 100);
     setProgress(percentage);
+    
+    if (percentage >= 100) {
+      setIsComplete(true);
+    }
   };
   
   return { 
@@ -43,6 +50,7 @@ export function useUploadProgress() {
     setProgress, 
     trackProgress, 
     startSimulation, 
-    stopSimulation 
+    stopSimulation,
+    isComplete
   };
 }
