@@ -7,13 +7,47 @@ import ProgressSteps from "@/components/video-upload/ProgressSteps";
 import ProcessingSteps from "@/components/video-upload/ProcessingSteps";
 import { useToast } from "@/components/ui/use-toast";
 
+// Frases divertidas para mostrar durante la carga
+const funnyLoadingPhrases = [
+  "La IA está analizando tu contenido píxel a píxel...",
+  "Enseñando a nuestros robots a apreciar tu creatividad...",
+  "Calculando el potencial viral de tu reel...",
+  "Aplicando magia de inteligencia artificial...",
+  "Convirtiendo algoritmos en insights útiles...",
+  "Nuestra IA está impresionada con tu contenido...",
+  "Analizando métricas que ni sabías que existían...",
+  "Preparando feedback que te sorprenderá...",
+  "Entrenando a tu audiencia virtual para reaccionar...",
+  "Haciendo que los algoritmos trabajen para ti...",
+  "Transformando datos en estrategia de contenido...",
+  "Descifrando el código del engagement perfecto...",
+];
+
 const UploadPage = () => {
   const [uploadStep, setUploadStep] = useState<"upload" | "processing" | "complete">("upload");
   const [uploadData, setUploadData] = useState<any>(null);
   const [feedbackData, setFeedbackData] = useState<any>(null);
   const [processingTimer, setProcessingTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [loadingPhrase, setLoadingPhrase] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Rotamos las frases divertidas cada 5 segundos durante el procesamiento
+  useEffect(() => {
+    if (uploadStep === "processing") {
+      // Seleccionar frase inicial
+      setLoadingPhrase(funnyLoadingPhrases[Math.floor(Math.random() * funnyLoadingPhrases.length)]);
+      
+      // Configurar intervalo para cambiar la frase
+      const phraseInterval = setInterval(() => {
+        setLoadingPhrase(funnyLoadingPhrases[Math.floor(Math.random() * funnyLoadingPhrases.length)]);
+      }, 5000);
+      
+      return () => {
+        clearInterval(phraseInterval);
+      };
+    }
+  }, [uploadStep]);
   
   // Clean up timer when component unmounts
   useEffect(() => {
@@ -103,7 +137,6 @@ const UploadPage = () => {
           feedback: feedbackData,
           videoData: {
             title: uploadData?.title || "Video sin título",
-            // No enviamos la URL del video
           }
         } 
       });
@@ -140,7 +173,8 @@ const UploadPage = () => {
             {(uploadStep === "processing" || uploadStep === "complete") && (
               <ProcessingSteps 
                 currentStep={uploadStep} 
-                onContinue={handleContinue} 
+                onContinue={handleContinue}
+                loadingPhrase={loadingPhrase}
               />
             )}
           </div>

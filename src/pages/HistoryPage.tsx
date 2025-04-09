@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import VideoCard from "@/components/VideoCard";
 import EmptyState from "@/components/EmptyState";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Video as VideoIcon, HistoryIcon, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,7 +72,7 @@ const HistoryPage = () => {
       toast({
         title: "Análisis en proceso",
         description: "Este análisis aún está siendo procesado. Por favor, inténtalo más tarde.",
-        variant: "warning"
+        variant: "destructive"
       });
       return;
     }
@@ -175,8 +174,8 @@ const HistoryPage = () => {
       
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent className="max-w-md">
+          <DialogTitle>Eliminar análisis</DialogTitle>
           <div className="space-y-4 p-2">
-            <h3 className="text-lg font-medium">¿Eliminar análisis?</h3>
             <p className="text-sm text-muted-foreground">
               ¿Estás seguro que quieres eliminar el análisis "{selectedVideo?.title}"? Esta acción no se puede deshacer.
             </p>

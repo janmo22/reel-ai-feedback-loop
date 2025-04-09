@@ -8,8 +8,10 @@ import { ArrowLeft, BookmarkPlus, Share2 } from "lucide-react";
 import AIFeedbackCard from "@/components/AIFeedbackCard";
 import EmptyState from "@/components/EmptyState";
 import { Loader } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-// Sample data structure that would come from the webhook
+// Definición de la estructura de datos del feedback de la IA
 interface AIFeedbackResponse {
   generalStudy: string;
   contentType: string;
@@ -58,20 +60,73 @@ const ResultsPage = () => {
   const [feedback, setFeedback] = useState<AIFeedbackResponse[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [videoData, setVideoData] = useState<any>(null);
+  const { toast } = useToast();
   
   useEffect(() => {
-    // Solo usar los datos si vienen del webhook/location state
+    // Verificamos si tenemos datos del state
     const state = location.state;
     
     if (state && state.feedback) {
+      // Si ya tenemos feedback en el state, lo usamos directamente
       setFeedback(state.feedback);
       setVideoData(state.videoData);
       setLoading(false);
+      console.log("Usando datos de feedback del state:", state.feedback);
+    } else if (state && state.videoId) {
+      // Si solo tenemos el videoId, intentamos obtener los datos de la base de datos
+      const fetchVideoData = async () => {
+        try {
+          // Obtenemos los datos del video
+          const { data: videoData, error: videoError } = await supabase
+            .from('videos')
+            .select('*')
+            .eq('id', state.videoId)
+            .single();
+          
+          if (videoError) throw videoError;
+          
+          setVideoData(videoData);
+          
+          // Verificamos si el video está completado
+          if (videoData.status === "completed") {
+            // Buscamos el feedback asociado
+            const { data: feedbackData, error: feedbackError } = await supabase
+              .from('feedback')
+              .select('*')
+              .eq('video_id', state.videoId)
+              .single();
+            
+            if (feedbackError) {
+              console.error("Error obteniendo feedback:", feedbackError);
+              // No mostramos error, simplemente dejamos loading en true
+            } else if (feedbackData) {
+              // Convertimos los datos de feedback al formato esperado
+              const formattedFeedback = [feedbackData.feedback_data];
+              setFeedback(formattedFeedback);
+              setLoading(false);
+              console.log("Datos de feedback obtenidos de la BD:", formattedFeedback);
+            }
+          } else {
+            // El video aún está en procesamiento
+            setLoading(true);
+            toast({
+              title: "Video en procesamiento",
+              description: "El análisis de este video aún está en proceso. Por favor, intenta más tarde.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("Error obteniendo datos:", error);
+          setLoading(true);
+        }
+      };
+      
+      fetchVideoData();
     } else {
-      // Si no hay datos, mantenemos el estado de carga
+      // Si no tenemos datos en el state, mantenemos el estado de carga
       setLoading(true);
     }
-  }, [location]);
+  }, [location, toast]);
   
   if (loading) {
     return (
