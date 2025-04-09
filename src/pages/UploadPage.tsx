@@ -113,22 +113,35 @@ const UploadPage = () => {
     console.log("Información enviada correctamente, procesando análisis...");
     
     // En un escenario real, la respuesta del webhook debería activar un cambio de estado
-    // Por ahora, simulamos el tiempo de procesamiento para la demo
+    // Por ahora, enviamos al usuario a la página de resultados con el ID del video
+    // El análisis se mostrará cuando esté disponible
     
-    // Simulación del tiempo de procesamiento (60 segundos)
-    const timer = setTimeout(() => {
-      // Usar el sampleFeedback como simulación de la respuesta del webhook
-      setFeedbackData(sampleFeedback);
-      setUploadStep("complete");
-      
-      toast({
-        title: "¡Análisis completado!",
-        description: "El análisis de tu reel ha sido completado con éxito.",
+    if (data.response && data.response.videoId) {
+      // Navega a la página de resultados con el ID del video para seguir el progreso
+      navigate("/results", {
+        state: {
+          videoId: data.response.videoId,
+          videoData: {
+            title: uploadData?.title || data?.title || "Video sin título",
+          }
+        }
       });
+    } else {
+      // Simulación del tiempo de procesamiento para la demo (60 segundos)
+      const timer = setTimeout(() => {
+        // Usar el sampleFeedback como simulación de la respuesta del webhook
+        setFeedbackData(sampleFeedback);
+        setUploadStep("complete");
+        
+        toast({
+          title: "¡Análisis completado!",
+          description: "El análisis de tu reel ha sido completado con éxito.",
+        });
+        
+      }, 60000);
       
-    }, 60000);
-    
-    setProcessingTimer(timer);
+      setProcessingTimer(timer);
+    }
   };
   
   const handleContinue = () => {

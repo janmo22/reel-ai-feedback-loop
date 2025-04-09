@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -33,7 +32,11 @@ export function useVideoResults() {
             .eq('id', state.videoId)
             .single();
           
-          if (videoError) throw videoError;
+          if (videoError) {
+            console.error("Error getting video data:", videoError);
+            setLoading(true);
+            return;
+          }
           
           setVideoData(videoData);
           
@@ -48,30 +51,38 @@ export function useVideoResults() {
             
             if (feedbackError) {
               console.error("Error getting feedback:", feedbackError);
-              // Don't show error, just keep loading as true
+              // Don't throw error, just keep loading as true
+              setLoading(true);
             } else if (feedbackData) {
               // Convert feedback data to the expected format with proper type casting
               const formattedFeedback = feedbackData.feedback_data as unknown as AIFeedbackResponse[];
               setFeedback(formattedFeedback);
               setLoading(false);
               console.log("Feedback data obtained from DB:", formattedFeedback);
+            } else {
+              // No feedback found but don't show an error
+              setLoading(true);
             }
           } else {
-            // The video is still processing
+            // The video is still processing - this is expected in some cases
             setLoading(true);
-            toast({
-              title: "Video en procesamiento",
-              description: "El análisis de este video aún está en proceso. Por favor, intenta más tarde.",
-              variant: "destructive",
-            });
+            // Don't show a toast error when processing is normal
           }
         } catch (error) {
           console.error("Error getting data:", error);
           setLoading(true);
+          // Don't show toast error for loading state
         }
       };
       
       fetchVideoData();
+
+      // Poll for updates every few seconds if the video is still processing
+      const intervalId = setInterval(fetchVideoData, 10000); // Check every 10 seconds
+      
+      return () => {
+        clearInterval(intervalId); // Clean up on component unmount
+      };
     } else {
       // If we don't have data in the state, keep loading state
       setLoading(true);

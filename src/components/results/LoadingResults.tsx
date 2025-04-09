@@ -9,10 +9,10 @@ const LoadingResults = () => {
   return (
     <EmptyState 
       icon={<Loader className="h-6 w-6 animate-spin text-flow-blue" />}
-      title="Esperando resultados"
-      description="Estamos a la espera de recibir el análisis de tu reel. Este proceso puede tardar unos minutos. Por favor, regresa a la página de carga o intenta más tarde."
-      actionText="Volver a subida"
-      onAction={() => navigate('/upload')}
+      title="Procesando video"
+      description="Estamos analizando tu reel con IA. Este proceso puede tardar varios minutos. La página se actualizará automáticamente cuando el análisis esté listo."
+      actionText="Volver a historial"
+      onAction={() => navigate('/history')}
       actionIcon={<ArrowLeft className="mr-2 h-4 w-4" />}
     />
   );
