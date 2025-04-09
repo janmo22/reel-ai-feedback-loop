@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
+import { useUploadProgress } from "@/hooks/use-upload-progress";
 
 interface VideoUploaderProps {
   onUploadComplete: (data: {
@@ -32,7 +34,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const [mainMessage, setMainMessage] = useState("");
   const [missions, setMissions] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const { progress: uploadProgress, setProgress: setUploadProgress } = useUploadProgress();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
@@ -194,6 +196,11 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         .upload(filePath, videoFile, {
           cacheControl: '3600',
           upsert: false,
+          // Using the newer onUploadProgress format for Supabase Storage v2+
+          onUploadProgress: (event) => {
+            const progress = event.loaded / event.total * 100;
+            setUploadProgress(Math.round(progress));
+          }
         });
       
       if (storageError) {
