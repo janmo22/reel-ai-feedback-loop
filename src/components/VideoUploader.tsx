@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, Video as VideoIcon, X, Play, CheckCircle, LoaderCircle } from "lucide-react";
+import { Upload, Video as VideoIcon, X, LoaderCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +43,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
   // Fixed webhook URL to use the test endpoint
   const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
+  
   
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -189,21 +189,12 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     setUploadProgress(0);
     
     try {
-      // Use this for simulating upload progress
-      const updateProgress = () => {
-        setUploadProgress((prev) => {
-          const randomIncrement = Math.floor(Math.random() * 10) + 5;
-          const newProgress = Math.min(prev + randomIncrement, 100);
-          return newProgress < 90 ? newProgress : 90;
-        });
-      };
-      
-      const progressInterval = setInterval(updateProgress, 1000);
-      
       const videoId = uuidv4();
       
+      // Save only metadata to Supabase, not the video
       try {
         console.log("Guardando SOLO metadatos en Supabase (no video)...");
+        // Only use fields that exist in the videos table
         await supabase
           .from('videos')
           .insert([
@@ -211,10 +202,9 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
               user_id: user.id,
               title,
               description,
-              video_url: "webhook_processed", // Placeholder, as video is not stored in Supabase
-              status: 'processing',
-              main_message: mainMessage, // Store the main message
-              missions: missions // Store the missions
+              video_url: "webhook_processed", // Placeholder
+              status: 'processing'
+              // Note: main_message and missions are removed since they don't exist in the table
             }
           ]);
         
@@ -223,15 +213,15 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         console.error("Error guardando en Supabase:", dbError);
         // Continue with webhook upload even if Supabase fails
       }
-
-      // Create a fresh FormData object
-      console.log("Preparando FormData para webhook...");
+      
+      // Direct file upload to webhook using Fetch API with form-data
+      console.log("Preparando envío al webhook...");
       const formData = new FormData();
       
-      // Add the video file - make sure the field name is correct
+      // Add video file
       formData.append("video", videoFile);
       
-      // Add all the metadata fields
+      // Add metadata
       formData.append("videoId", videoId);
       formData.append("userId", user.id);
       formData.append("title", title);
@@ -242,23 +232,32 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       console.log("Enviando video al webhook:", WEBHOOK_URL);
       console.log("Tamaño del video:", (videoFile.size / (1024 * 1024)).toFixed(2), "MB");
       
-      // Using XMLHttpRequest for better progress tracking and error handling
-      const xhr = new XMLHttpRequest();
+      // Use fetch with AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
       
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          const percentComplete = Math.round((event.loaded / event.total) * 100);
-          setUploadProgress(percentComplete > 90 ? 90 : percentComplete);
-        }
-      };
+      // Show progress simulation since fetch doesn't have progress events
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          const increment = Math.floor(Math.random() * 10) + 5;
+          return Math.min(prev + increment, 85);
+        });
+      }, 1000);
       
-      xhr.onload = function() {
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
         clearInterval(progressInterval);
         
-        if (xhr.status >= 200 && xhr.status < 300) {
-          console.log('Video enviado exitosamente. Respuesta:', xhr.responseText);
+        if (response.ok) {
           setUploadProgress(100);
           
+          console.log("Video enviado correctamente al webhook");
           toast({
             title: "¡Video enviado!",
             description: "Tu reel ha sido enviado para análisis.",
@@ -273,30 +272,31 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
             response: { status: "success", videoId },
           });
         } else {
-          console.error('Error en respuesta del servidor:', xhr.status, xhr.statusText);
+          console.error("Error en la respuesta del webhook:", response.status);
+          throw new Error(`Error en el servidor: ${response.status}`);
+        }
+      } catch (error: any) {
+        clearTimeout(timeoutId);
+        clearInterval(progressInterval);
+        
+        if (error.name === 'AbortError') {
+          console.error("La solicitud al webhook se canceló por tiempo de espera");
           toast({
-            title: "Error de comunicación",
-            description: `Error en el servidor: ${xhr.status}. Por favor, inténtalo de nuevo.`,
+            title: "Tiempo de espera agotado",
+            description: "El servidor está tardando demasiado en responder. Inténtalo de nuevo más tarde.",
             variant: "destructive",
           });
-          setIsUploading(false);
+        } else {
+          console.error("Error al enviar el video al webhook:", error);
+          toast({
+            title: "Error de envío",
+            description: error.message || "No se pudo enviar el video al servidor. Inténtalo de nuevo.",
+            variant: "destructive",
+          });
         }
-      };
-      
-      xhr.onerror = function() {
-        clearInterval(progressInterval);
-        console.error('Error de red al enviar al webhook');
-        toast({
-          title: "Error de conexión",
-          description: "Hubo un problema al enviar el video. Verifica tu conexión e inténtalo de nuevo.",
-          variant: "destructive",
-        });
+        
         setIsUploading(false);
-      };
-      
-      xhr.open('POST', WEBHOOK_URL, true);
-      xhr.send(formData);
-      
+      }
     } catch (error: any) {
       console.error("Error general al subir video:", error);
       toast({
@@ -308,6 +308,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     }
   };
 
+  
   return (
     <Card className="w-full max-w-3xl mx-auto p-6">
       <form onSubmit={handleSubmit} className="space-y-6">
