@@ -12,8 +12,8 @@ export interface UploadVideoParams {
   mainMessage: string;
 }
 
-// The webhook URL for uploading videos
-export const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
+// The webhook URL for uploading videos (updated to test webhook)
+export const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
 /**
  * Save the initial video metadata to Supabase
