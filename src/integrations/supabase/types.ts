@@ -9,7 +9,74 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      feedback: {
+        Row: {
+          created_at: string | null
+          feedback_data: Json
+          id: string
+          overall_score: number
+          video_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          feedback_data: Json
+          id?: string
+          overall_score: number
+          video_id: string
+        }
+        Update: {
+          created_at?: string | null
+          feedback_data?: Json
+          id?: string
+          overall_score?: number
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          status: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          status: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

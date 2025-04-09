@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -195,10 +194,6 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         .upload(filePath, videoFile, {
           cacheControl: '3600',
           upsert: false,
-          onUploadProgress: (progress) => {
-            const percentage = Math.round((progress.loaded / progress.total) * 100);
-            setUploadProgress(percentage);
-          }
         });
       
       if (storageError) {
@@ -246,7 +241,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         description,
         missions,
         mainMessage,
-        response: { status: "success", videoId: videoData.id },
+        response: { status: "success", videoId: videoData?.id || videoId },
       });
       
     } catch (error: any) {

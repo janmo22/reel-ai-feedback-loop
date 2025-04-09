@@ -7,10 +7,11 @@ import FeedbackCard from "@/components/FeedbackCard";
 import EmptyState from "@/components/EmptyState";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Video, HistoryIcon, Loader2 } from "lucide-react";
+import { Video as VideoIcon, HistoryIcon, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
+import { Video, Feedback } from "@/types";
 
 const HistoryPage = () => {
   const [videos, setVideos] = useState<any[]>([]);
