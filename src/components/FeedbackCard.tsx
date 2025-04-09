@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ThumbsUp, ThumbsDown } from "lucide-react";
+import { ChevronDown, ChevronUp, ThumbsUp, Lightbulb } from "lucide-react";
 
 interface FeedbackCardProps {
   title: string;
@@ -27,7 +27,7 @@ const FeedbackCard = ({ title, overallScore, categories, isDetailed = false }: F
   };
   
   return (
-    <Card className="transition-all duration-300 ease-in-out">
+    <Card className="transition-all duration-300 ease-in-out hover:shadow-md">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div>
@@ -64,9 +64,12 @@ const FeedbackCard = ({ title, overallScore, categories, isDetailed = false }: F
                 <p className="text-sm text-muted-foreground mb-3">{category.feedback}</p>
                 
                 {category.suggestions && category.suggestions.length > 0 && (
-                  <div className="space-y-2">
-                    <h5 className="text-sm font-medium">Sugerencias:</h5>
-                    <ul className="space-y-1">
+                  <div className="space-y-2 bg-muted/30 p-3 rounded-md mt-3">
+                    <h5 className="text-sm font-medium flex items-center">
+                      <Lightbulb size={16} className="text-yellow-500 mr-2" />
+                      Sugerencias:
+                    </h5>
+                    <ul className="space-y-2">
                       {category.suggestions.map((suggestion, idx) => (
                         <li key={idx} className="text-sm flex gap-2">
                           <ThumbsUp size={16} className="text-green-500 flex-shrink-0 mt-1" />
