@@ -41,7 +41,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const { user } = useAuth();
   
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
-  const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
+  const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
   
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -188,31 +188,33 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     
     try {
       const updateProgress = () => {
-        const randomIncrement = Math.floor(Math.random() * 5) + 2;
+        const randomIncrement = Math.floor(Math.random() * 10) + 5;
         setUploadProgress((prev) => {
           const newProgress = Math.min(prev + randomIncrement, 100);
           return newProgress < 90 ? newProgress : 90;
         });
       };
       
-      const progressInterval = setInterval(updateProgress, 2000);
+      const progressInterval = setInterval(updateProgress, 1000);
       
       const videoId = uuidv4();
       let videoUrl = "";
+      let storageError = null;
       
       try {
         const fileExt = videoFile.name.split('.').pop();
         const filePath = `${user.id}/${videoId}.${fileExt}`;
         
-        const { data: storageData, error: storageError } = await supabase.storage
+        const { data: storageData, error } = await supabase.storage
           .from('videos')
           .upload(filePath, videoFile, {
             cacheControl: '3600',
             upsert: false
           });
         
-        if (storageError) {
-          console.warn("Storage upload failed, proceeding with webhook only:", storageError);
+        if (error) {
+          console.warn("Storage upload failed:", error);
+          storageError = error;
         } else {
           const { data: publicUrlData } = supabase.storage
             .from('videos')
@@ -221,7 +223,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
           videoUrl = publicUrlData.publicUrl;
           
           try {
-            const { data: videoData, error: videoError } = await supabase
+            await supabase
               .from('videos')
               .insert([
                 {
@@ -232,33 +234,31 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
                   status: 'processing'
                 }
               ])
-              .select()
-              .single();
-            
-            if (videoError) {
-              console.warn("Database insertion failed:", videoError);
-            }
+              .select();
           } catch (dbError) {
             console.warn("Database error:", dbError);
           }
         }
-      } catch (storageError) {
-        console.warn("Storage error:", storageError);
+      } catch (error) {
+        console.warn("Storage error:", error);
+        storageError = error;
       }
 
+      const webhookData = {
+        videoId: videoId,
+        userId: user.id,
+        videoUrl,
+        title,
+        description,
+        missions,
+        mainMessage,
+        timestamp: new Date().toISOString(),
+        storageError: storageError ? String(storageError) : null
+      };
+
+      console.log("Enviando video al webhook:", WEBHOOK_URL);
+      
       try {
-        console.log("Sending data to webhook:", WEBHOOK_URL);
-        const webhookData = {
-          videoId: videoId,
-          userId: user.id,
-          videoUrl,
-          title,
-          description,
-          missions,
-          mainMessage
-        };
-        console.log("Webhook payload:", webhookData);
-        
         const webhookResponse = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: {
@@ -268,36 +268,45 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         });
         
         if (!webhookResponse.ok) {
-          console.error("Webhook response not OK:", webhookResponse.status, webhookResponse.statusText);
-          throw new Error(`Webhook error: ${webhookResponse.status}`);
+          console.error("Error en la respuesta del webhook:", webhookResponse.status, webhookResponse.statusText);
+          throw new Error(`Error del webhook: ${webhookResponse.status}`);
         }
         
         const responseData = await webhookResponse.text();
-        console.log('Webhook notification sent successfully. Response:', responseData);
+        console.log('Video enviado exitosamente al webhook. Respuesta:', responseData);
+        
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+        
+        toast({
+          title: "¡Video enviado!",
+          description: "Tu reel ha sido enviado para análisis.",
+        });
+        
+        onUploadComplete({
+          video: videoFile,
+          title,
+          description,
+          missions,
+          mainMessage,
+          response: { status: "success", videoId },
+        });
       } catch (webhookError) {
-        console.error('Failed to notify webhook:', webhookError);
+        console.error('Error al enviar al webhook:', webhookError);
+        clearInterval(progressInterval);
+        
+        toast({
+          title: "Error al enviar",
+          description: "Hubo un problema al enviar tu video. Por favor, inténtalo de nuevo.",
+          variant: "destructive",
+        });
+        
+        setIsUploading(false);
         throw webhookError;
       }
       
-      setUploadProgress(100);
-      clearInterval(progressInterval);
-      
-      toast({
-        title: "¡Video enviado!",
-        description: "Tu reel ha sido enviado para análisis.",
-      });
-      
-      onUploadComplete({
-        video: videoFile,
-        title,
-        description,
-        missions,
-        mainMessage,
-        response: { status: "success", videoId },
-      });
-      
     } catch (error: any) {
-      console.error("Error subiendo video:", error);
+      console.error("Error general al subir video:", error);
       toast({
         title: "Error de subida",
         description: error.message || "Hubo un problema al subir tu video. Por favor, inténtalo de nuevo.",
@@ -455,7 +464,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         {isUploading && (
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground font-satoshi">
-              <span>Subiendo...</span>
+              <span>Enviando video...</span>
               <span>{uploadProgress}%</span>
             </div>
             <Progress value={uploadProgress} className="h-2 bg-muted [&>div]:bg-flow-electric" />

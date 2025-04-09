@@ -69,7 +69,7 @@ const UploadPage = () => {
       
       setFeedbackData(sampleFeedback);
       setUploadStep("complete");
-    }, 90000); // Changed to 90000ms (1 minute and 30 seconds)
+    }, 90000); // Mantener en 90000ms (1 minuto y 30 segundos)
   };
   
   const handleContinue = () => {
@@ -202,7 +202,7 @@ const UploadPage = () => {
                       100% { width: 98%; }
                     }
                     .animate-progress {
-                      animation: progress 2.5s ease-in-out infinite;
+                      animation: progress 90s ease-in-out forwards;
                     }
                   `}
                 </style>
