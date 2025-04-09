@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -148,16 +147,18 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     
     console.log("Subiendo video a Supabase Storage...", filePath);
     
-    // Subir el archivo a Supabase Storage con seguimiento del progreso
+    const options = {
+      cacheControl: '3600',
+      upsert: false
+    };
+    
     const { data, error } = await supabase.storage
       .from('videos')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-        onUploadProgress: (progress) => {
-          trackProgress(progress.loaded, progress.total);
-        }
-      });
+      .upload(filePath, file, options);
+    
+    if (file.size > 0) {
+      trackProgress(file.size, file.size);
+    }
 
     if (error) {
       console.error("Error al subir a Supabase:", error);
@@ -166,7 +167,6 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     
     console.log("Video subido a Supabase:", data);
     
-    // Obtener la URL pública
     const { data: publicUrlData } = supabase.storage
       .from('videos')
       .getPublicUrl(filePath);
@@ -229,7 +229,6 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     try {
       const videoId = uuidv4();
       
-      // Paso 1: Subir el video a Supabase Storage
       console.log("Iniciando proceso de subida a Supabase...");
       const videoUrl = await uploadVideoToSupabase(videoFile, videoId);
       setUploadedVideoUrl(videoUrl);
@@ -237,7 +236,6 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       console.log("Video subido exitosamente a Supabase:", videoUrl);
       
       try {
-        // Paso 2: Guardar los metadatos en la base de datos de Supabase
         console.log("Guardando metadatos en Supabase...");
         await supabase
           .from('videos')
@@ -258,7 +256,6 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         // Continuar con el webhook incluso si falla Supabase
       }
       
-      // Paso 3: Enviar los metadatos y la URL del video al webhook para procesamiento
       console.log("Enviando datos al webhook:", WEBHOOK_URL);
       
       const formData = new FormData();
