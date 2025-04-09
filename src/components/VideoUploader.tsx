@@ -41,7 +41,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const { user } = useAuth();
   
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
-  const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
+  const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
   
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -247,27 +247,33 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       }
 
       try {
+        console.log("Sending data to webhook:", WEBHOOK_URL);
+        const webhookData = {
+          videoId: videoId,
+          userId: user.id,
+          videoUrl,
+          title,
+          description,
+          missions,
+          mainMessage
+        };
+        console.log("Webhook payload:", webhookData);
+        
         const webhookResponse = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            videoId: videoId,
-            userId: user.id,
-            videoUrl,
-            title,
-            description,
-            missions,
-            mainMessage
-          }),
+          body: JSON.stringify(webhookData),
         });
         
         if (!webhookResponse.ok) {
+          console.error("Webhook response not OK:", webhookResponse.status, webhookResponse.statusText);
           throw new Error(`Webhook error: ${webhookResponse.status}`);
         }
         
-        console.log('Webhook notification sent successfully');
+        const responseData = await webhookResponse.text();
+        console.log('Webhook notification sent successfully. Response:', responseData);
       } catch (webhookError) {
         console.error('Failed to notify webhook:', webhookError);
         throw webhookError;
