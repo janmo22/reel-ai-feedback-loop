@@ -41,6 +41,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const { user } = useAuth();
   
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
+  const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
   
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -235,6 +236,32 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       if (videoError) {
         clearInterval(progressInterval);
         throw videoError;
+      }
+      
+      try {
+        const webhookResponse = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            videoId: videoData?.id || videoId,
+            userId: user.id,
+            videoUrl,
+            title,
+            description,
+            missions,
+            mainMessage
+          }),
+        });
+        
+        if (!webhookResponse.ok) {
+          throw new Error(`Webhook error: ${webhookResponse.status}`);
+        }
+        
+        console.log('Webhook notification sent successfully');
+      } catch (webhookError) {
+        console.error('Failed to notify webhook:', webhookError);
       }
       
       setUploadProgress(100);
