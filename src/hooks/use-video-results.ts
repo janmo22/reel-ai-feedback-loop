@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -49,8 +50,8 @@ export function useVideoResults() {
               console.error("Error getting feedback:", feedbackError);
               // Don't show error, just keep loading as true
             } else if (feedbackData) {
-              // Convert feedback data to the expected format
-              const formattedFeedback = feedbackData.feedback_data as AIFeedbackResponse[];
+              // Convert feedback data to the expected format with proper type casting
+              const formattedFeedback = feedbackData.feedback_data as unknown as AIFeedbackResponse[];
               setFeedback(formattedFeedback);
               setLoading(false);
               console.log("Feedback data obtained from DB:", formattedFeedback);
