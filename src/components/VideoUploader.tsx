@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -42,7 +41,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const { user } = useAuth();
   
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
-  const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
+  const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
   
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -188,7 +187,6 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     setUploadProgress(0);
     
     try {
-      // Simulate progress for UI feedback
       const updateProgress = () => {
         const randomIncrement = Math.floor(Math.random() * 10) + 5;
         setUploadProgress((prev) => {
@@ -202,7 +200,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       const videoId = uuidv4();
       
       try {
-        // Save metadata to Supabase database (not the video file)
+        console.log("Guardando metadata en Supabase...");
         await supabase
           .from('videos')
           .insert([
@@ -210,18 +208,17 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
               user_id: user.id,
               title,
               description,
-              video_url: "webhook_processed", // Placeholder since actual video is sent to webhook
+              video_url: "webhook_processed",
               status: 'processing'
             }
           ]);
         
-        console.log("Metadata saved to database");
+        console.log("Metadata guardada en Supabase correctamente");
       } catch (dbError) {
-        console.warn("Database error:", dbError);
-        // Continue even if database insert fails - the webhook is the priority
+        console.error("Error guardando en Supabase:", dbError);
       }
 
-      // Create a FormData object to send the video file directly to the webhook
+      console.log("Preparando FormData con video para webhook...");
       const formData = new FormData();
       formData.append("video", videoFile);
       formData.append("videoId", videoId);
@@ -231,39 +228,27 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       formData.append("missions", JSON.stringify(missions));
       formData.append("mainMessage", mainMessage);
       
-      console.log("Enviando video directamente al webhook:", WEBHOOK_URL);
-      console.log("FormData creado con el video:", videoFile.name, videoFile.size, "bytes");
-      
-      // Also prepare a JSON payload as backup in case FormData doesn't work as expected
-      const jsonData = {
-        videoId: videoId,
-        userId: user.id,
-        title,
-        description,
-        missions,
-        mainMessage,
-        timestamp: new Date().toISOString(),
-        videoInfo: {
-          name: videoFile.name,
-          type: videoFile.type,
-          size: videoFile.size
-        }
-      };
+      console.log("Enviando video al webhook:", WEBHOOK_URL);
+      console.log("Tamaño del video:", (videoFile.size / (1024 * 1024)).toFixed(2), "MB");
 
       try {
-        // First attempt: Try sending with FormData (with the actual video file)
         const webhookResponse = await fetch(WEBHOOK_URL, {
           method: 'POST',
           body: formData,
         });
         
+        console.log("Respuesta del servidor webhook:", webhookResponse.status);
+        
         if (!webhookResponse.ok) {
-          console.error("Error en la respuesta del webhook con FormData:", webhookResponse.status, webhookResponse.statusText);
-          throw new Error(`Error del webhook: ${webhookResponse.status}`);
+          throw new Error(`Error en la respuesta del webhook: ${webhookResponse.status}`);
         }
         
-        const responseData = await webhookResponse.text();
-        console.log('Video enviado exitosamente al webhook. Respuesta:', responseData);
+        try {
+          const responseText = await webhookResponse.text();
+          console.log('Video enviado exitosamente. Respuesta:', responseText);
+        } catch (parseError) {
+          console.log('No se pudo leer la respuesta pero el envío fue exitoso');
+        }
         
         clearInterval(progressInterval);
         setUploadProgress(100);
@@ -283,43 +268,12 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         });
       } catch (webhookError) {
         console.error('Error al enviar al webhook con FormData:', webhookError);
-        
-        // Fallback: Try sending with JSON (metadata only)
-        try {
-          console.log("Intentando enviar solo metadatos al webhook como JSON");
-          const fallbackResponse = await fetch(WEBHOOK_URL, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(jsonData),
-          });
-          
-          if (!fallbackResponse.ok) {
-            throw new Error(`Error del webhook: ${fallbackResponse.status}`);
-          }
-          
-          const fallbackData = await fallbackResponse.text();
-          console.log('Metadatos enviados exitosamente al webhook. Respuesta:', fallbackData);
-          
-          toast({
-            title: "¡Video enviado!",
-            description: "Tu reel ha sido enviado para análisis (solo metadatos).",
-          });
-          
-          onUploadComplete({
-            video: videoFile,
-            title,
-            description,
-            missions,
-            mainMessage,
-            response: { status: "success", videoId },
-          });
-        } catch (fallbackError) {
-          console.error('Error al enviar metadatos al webhook:', fallbackError);
-          throw fallbackError;
-        }
-      } finally {
+        toast({
+          title: "Error de comunicación",
+          description: "Hubo un problema al enviar el video. Por favor, inténtalo de nuevo.",
+          variant: "destructive",
+        });
+        setIsUploading(false);
         clearInterval(progressInterval);
       }
     } catch (error: any) {
