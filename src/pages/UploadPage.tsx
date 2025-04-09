@@ -25,7 +25,7 @@ const UploadPage = () => {
     
     // Simulación del tiempo de procesamiento (entre 1-2 minutos)
     // En producción, esto sería reemplazado por un listener o webhook real
-    const processingTime = Math.floor(Math.random() * (120000 - 60000 + 1)) + 60000;
+    const processingTime = 60000; // Fijamos en 60 segundos para que sea consistente
     
     setTimeout(() => {
       // Simular que el webhook devuelve datos de análisis
