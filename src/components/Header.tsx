@@ -1,77 +1,97 @@
 
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { VideoIcon, HistoryIcon, HomeIcon, Instagram } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Header = () => {
+  const location = useLocation();
+  const { user, signOut } = useAuth();
+  
+  const isActiveRoute = (path: string) => {
+    return location.pathname === path;
+  };
+  
+  const getInitials = () => {
+    if (!user) return "??";
+    const email = user.email || "";
+    return email.substring(0, 2).toUpperCase();
+  };
+  
   return (
-    <header className="sticky top-0 z-10 bg-white/80 dark:bg-flow-dark/80 backdrop-blur-md border-b border-border">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <Link to="/" className="flex items-center gap-2">
-          <img 
-            src="/lovable-uploads/23bce40c-310f-4879-a62c-17047b61ab18.png" 
-            alt="Flow Logo" 
-            className="h-8" 
-          />
-          <span className="font-bold text-xl electric-text">
-            ReelAI
-          </span>
-        </Link>
-
-        <nav className="hidden md:flex gap-6 items-center">
-          <Link 
-            to="/" 
-            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1 font-satoshi"
-          >
-            <HomeIcon className="h-4 w-4" />
-            <span>Inicio</span>
+    <header className="border-b bg-background">
+      <div className="container flex h-16 items-center justify-between px-4">
+        <div className="flex items-center gap-6">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-2xl font-bold electric-text">FLOW</span>
           </Link>
-          <Link 
-            to="/upload" 
-            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1 font-satoshi"
-          >
-            <VideoIcon className="h-4 w-4" />
-            <span>Subir Reel</span>
-          </Link>
-          <Link 
-            to="/history" 
-            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1 font-satoshi"
-          >
-            <HistoryIcon className="h-4 w-4" />
-            <span>Historial</span>
-          </Link>
-          <a 
-            href="https://instagram.com/janmoliner.ia" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-foreground/70 hover:text-foreground transition-colors flex items-center gap-1 font-satoshi"
-          >
-            <Instagram className="h-4 w-4" />
-            <span>@janmoliner.ia</span>
-          </a>
-          <Button className="bg-flow-electric hover:bg-flow-electric/90">
-            Comenzar
-          </Button>
-        </nav>
-        
-        <div className="md:hidden">
-          <Button variant="ghost" size="icon">
-            <span className="sr-only">Menú</span>
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-6 w-6" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
+          
+          <nav className="hidden md:flex gap-6">
+            <Link
+              to="/"
+              className={`text-sm font-medium transition-colors ${
+                isActiveRoute("/")
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M4 6h16M4 12h16M4 18h16" 
-              />
-            </svg>
-          </Button>
+              Inicio
+            </Link>
+            <Link
+              to="/upload"
+              className={`text-sm font-medium transition-colors ${
+                isActiveRoute("/upload")
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Subir Reel
+            </Link>
+            <Link
+              to="/history"
+              className={`text-sm font-medium transition-colors ${
+                isActiveRoute("/history")
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Historial
+            </Link>
+          </nav>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="" alt="Avatar" />
+                  <AvatarFallback>{getInitials()}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {user && <DropdownMenuItem className="font-medium">{user.email}</DropdownMenuItem>}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/history">Mi historial</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/settings">Ajustes</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => signOut()}>
+                Cerrar sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

@@ -1,69 +1,113 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import VideoCard from "@/components/VideoCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import EmptyState from "@/components/EmptyState";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Video, HistoryIcon } from "lucide-react";
-
-// Mock data for demonstration
-const mockVideos = [
-  {
-    id: "1",
-    title: "Mi primer TikTok challenge",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    date: "2024-04-05T12:00:00Z",
-    status: "completed" as const,
-    feedback: {
-      overallScore: 7.5,
-      categories: [
-        {
-          name: "Calidad visual",
-          score: 8,
-          feedback: "La iluminación es buena y el encuadre es apropiado para el formato vertical.",
-          suggestions: ["Considera añadir un poco más de contraste para resaltar el sujeto principal."]
-        },
-        {
-          name: "Audio",
-          score: 6,
-          feedback: "El audio es claro pero hay algo de ruido de fondo que distrae.",
-          suggestions: ["Utiliza un micrófono externo o graba en un ambiente más silencioso."]
-        },
-        {
-          name: "Estructura y ritmo",
-          score: 8,
-          feedback: "Buena narrativa con un ritmo constante que mantiene el interés.",
-          suggestions: ["Puedes experimentar con transiciones más rápidas en algunas secciones."]
-        }
-      ]
-    }
-  },
-  {
-    id: "2",
-    title: "Tutorial de maquillaje rápido",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    date: "2024-04-04T10:30:00Z",
-    status: "processing" as const
-  },
-  {
-    id: "3",
-    title: "Mi rutina matutina 2024",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    date: "2024-04-03T15:45:00Z",
-    status: "failed" as const
-  }
-];
+import { Video, HistoryIcon, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const HistoryPage = () => {
-  const [selectedVideo, setSelectedVideo] = useState<typeof mockVideos[0] | null>(null);
+  const [videos, setVideos] = useState<any[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
-  const handleVideoClick = (video: typeof mockVideos[0]) => {
+  useEffect(() => {
+    const fetchVideos = async () => {
+      if (!user) return;
+      
+      try {
+        // Fetch videos and join with feedback
+        const { data, error } = await supabase
+          .from('videos')
+          .select(`
+            *,
+            feedback(*)
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          throw error;
+        }
+        
+        setVideos(data || []);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los videos: " + error.message,
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchVideos();
+  }, [user, toast]);
+  
+  const handleVideoClick = (video: any) => {
     setSelectedVideo(video);
     setDialogOpen(true);
   };
+  
+  const formatFeedbackForDisplay = (feedback: any) => {
+    if (!feedback || !feedback.feedback_data) return [];
+    
+    const data = feedback.feedback_data;
+    
+    // Extract categories from the feedback data
+    const categories = [];
+    
+    if (data.structure?.hook) {
+      categories.push({
+        name: "Hook",
+        score: data.structure.hook.score || 0,
+        feedback: data.structure.hook.general || "No hay información disponible",
+      });
+    }
+    
+    if (data.engagementPotential) {
+      categories.push({
+        name: "Engagement",
+        score: data.overallEvaluation?.score || 0,
+        feedback: data.engagementPotential.interaction || "No hay información disponible",
+      });
+    }
+    
+    if (data.seo) {
+      categories.push({
+        name: "SEO",
+        score: 7,
+        feedback: data.seo.keywordAnalysis || "No hay información disponible",
+      });
+    }
+    
+    return categories;
+  };
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin text-flow-electric" />
+            <p className="text-muted-foreground">Cargando historial...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -78,14 +122,14 @@ const HistoryPage = () => {
             </p>
           </div>
           
-          {mockVideos.length > 0 ? (
+          {videos.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {mockVideos.map((video) => (
+              {videos.map((video) => (
                 <VideoCard
                   key={video.id}
                   title={video.title}
-                  videoUrl={video.videoUrl}
-                  date={video.date}
+                  videoUrl={video.video_url}
+                  date={video.created_at}
                   status={video.status}
                   onClick={() => handleVideoClick(video)}
                 />
@@ -110,23 +154,23 @@ const HistoryPage = () => {
               <div>
                 <h2 className="text-xl font-bold mb-2">{selectedVideo.title}</h2>
                 <p className="text-muted-foreground text-sm">
-                  Subido el {new Date(selectedVideo.date).toLocaleDateString()}
+                  Subido el {new Date(selectedVideo.created_at).toLocaleDateString()}
                 </p>
               </div>
               
               <div className="aspect-video bg-black rounded-md overflow-hidden">
                 <video 
-                  src={selectedVideo.videoUrl} 
+                  src={selectedVideo.video_url} 
                   controls
                   className="w-full h-full object-contain"
                 />
               </div>
               
-              {selectedVideo.status === "completed" && selectedVideo.feedback && (
+              {selectedVideo.status === "completed" && selectedVideo.feedback && selectedVideo.feedback.length > 0 && (
                 <FeedbackCard
                   title="Análisis de IA"
-                  overallScore={selectedVideo.feedback.overallScore}
-                  categories={selectedVideo.feedback.categories}
+                  overallScore={selectedVideo.feedback[0].overall_score || 0}
+                  categories={formatFeedbackForDisplay(selectedVideo.feedback[0])}
                   isDetailed={true}
                 />
               )}
@@ -158,7 +202,17 @@ const HistoryPage = () => {
                 >
                   Cerrar
                 </Button>
-                <Button>Descargar informe</Button>
+                {selectedVideo.status === "completed" && selectedVideo.feedback && selectedVideo.feedback.length > 0 && (
+                  <Button onClick={() => navigate("/results", { state: { 
+                    feedback: [selectedVideo.feedback[0].feedback_data],
+                    videoData: {
+                      title: selectedVideo.title,
+                      videoUrl: selectedVideo.video_url
+                    }
+                  }})}>
+                    Ver informe completo
+                  </Button>
+                )}
               </div>
             </div>
           )}
