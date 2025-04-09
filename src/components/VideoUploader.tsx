@@ -187,57 +187,65 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     setUploadProgress(0);
     
     try {
-      const fileExt = videoFile.name.split('.').pop();
-      const videoId = uuidv4();
-      const filePath = `${user.id}/${videoId}.${fileExt}`;
-      
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from('videos')
-        .upload(filePath, videoFile, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
       const updateProgress = () => {
-        const randomIncrement = Math.floor(Math.random() * 10) + 5;
+        const randomIncrement = Math.floor(Math.random() * 5) + 2;
         setUploadProgress((prev) => {
           const newProgress = Math.min(prev + randomIncrement, 100);
-          return newProgress < 95 ? newProgress : 95;
+          return newProgress < 90 ? newProgress : 90;
         });
       };
       
-      const progressInterval = setInterval(updateProgress, 500);
+      const progressInterval = setInterval(updateProgress, 2000);
       
-      if (storageError) {
-        clearInterval(progressInterval);
-        throw storageError;
-      }
+      const videoId = uuidv4();
+      let videoUrl = "";
       
-      const { data: publicUrlData } = supabase.storage
-        .from('videos')
-        .getPublicUrl(filePath);
-      
-      const videoUrl = publicUrlData.publicUrl;
-      
-      const { data: videoData, error: videoError } = await supabase
-        .from('videos')
-        .insert([
-          {
-            user_id: user.id,
-            title,
-            description,
-            video_url: videoUrl,
-            status: 'processing'
+      try {
+        const fileExt = videoFile.name.split('.').pop();
+        const filePath = `${user.id}/${videoId}.${fileExt}`;
+        
+        const { data: storageData, error: storageError } = await supabase.storage
+          .from('videos')
+          .upload(filePath, videoFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (storageError) {
+          console.warn("Storage upload failed, proceeding with webhook only:", storageError);
+        } else {
+          const { data: publicUrlData } = supabase.storage
+            .from('videos')
+            .getPublicUrl(filePath);
+          
+          videoUrl = publicUrlData.publicUrl;
+          
+          try {
+            const { data: videoData, error: videoError } = await supabase
+              .from('videos')
+              .insert([
+                {
+                  user_id: user.id,
+                  title,
+                  description,
+                  video_url: videoUrl,
+                  status: 'processing'
+                }
+              ])
+              .select()
+              .single();
+            
+            if (videoError) {
+              console.warn("Database insertion failed:", videoError);
+            }
+          } catch (dbError) {
+            console.warn("Database error:", dbError);
           }
-        ])
-        .select()
-        .single();
-      
-      if (videoError) {
-        clearInterval(progressInterval);
-        throw videoError;
+        }
+      } catch (storageError) {
+        console.warn("Storage error:", storageError);
       }
-      
+
       try {
         const webhookResponse = await fetch(WEBHOOK_URL, {
           method: 'POST',
@@ -245,7 +253,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            videoId: videoData?.id || videoId,
+            videoId: videoId,
             userId: user.id,
             videoUrl,
             title,
@@ -262,6 +270,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         console.log('Webhook notification sent successfully');
       } catch (webhookError) {
         console.error('Failed to notify webhook:', webhookError);
+        throw webhookError;
       }
       
       setUploadProgress(100);
@@ -272,16 +281,14 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         description: "Tu reel ha sido enviado para análisis.",
       });
       
-      setTimeout(() => {
-        onUploadComplete({
-          video: videoFile,
-          title,
-          description,
-          missions,
-          mainMessage,
-          response: { status: "success", videoId: videoData?.id || videoId },
-        });
-      }, 500);
+      onUploadComplete({
+        video: videoFile,
+        title,
+        description,
+        missions,
+        mainMessage,
+        response: { status: "success", videoId },
+      });
       
     } catch (error: any) {
       console.error("Error subiendo video:", error);

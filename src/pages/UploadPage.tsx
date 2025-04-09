@@ -69,7 +69,7 @@ const UploadPage = () => {
       
       setFeedbackData(sampleFeedback);
       setUploadStep("complete");
-    }, 3000);
+    }, 90000); // Changed to 90000ms (1 minute and 30 seconds)
   };
   
   const handleContinue = () => {
@@ -190,20 +190,22 @@ const UploadPage = () => {
                   <div className="h-full bg-flow-electric rounded-full animate-progress"></div>
                 </div>
                 
-                <style jsx>{`
-                  @keyframes progress {
-                    0% { width: 5%; }
-                    20% { width: 25%; }
-                    40% { width: 42%; }
-                    60% { width: 58%; }
-                    80% { width: 75%; }
-                    95% { width: 92%; }
-                    100% { width: 98%; }
-                  }
-                  .animate-progress {
-                    animation: progress 2.5s ease-in-out infinite;
-                  }
-                `}</style>
+                <style>
+                  {`
+                    @keyframes progress {
+                      0% { width: 5%; }
+                      20% { width: 25%; }
+                      40% { width: 42%; }
+                      60% { width: 58%; }
+                      80% { width: 75%; }
+                      95% { width: 92%; }
+                      100% { width: 98%; }
+                    }
+                    .animate-progress {
+                      animation: progress 2.5s ease-in-out infinite;
+                    }
+                  `}
+                </style>
               </div>
             )}
             
