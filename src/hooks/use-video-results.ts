@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -59,6 +60,12 @@ export function useVideoResults() {
               setFeedback(formattedFeedback);
               setLoading(false);
               console.log("Feedback data obtained from DB:", formattedFeedback);
+              
+              // Show a toast when the feedback is ready
+              toast({
+                title: "¡Análisis completado!",
+                description: "Los resultados de tu video ya están listos para revisar.",
+              });
             } else {
               // No feedback found but don't show an error
               setLoading(true);
@@ -66,7 +73,7 @@ export function useVideoResults() {
           } else {
             // The video is still processing - this is expected in some cases
             setLoading(true);
-            // Don't show a toast error when processing is normal
+            console.log("El video aún está en procesamiento. Estado actual:", videoData.status);
           }
         } catch (error) {
           console.error("Error getting data:", error);
