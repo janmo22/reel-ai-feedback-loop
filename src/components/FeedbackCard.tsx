@@ -31,7 +31,7 @@ const FeedbackCard = ({
   
   const getScoreColor = (score: number) => {
     if (score >= 8) return "bg-green-500";
-    if (score >= 6) return "bg-yellow-500";
+    if (score >= 6) return "bg-violet-500";
     return "bg-red-500";
   };
   
@@ -62,25 +62,25 @@ const FeedbackCard = ({
         </Button>
         
         {expanded && (
-          <div className="space-y-3 mt-3 animate-in fade-in-50 duration-300">
+          <div className="space-y-5 mt-4 animate-in fade-in-50 duration-300">
             {categories.map((category, index) => (
-              <div key={index} className="border-b last:border-b-0 pb-3 last:pb-0 mb-3 last:mb-0">
-                <div className="flex justify-between items-center mb-2">
+              <div key={index} className="border-b last:border-b-0 pb-5 last:pb-0 mb-5 last:mb-0">
+                <div className="flex justify-between items-center mb-3">
                   <h4 className="font-medium text-slate-800">{category.name}</h4>
                   <Badge variant="outline" className={`border-${getScoreColor(category.score).replace('bg-', '')}-200 text-slate-700`}>
                     {category.score}/10
                   </Badge>
                 </div>
                 
-                <p className="text-sm text-slate-700 mb-3">{category.feedback}</p>
+                <p className="text-sm text-slate-700 mb-4">{category.feedback}</p>
                 
                 {category.suggestions && category.suggestions.length > 0 && (
-                  <div className="bg-slate-50 p-3 rounded-md mt-3 border-l-2 border-amber-500">
+                  <div className="bg-violet-50 p-4 rounded-md mt-4 border-l-2 border-violet-500">
                     <h5 className="text-sm font-medium text-slate-700 mb-2">Recomendaciones:</h5>
-                    <ul className="space-y-2">
+                    <ul className="space-y-3">
                       {category.suggestions.map((suggestion, idx) => (
                         <li key={idx} className="text-sm flex gap-2">
-                          <ThumbsUp size={14} className="text-amber-600 flex-shrink-0 mt-1" />
+                          <ThumbsUp size={14} className="text-violet-600 flex-shrink-0 mt-1" />
                           <span className="text-slate-700">{suggestion}</span>
                         </li>
                       ))}

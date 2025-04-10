@@ -83,71 +83,65 @@ const ResultsPage = () => {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Header />
       
-      <main className="flex-1 py-8 px-4">
-        <div className="container mx-auto max-w-5xl">
+      <main className="flex-1 py-10 px-4">
+        <div className="container mx-auto max-w-4xl">
           <Button 
             variant="ghost" 
-            className="mb-6"
+            className="mb-8"
             onClick={() => navigate(-1)}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver
           </Button>
           
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="md:w-3/4">
-              <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-100 mb-6">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                  <div>
-                    <h1 className="text-2xl font-bold mb-2 text-slate-800">
-                      {contentTitle}
-                    </h1>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-500">{contentType}</span>
-                      {fd?.videoStructureAndPacing?.valueDelivery?.mainFunction && (
-                        <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full">
-                          {fd.videoStructureAndPacing.valueDelivery.mainFunction}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-row md:flex-col items-center gap-2">
-                    <div className="flex items-center">
-                      {[1, 2, 3, 4, 5].map((_, idx) => {
-                        const halfScore = score / 2;
-                        const filled = idx < Math.floor(halfScore);
-                        const half = !filled && idx === Math.floor(halfScore) && halfScore % 1 !== 0;
-                        
-                        return (
-                          <Star 
-                            key={idx} 
-                            className={`h-5 w-5 ${
-                              filled ? 'text-amber-400 fill-amber-400' : 
-                              half ? 'text-amber-400 fill-amber-400/50' : 
-                              'text-amber-200'
-                            }`}
-                          />
-                        );
-                      })}
-                    </div>
-                    <div className="text-lg font-bold text-slate-800 ml-1">{score}/10</div>
-                  </div>
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-slate-100 mb-8">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+              <div>
+                <h1 className="text-2xl font-bold mb-2 text-slate-800">
+                  {contentTitle}
+                </h1>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500">{contentType}</span>
+                  {fd?.videoStructureAndPacing?.valueDelivery?.mainFunction && (
+                    <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full">
+                      {fd.videoStructureAndPacing.valueDelivery.mainFunction}
+                    </span>
+                  )}
                 </div>
               </div>
               
-              <ResultsFeedback feedbackItem={feedbackItem} />
-            </div>
-            
-            <div className="md:w-1/4">
-              <div className="sticky top-24">
-                <VideoActions 
-                  onSave={toggleFavorite}
-                  onShare={handleShare}
-                  isFavorite={videoData.is_favorite}
-                />
+              <div className="flex flex-row items-center gap-2">
+                <div className="flex items-center">
+                  {[1, 2, 3, 4, 5].map((_, idx) => {
+                    const halfScore = score / 2;
+                    const filled = idx < Math.floor(halfScore);
+                    const half = !filled && idx === Math.floor(halfScore) && halfScore % 1 !== 0;
+                    
+                    return (
+                      <Star 
+                        key={idx} 
+                        className={`h-5 w-5 ${
+                          filled ? 'text-violet-400 fill-violet-400' : 
+                          half ? 'text-violet-400 fill-violet-400/50' : 
+                          'text-violet-200'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="text-lg font-bold text-slate-800 ml-1">{score}/10</div>
               </div>
             </div>
+          </div>
+          
+          <div className="space-y-8">
+            <ResultsFeedback feedbackItem={feedbackItem} />
+            
+            <VideoActions 
+              onSave={toggleFavorite}
+              onShare={handleShare}
+              isFavorite={videoData.is_favorite}
+            />
           </div>
         </div>
       </main>

@@ -25,10 +25,10 @@ const SuggestedCopy = ({ suggestedText, suggestedCopy }: SuggestedCopyProps) => 
   };
   
   return (
-    <div className="bg-white rounded-lg p-5 border shadow-sm">
+    <div className="bg-white rounded-lg p-6 border shadow-sm">
       <h3 className="text-lg font-semibold mb-4 flex items-center">Copy sugerido</h3>
-      <div className="bg-slate-50 p-4 rounded-md border mb-4">
-        <p className="font-medium text-md mb-2">{suggestedText}</p>
+      <div className="bg-slate-50 p-5 rounded-md border mb-5">
+        <p className="font-medium text-md mb-3">{suggestedText}</p>
         <p className="text-sm text-slate-600 whitespace-pre-wrap">{suggestedCopy}</p>
       </div>
       <Button 
