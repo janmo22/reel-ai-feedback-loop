@@ -95,7 +95,23 @@ const HistoryPage = () => {
       if (error) throw error;
       
       console.log("Videos fetched:", data);
-      setVideos(data || []);
+      
+      // Transform the data to match our VideoWithFeedback interface
+      const transformedData: VideoWithFeedback[] = data?.map(item => ({
+        id: item.id,
+        created_at: item.created_at,
+        title: item.title,
+        status: item.status as 'processing' | 'completed' | 'failed',
+        url: item.url || null,
+        video_url: item.video_url,
+        user_id: item.user_id,
+        thumbnail_url: item.thumbnail_url,
+        is_favorite: item.is_favorite || false,
+        updated_at: item.updated_at,
+        feedback: item.feedback
+      })) || [];
+      
+      setVideos(transformedData);
     } catch (error: any) {
       console.error('Error fetching videos:', error);
       toast({

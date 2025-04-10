@@ -61,7 +61,7 @@ export function useVideoResults() {
     if (state && state.feedback) {
       // If we already have feedback in the state, use it directly
       setFeedback(state.feedback as AIFeedbackResponse[]);
-      setVideoData(state.videoData);
+      setVideoData(state.videoData as Video);
       setLoading(false);
       console.log("Using feedback data from state:", state.feedback);
     } else if (state && state.videoId) {
@@ -88,7 +88,23 @@ export function useVideoResults() {
           }
           
           console.log("Video data obtenido:", videoData);
-          setVideoData(videoData as Video);
+          
+          // Transform data to match our Video interface
+          const transformedVideoData: Video = {
+            id: videoData.id,
+            created_at: videoData.created_at,
+            title: videoData.title,
+            description: videoData.description,
+            status: videoData.status as 'processing' | 'completed' | 'failed',
+            url: videoData.url || null,
+            video_url: videoData.video_url,
+            user_id: videoData.user_id,
+            thumbnail_url: videoData.thumbnail_url,
+            is_favorite: videoData.is_favorite || false,
+            updated_at: videoData.updated_at
+          };
+          
+          setVideoData(transformedVideoData);
           
           // Comprobamos si hay feedback existente
           const { data: feedbackData, error: feedbackError } = await supabase
@@ -111,8 +127,7 @@ export function useVideoResults() {
               setLoading(false);
               
               // Update video status to completed if needed
-              const videoTyped = videoData as Video;
-              if (videoTyped.status !== 'completed') {
+              if (transformedVideoData.status !== 'completed') {
                 await supabase
                   .from('videos')
                   .update({ 
@@ -133,7 +148,7 @@ export function useVideoResults() {
             }
           } else {
             // No hay feedback, seguimos en estado de carga pero mostramos el video
-            console.log("No hay feedback aún para el video. Estado:", videoData.status);
+            console.log("No hay feedback aún para el video. Estado:", transformedVideoData.status);
             setLoading(true);
           }
         } catch (error) {
