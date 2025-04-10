@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+
+import { useNavigate, useLocation } from "react-router-dom";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -14,6 +15,8 @@ import ResultsFeedback from "@/components/results/ResultsFeedback";
 
 const ResultsPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isProcessing = location.state?.videoData?.isProcessing === true;
   const { feedback, videoData, loading, hasFeedback, toggleFavorite, error } = useVideoResults();
   const { toast } = useToast();
   
@@ -24,7 +27,9 @@ const ResultsPage = () => {
     });
   };
   
-  if (loading) {
+  // Show loading screen if the video is currently being processed
+  // or if we're still loading data
+  if (loading || isProcessing) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">
         <Header />

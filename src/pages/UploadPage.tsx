@@ -77,6 +77,7 @@ const UploadPage = () => {
           videoData: {
             title: data.title || "Video sin título",
             description: data.description || "",
+            isProcessing: true // Add flag to indicate processing state
           }
         }
       });
@@ -92,6 +93,7 @@ const UploadPage = () => {
           videoData: {
             title: uploadData.title || "Video sin título",
             description: uploadData.description || "",
+            isProcessing: true // Add flag to indicate processing state
           }
         }
       });

@@ -2,7 +2,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, CheckCircle2, ArrowRight } from "lucide-react";
+import { Loader2, CheckCircle2, ArrowRight, Clock, History } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface ProcessingStepsProps {
   currentStep: "processing" | "complete";
@@ -15,6 +16,8 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
   loadingPhrase,
   onContinue,
 }) => {
+  const navigate = useNavigate();
+
   return (
     <Card className="w-full max-w-3xl mx-auto p-8 text-center flex flex-col items-center space-y-6 shadow-lg border-border/40">
       <div className="relative">
@@ -57,8 +60,22 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
       )}
       
       {currentStep === "processing" && (
-        <div className="text-sm text-muted-foreground italic max-w-lg">
-          Este proceso puede tomar unos minutos. Te redirigiremos automáticamente cuando esté listo.
+        <div className="space-y-4 text-sm max-w-lg">
+          <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 p-4 rounded-lg">
+            <Clock className="h-5 w-5 flex-shrink-0" />
+            <p className="text-left">
+              Este proceso suele tardar <strong>aproximadamente 2 minutos</strong>. 
+              Te redirigiremos automáticamente cuando esté listo.
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => navigate('/history')}
+            className="inline-flex items-center"
+          >
+            <History className="mr-2 h-4 w-4" />
+            Ver historial de videos
+          </Button>
         </div>
       )}
     </Card>
