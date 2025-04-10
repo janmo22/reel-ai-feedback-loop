@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
+import { Home, Upload, History, ChevronDown } from "lucide-react";
 
 const Header = () => {
   const location = useLocation();
@@ -26,43 +27,50 @@ const Header = () => {
   };
   
   return (
-    <header className="border-b bg-background">
+    <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-40">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl font-bold electric-text">FLOW</span>
+            <img 
+              src="/lovable-uploads/43d0d4b9-0d80-4f4b-bd92-87de16ec68d8.png" 
+              alt="FLOW Logo" 
+              className="h-8" 
+            />
           </Link>
           
           <nav className="hidden md:flex gap-6">
             <Link
               to="/"
-              className={`text-sm font-medium transition-colors ${
+              className={`text-sm font-medium transition-colors flex items-center gap-1 ${
                 isActiveRoute("/")
-                  ? "text-primary"
+                  ? "text-flow-blue"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Inicio
+              <Home className="w-4 h-4" />
+              <span>Inicio</span>
             </Link>
             <Link
               to="/upload"
-              className={`text-sm font-medium transition-colors ${
+              className={`text-sm font-medium transition-colors flex items-center gap-1 ${
                 isActiveRoute("/upload")
-                  ? "text-primary"
+                  ? "text-flow-blue"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Subir Reel
+              <Upload className="w-4 h-4" />
+              <span>Subir Reel</span>
             </Link>
             <Link
               to="/history"
-              className={`text-sm font-medium transition-colors ${
+              className={`text-sm font-medium transition-colors flex items-center gap-1 ${
                 isActiveRoute("/history")
-                  ? "text-primary"
+                  ? "text-flow-blue"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Historial
+              <History className="w-4 h-4" />
+              <span>Historial</span>
             </Link>
           </nav>
         </div>
@@ -70,11 +78,13 @@ const Header = () => {
         <div className="flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" size="sm" className="gap-2 text-sm">
+                <Avatar className="h-7 w-7">
                   <AvatarImage src="" alt="Avatar" />
                   <AvatarFallback>{getInitials()}</AvatarFallback>
                 </Avatar>
+                <span className="hidden sm:inline-block">Mi cuenta</span>
+                <ChevronDown className="h-4 w-4 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
