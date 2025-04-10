@@ -3,29 +3,13 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { AIFeedbackResponse } from "@/types";
-
-// Add a type for the video data to avoid TypeScript errors
-interface VideoData {
-  id: string;
-  title: string;
-  description: string | null;
-  video_url: string;
-  thumbnail_url: string | null;
-  status: string;
-  created_at: string | null;
-  updated_at: string | null;
-  user_id: string;
-  feedback_received?: boolean;
-  main_message?: string;
-  missions?: string[];
-}
+import { AIFeedbackResponse, Video } from "@/types";
 
 export function useVideoResults() {
   const location = useLocation();
   const [feedback, setFeedback] = useState<AIFeedbackResponse[] | null>(null);
   const [loading, setLoading] = useState(true);
-  const [videoData, setVideoData] = useState<VideoData | null>(null);
+  const [videoData, setVideoData] = useState<Video | null>(null);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -62,11 +46,13 @@ export function useVideoResults() {
           }
           
           console.log("Video data obtenido:", videoData);
-          setVideoData(videoData as VideoData);
+          setVideoData(videoData as Video);
           
           // Comprobamos el estado del video
-          // Check if status is completed or if the feedback_received field exists and is true
-          if (videoData.status === "completed" || (Object.prototype.hasOwnProperty.call(videoData, 'feedback_received') && videoData.feedback_received === true)) {
+          // Check if status is completed or if the feedback_received field is true (cast to Video type first)
+          const videoWithTyping = videoData as Video;
+          
+          if (videoData.status === "completed" || videoWithTyping.feedback_received === true) {
             // Buscamos feedback asociado
             const { data: feedbackData, error: feedbackError } = await supabase
               .from('feedback')
