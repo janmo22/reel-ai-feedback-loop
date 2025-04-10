@@ -33,9 +33,9 @@ export const useVideoResults = (videoId?: string) => {
       if (videoError) throw new Error(videoError.message);
       if (!videoData) throw new Error('Video not found');
       
-      // Get feedback data from the correct table
+      // Get feedback data from the feedback table
       const { data: feedbackData, error: feedbackError } = await supabase
-        .from('feedback')  // Using "feedback" table
+        .from('feedback')
         .select('*')
         .eq('video_id', queryVideoId)
         .order('created_at', { ascending: false });
@@ -55,71 +55,85 @@ export const useVideoResults = (videoId?: string) => {
         video_url: videoData.video_url,
         user_id: videoData.user_id,
         thumbnail_url: videoData.thumbnail_url || '',
-        is_favorite: isFavorite,  // Use the safely extracted value
+        is_favorite: isFavorite,
         updated_at: videoData.updated_at || videoData.created_at,
-        feedback: [] // Will be populated if there's feedback data
+        feedback: [] // Will be populated with actual feedback data
       };
       
       setVideo(finalVideo);
 
       // Process feedback data if available
       if (feedbackData && feedbackData.length > 0) {
-        // Create a proper AIFeedbackResponse object with the data we have
-        const mockFeedbackResponse: AIFeedbackResponse = {
-          id: feedbackData[0].id,
-          feedback: "Análisis completo del vídeo",
-          score: feedbackData[0].overall_score || 7,
-          suggestions: "Mejorar el inicio del video para captar más atención",
-          tags: ["reel", "instagram", "contenido"],
-          created_at: feedbackData[0].created_at,
-          generalStudy: "Tu reel tiene potencial pero necesita ajustes para maximizar su impacto",
-          contentType: "Reel informativo",
-          contentTitle: videoData.title,
-          contentSubtitle: "Análisis de contenido",
-          overallEvaluation: {
-            score: feedbackData[0].overall_score || 7,
-            suggestions: [
-              "Mejora la introducción para captar más rápido la atención",
-              "Refuerza el mensaje principal para mayor claridad",
-              "Añade una llamada a la acción más específica"
-            ]
-          },
-          structure: {
-            hook: {
-              general: "El hook inicial podría ser más impactante",
-              spoken: "La narración es clara pero necesita más energía",
-              visual: "Los elementos visuales son adecuados",
-              strengths: "Buena claridad en la comunicación",
-              weaknesses: "Falta de impacto emocional inicial",
-              score: 6,
-              auditory: "El audio es de buena calidad",
-              clarity: "El mensaje es comprensible",
-              feel: "La atmósfera es profesional",
-              invitation: "Podría mejorar la invitación inicial",
-              patternBreak: "Falta un patrón disruptivo para captar atención"
-            },
-            buildUp: "El desarrollo del contenido es coherente pero podría ser más dinámico",
-            value: {
-              comment: "El valor principal se comunica adecuadamente",
-              score: 7,
-              function: "Informativa y educativa"
-            },
-            cta: "La llamada a la acción podría ser más específica"
-          },
-          seo: {
-            keywordAnalysis: "Buen uso de palabras clave relevantes",
-            clarity: "La temática principal es clara para el algoritmo",
-            suggestedText: "Mejora tu presencia digital",
-            suggestedCopy: "¿Quieres que tus reels generen más engagement? Aplica estas técnicas probadas para multiplicar tu alcance y conversión. #ContentStrategy #ReelsTips"
-          },
-          nativeCodes: "Incorpora hashtags más específicos y relevantes para tu nicho",
-          engagementPotential: {
-            interaction: "Tiene potencial para generar comentarios",
-            watchTime: "La duración es adecuada para mantener la atención"
-          }
-        };
+        // Array to store processed feedback responses
+        const processedFeedback: AIFeedbackResponse[] = [];
         
-        setFeedback([mockFeedbackResponse]);
+        for (const item of feedbackData) {
+          // Extract the feedback_data JSON from the database
+          const feedbackJson = item.feedback_data;
+          
+          if (!feedbackJson) continue;
+          
+          // Create an AIFeedbackResponse using the actual data from the database
+          const aiResponse: AIFeedbackResponse = {
+            id: item.id,
+            feedback: feedbackJson.feedback || "Análisis completo del vídeo",
+            score: item.overall_score || 0,
+            suggestions: feedbackJson.suggestions || "",
+            tags: feedbackJson.tags || ["reel", "instagram", "contenido"],
+            created_at: item.created_at,
+            generalStudy: feedbackJson.generalStudy || "Análisis del contenido del video",
+            contentType: feedbackJson.contentType || "Reel informativo",
+            contentTitle: feedbackJson.contentTitle || videoData.title,
+            contentSubtitle: feedbackJson.contentSubtitle || "Análisis de contenido",
+            overallEvaluation: {
+              score: item.overall_score || 0,
+              suggestions: feedbackJson.suggestions ? 
+                (Array.isArray(feedbackJson.suggestions) ? 
+                  feedbackJson.suggestions : 
+                  [feedbackJson.suggestions]) : 
+                ["Mejora la introducción", "Refuerza el mensaje principal", "Añade una llamada a la acción clara"]
+            },
+            structure: feedbackJson.structure || {
+              hook: {
+                general: "Información no disponible",
+                spoken: "Información no disponible",
+                visual: "Información no disponible",
+                strengths: "Información no disponible",
+                weaknesses: "Información no disponible",
+                score: 0,
+                auditory: "Información no disponible",
+                clarity: "Información no disponible",
+                feel: "Información no disponible",
+                invitation: "Información no disponible",
+                patternBreak: "Información no disponible"
+              },
+              buildUp: "Información no disponible",
+              value: {
+                comment: "Información no disponible",
+                score: 0,
+                function: "Información no disponible"
+              },
+              cta: "Información no disponible"
+            },
+            seo: feedbackJson.seo || {
+              keywordAnalysis: "Información no disponible",
+              clarity: "Información no disponible",
+              suggestedText: "Información no disponible",
+              suggestedCopy: "Información no disponible"
+            },
+            nativeCodes: feedbackJson.nativeCodes || "Información no disponible",
+            engagementPotential: feedbackJson.engagementPotential || {
+              interaction: "Información no disponible",
+              watchTime: "Información no disponible"
+            }
+          };
+          
+          processedFeedback.push(aiResponse);
+        }
+        
+        if (processedFeedback.length > 0) {
+          setFeedback(processedFeedback);
+        }
       }
     } catch (err) {
       console.error('Error fetching video:', err);
@@ -135,14 +149,13 @@ export const useVideoResults = (videoId?: string) => {
     try {
       const newFavoriteStatus = !video.is_favorite;
       
-      // Update is_favorite in Supabase using any: to bypass TypeScript check
-      // since is_favorite might not be in the database schema
+      // Update is_favorite in Supabase
       const { error } = await supabase
         .from('videos')
         .update({ 
           is_favorite: newFavoriteStatus,
           updated_at: new Date().toISOString()
-        } as any)
+        })
         .eq('id', video.id);
         
       if (error) throw error;

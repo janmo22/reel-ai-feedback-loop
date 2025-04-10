@@ -8,7 +8,7 @@ interface ResultsFeedbackProps {
 }
 
 const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
-  // Create a default structure for missing properties
+  // Create a default structure for missing properties with null checks
   const feedback = {
     ...feedbackItem,
     structure: feedbackItem.structure || {
@@ -43,12 +43,16 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     engagementPotential: feedbackItem.engagementPotential || {
       interaction: "No disponible",
       watchTime: "No disponible"
+    },
+    overallEvaluation: feedbackItem.overallEvaluation || {
+      score: 0,
+      suggestions: ["No hay sugerencias disponibles"]
     }
   };
   
   return (
     <div className="space-y-6">
-      <AIFeedbackCard feedback={feedbackItem} />
+      <AIFeedbackCard feedback={feedback} />
       
       {/* Only show additional feedback cards if structure is available */}
       {feedback.structure && (
