@@ -7,9 +7,8 @@ import { useUploadProgress } from "@/hooks/use-upload-progress";
 import { VideoUploadResponse } from "@/types";
 import { useVideoFile } from "@/hooks/use-video-file";
 import { useMissions } from "@/hooks/use-missions";
+import { supabase } from "@/integrations/supabase/client";
 import { 
-  saveVideoMetadata, 
-  updateVideoStatus,
   uploadVideoToWebhook 
 } from "@/utils/video-upload-service";
 
@@ -106,13 +105,38 @@ export function useVideoUpload(onUploadComplete: (data: {
     startSimulation(); // Start a progress simulation
     
     try {
-      // Generate a unique ID for the video
-      const videoId = uuidv4();
+      // Step 1: First create a video record in Supabase videos table
+      console.log("Creando registro de video en Supabase...");
+      const { data: videoData, error: videoError } = await supabase
+        .from('videos')
+        .insert([
+          {
+            title,
+            description,
+            user_id: user.id,
+            video_url: "placeholder-url", // Will be updated later if needed
+            status: 'uploading',
+            missions,
+            main_message: mainMessage
+          }
+        ])
+        .select()
+        .single();
       
-      // Save metadata to the database with "uploading" status
-      await saveVideoMetadata(videoId, user.id, title, description, missions, mainMessage);
+      if (videoError) {
+        console.error("Error creando registro de video:", videoError);
+        throw new Error(`Error al crear registro de video: ${videoError.message}`);
+      }
       
-      // Send data to webhook
+      if (!videoData || !videoData.id) {
+        throw new Error("No se pudo obtener el ID del video creado");
+      }
+      
+      const videoId = videoData.id;
+      console.log("Video registrado en Supabase con ID:", videoId);
+      
+      // Step 2: Only after creating the video record, send data to webhook
+      console.log("Enviando video al webhook con videoId:", videoId);
       const response = await uploadVideoToWebhook({
         videoId,
         userId: user.id,
@@ -131,13 +155,18 @@ export function useVideoUpload(onUploadComplete: (data: {
       
       setIsUploading(false);
       
+      // Step 3: Call onUploadComplete with the videoId and other data
       onUploadComplete({
         video: videoFile,
         title,
         description,
         missions,
         mainMessage,
-        response,
+        response: {
+          status: "processing",
+          videoId,
+          message: "Video enviado para procesamiento"
+        },
       });
     } catch (error: any) {
       console.error("Error en el proceso:", error);

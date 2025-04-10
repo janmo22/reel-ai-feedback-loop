@@ -16,43 +16,6 @@ export interface UploadVideoParams {
 export const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
 /**
- * Save the initial video metadata to Supabase
- */
-export async function saveVideoMetadata(
-  videoId: string,
-  userId: string, 
-  title: string, 
-  description: string,
-  missions: string[] = [],
-  mainMessage: string = ""
-) {
-  console.log("Guardando metadatos en Supabase...");
-  
-  try {
-    await supabase
-      .from('videos')
-      .insert([
-        {
-          id: videoId,
-          user_id: userId,
-          title,
-          description,
-          video_url: "placeholder-url", // URL placeholder since we're not uploading the video to Supabase
-          status: 'uploading',
-          missions,
-          main_message: mainMessage
-        }
-      ]);
-    
-    console.log("Metadatos guardados en Supabase correctamente");
-    return videoId;
-  } catch (dbError) {
-    console.error("Error guardando en Supabase:", dbError);
-    throw new Error(`Error guardando metadatos: ${dbError}`);
-  }
-}
-
-/**
  * Update the video status in Supabase
  */
 export async function updateVideoStatus(videoId: string, status: string) {
@@ -99,6 +62,9 @@ export async function uploadVideoToWebhook({
   console.log("Enviando datos y video en binario al webhook con videoId:", videoId);
   
   try {
+    // Update video status to processing before sending to webhook
+    await updateVideoStatus(videoId, 'processing');
+    
     // Using regular fetch mode first to try to get a response
     const response = await fetch(WEBHOOK_URL, {
       method: "POST",
@@ -107,9 +73,6 @@ export async function uploadVideoToWebhook({
     
     if (response.ok) {
       console.log("Datos enviados correctamente al webhook con respuesta");
-      
-      // Update the video status to processing
-      await updateVideoStatus(videoId, 'processing');
       
       return { 
         status: "processing", 
@@ -132,9 +95,6 @@ export async function uploadVideoToWebhook({
       });
       
       console.log("Datos enviados al webhook usando modo no-cors");
-      
-      // Update the video status to processing
-      await updateVideoStatus(videoId, 'processing');
       
       return { 
         status: "processing", 
