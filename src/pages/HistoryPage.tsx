@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Video as VideoIcon, HistoryIcon, Loader2, Star, Eye, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Video, Feedback } from "@/types";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { format, parseISO } from "date-fns";

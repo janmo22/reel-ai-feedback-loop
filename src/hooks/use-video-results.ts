@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AIFeedbackResponse, Video } from "@/types";
 
@@ -100,7 +100,7 @@ export function useVideoResults() {
             video_url: videoData.video_url,
             user_id: videoData.user_id,
             thumbnail_url: videoData.thumbnail_url,
-            is_favorite: videoData.is_favorite || false,
+            is_favorite: videoData.is_favorite || false,  // Add default false if is_favorite is not present
             updated_at: videoData.updated_at
           };
           
