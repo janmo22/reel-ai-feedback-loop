@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -10,10 +11,11 @@ import NoResults from "@/components/results/NoResults";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Footer from "@/components/layout/Footer";
+import ResultsFeedback from "@/components/results/ResultsFeedback";
 
 const ResultsPage = () => {
   const navigate = useNavigate();
-  const { feedback, videoData, loading, hasFeedback, toggleFavorite } = useVideoResults();
+  const { feedback, videoData, loading, hasFeedback, toggleFavorite, error } = useVideoResults();
   const { toast } = useToast();
   
   const handleShare = () => {
@@ -35,8 +37,23 @@ const ResultsPage = () => {
     );
   }
   
+  // Show error state if there was an error loading the data
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col bg-slate-50">
+        <Header />
+        <main className="flex-1 py-8 px-4">
+          <div className="container mx-auto max-w-6xl">
+            <NoResults />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+  
   // Ensure feedback data is available
-  if (!hasFeedback) {
+  if (!hasFeedback || !feedback || !videoData) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">
         <Header />
@@ -51,8 +68,8 @@ const ResultsPage = () => {
   }
   
   // Get the first feedback item
-  const feedbackItem = feedback![0];
-  const contentTitle = feedbackItem.contentTitle || videoData?.title || "Análisis de Reel";
+  const feedbackItem = feedback[0];
+  const contentTitle = feedbackItem.contentTitle || videoData.title || "Análisis de Reel";
   const contentSubtitle = feedbackItem.contentSubtitle || "Evaluación de contenido";
   
   return (
@@ -289,15 +306,16 @@ const ResultsPage = () => {
               </div>
               
               <SuggestedCopy 
-                suggestedText={feedbackItem.seo.suggestedText}
-                suggestedCopy={feedbackItem.seo.suggestedCopy}
+                suggestedText={feedbackItem.seo.suggestedText || ""}
+                suggestedCopy={feedbackItem.seo.suggestedCopy || ""}
               />
             </div>
             
             <div className="md:col-span-1">
               <VideoActions 
-                onSave={toggleFavorite} 
-                onShare={handleShare} 
+                onSave={toggleFavorite}
+                onShare={handleShare}
+                isFavorite={videoData?.is_favorite}
               />
             </div>
           </div>

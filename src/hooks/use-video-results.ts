@@ -1,11 +1,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { supabase } from '@/integrations/supabase/client';
 import { Video, AIFeedbackResponse } from '@/types';
 import { useSearchParams } from 'react-router-dom';
 
 export const useVideoResults = (videoId?: string) => {
-  const supabase = useSupabaseClient();
   const [searchParams] = useSearchParams();
   const queryVideoId = videoId || searchParams.get('videoId');
   
@@ -24,6 +23,7 @@ export const useVideoResults = (videoId?: string) => {
     setError(null);
     
     try {
+      // Fixed: Using supabase directly instead of useSupabaseClient hook
       const { data: videoData, error: videoError } = await supabase
         .from('videos')
         .select('*')
@@ -122,7 +122,7 @@ export const useVideoResults = (videoId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [queryVideoId, supabase]);
+  }, [queryVideoId]);
 
   const toggleFavorite = async () => {
     if (!video) return;

@@ -2,7 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, BookmarkPlus, Share2, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 
 interface VideoActionsProps {
   onSave?: () => void;
