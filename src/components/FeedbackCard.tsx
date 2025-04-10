@@ -17,7 +17,7 @@ interface FeedbackCardProps {
   isDetailed?: boolean;
 }
 
-const FeedbackCard = ({ title, overallScore, categories, isDetailed = false }: FeedbackCardProps) => {
+const FeedbackCard = ({ title, overallScore, categories, isDetailed = true }: FeedbackCardProps) => {
   const [expanded, setExpanded] = useState(isDetailed);
   
   const getScoreColor = (score: number) => {

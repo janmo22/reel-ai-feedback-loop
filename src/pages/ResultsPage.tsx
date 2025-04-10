@@ -73,8 +73,23 @@ const ResultsPage = () => {
   
   // Get the first feedback item
   const feedbackItem = feedback[0];
-  const contentTitle = feedbackItem.contentTitle || videoData.title || "Análisis de Reel";
-  const contentSubtitle = feedbackItem.contentSubtitle || "Evaluación de contenido";
+  const fd = feedbackItem.feedback_data;
+  
+  // Determine content details
+  const contentTitle = videoData.title || "Análisis de Reel";
+  const contentSubtitle = fd?.executiveSummary 
+    ? "Evaluación ejecutiva" 
+    : "Evaluación de contenido";
+  
+  // Get overall score
+  const score = feedbackItem.overallEvaluation?.score || 0;
+  
+  // Get executive summary
+  const executiveSummary = fd?.executiveSummary || feedbackItem.generalStudy || "";
+  
+  // Get suggested copy
+  const suggestedCopy = fd?.seoAndDiscoverability?.suggestedOptimizedCopy || "";
+  const suggestedText = fd?.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "";
   
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -105,13 +120,13 @@ const ResultsPage = () => {
                 
                 <div className="mt-4 md:mt-0">
                   <div className="inline-flex items-center justify-center rounded-full px-6 py-3 text-xl font-medium text-white bg-indigo-400">
-                    Score: {feedbackItem.overallEvaluation.score}/10
+                    Score: {score}/10
                   </div>
                 </div>
               </div>
               
               <p className="text-lg mt-6">
-                {feedbackItem.generalStudy}
+                {executiveSummary}
               </p>
             </div>
           </div>
@@ -120,12 +135,13 @@ const ResultsPage = () => {
             <div className="md:col-span-2">
               <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-4 mb-6">
                 <Tabs defaultValue="resumen" className="w-full">
-                  <TabsList className="grid grid-cols-5 mb-6 w-full">
+                  <TabsList className="grid grid-cols-6 mb-6 w-full">
                     <TabsTrigger value="resumen">Resumen</TabsTrigger>
                     <TabsTrigger value="estructura">Estructura</TabsTrigger>
                     <TabsTrigger value="hook">Hook</TabsTrigger>
                     <TabsTrigger value="engagement">Engagement</TabsTrigger>
                     <TabsTrigger value="seo">SEO</TabsTrigger>
+                    <TabsTrigger value="estrategia">Estrategia</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="resumen" className="p-6 border rounded-lg">
@@ -161,7 +177,10 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.structure?.buildUp || "Mejorar la estructura narrativa para mantener el interés a lo largo del video."}</p>
+                        <p className="text-lg">
+                          {fd?.videoStructureAndPacing?.buildUpAndPacingComment || 
+                            "Mejorar la estructura narrativa para mantener el interés a lo largo del video."}
+                        </p>
                       </div>
                       
                       <div className="flex items-start gap-4">
@@ -173,7 +192,10 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.structure?.value?.comment || "Desarrollar mejor el argumento principal para que se entienda el valor del contenido."}</p>
+                        <p className="text-lg">
+                          {fd?.videoStructureAndPacing?.valueDelivery?.comment || 
+                            "Desarrollar mejor el argumento principal para que se entienda el valor del contenido."}
+                        </p>
                       </div>
                       
                       <div className="flex items-start gap-4">
@@ -186,7 +208,10 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.structure?.cta || "Añadir una llamada a la acción más clara al final del video."}</p>
+                        <p className="text-lg">
+                          {fd?.videoStructureAndPacing?.ctaAndEnding?.comment || 
+                            "Añadir una llamada a la acción más clara al final del video."}
+                        </p>
                       </div>
                     </div>
                   </TabsContent>
@@ -203,7 +228,10 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.structure?.hook?.general || "El hook inicial necesita ser más impactante para captar la atención en los primeros segundos."}</p>
+                        <p className="text-lg">
+                          {fd?.videoStructureAndPacing?.hook?.attentionGrabbingComment || 
+                            "El hook inicial necesita ser más impactante para captar la atención en los primeros segundos."}
+                        </p>
                       </div>
                       
                       <div className="flex items-start gap-4">
@@ -215,7 +243,10 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.structure?.hook?.visual || "El elemento visual de inicio no es suficientemente llamativo."}</p>
+                        <p className="text-lg">
+                          {fd?.videoStructureAndPacing?.hook?.visualHookAnalysis || 
+                            "El elemento visual de inicio no es suficientemente llamativo."}
+                        </p>
                       </div>
                       
                       <div className="flex items-start gap-4">
@@ -226,7 +257,10 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.structure?.hook?.spoken || "La introducción verbal podría ser más directa y clara."}</p>
+                        <p className="text-lg">
+                          {fd?.videoStructureAndPacing?.hook?.spokenHookAnalysis || 
+                            "La introducción verbal podría ser más directa y clara."}
+                        </p>
                       </div>
                     </div>
                   </TabsContent>
@@ -245,7 +279,10 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.engagementPotential?.interaction || "Fomentar más la participación de la audiencia con preguntas directas."}</p>
+                        <p className="text-lg">
+                          {fd?.engagementOptimization?.interactionHierarchyComment || 
+                            "Fomentar más la participación de la audiencia con preguntas directas."}
+                        </p>
                       </div>
                       
                       <div className="flex items-start gap-4">
@@ -257,8 +294,26 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.engagementPotential?.watchTime || "El ritmo podría mejorarse para aumentar el tiempo de visualización."}</p>
+                        <p className="text-lg">
+                          {fd?.engagementOptimization?.watchTimePotentialComment || 
+                            "El ritmo podría mejorarse para aumentar el tiempo de visualización."}
+                        </p>
                       </div>
+                      
+                      {fd?.engagementOptimization?.viralityFactorsComment && (
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 mt-1">
+                            <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                              <svg className="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                              </svg>
+                            </div>
+                          </div>
+                          <p className="text-lg">{fd.engagementOptimization.viralityFactorsComment}</p>
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
                   
@@ -274,7 +329,10 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.seo?.keywordAnalysis || "Utilizar palabras clave más relevantes para tu nicho."}</p>
+                        <p className="text-lg">
+                          {fd?.seoAndDiscoverability?.keywordIdentificationComment || 
+                            "Utilizar palabras clave más relevantes para tu nicho."}
+                        </p>
                       </div>
                       
                       <div className="flex items-start gap-4">
@@ -290,7 +348,10 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.seo?.clarity || "La temática principal debe ser más clara para el algoritmo."}</p>
+                        <p className="text-lg">
+                          {fd?.seoAndDiscoverability?.thematicClarityComment || 
+                            "La temática principal debe ser más clara para el algoritmo."}
+                        </p>
                       </div>
                       
                       <div className="flex items-start gap-4">
@@ -302,16 +363,69 @@ const ResultsPage = () => {
                             </svg>
                           </div>
                         </div>
-                        <p className="text-lg">{feedbackItem.nativeCodes || "Usar hashtags más específicos y relevantes para tu contenido."}</p>
+                        <p className="text-lg">
+                          {fd?.seoAndDiscoverability?.hashtagsSEOAnalysis || 
+                            "Usar hashtags más específicos y relevantes para tu contenido."}
+                        </p>
                       </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="estrategia" className="p-6 border rounded-lg">
+                    <h2 className="text-2xl font-bold mb-6">Alineación Estratégica</h2>
+                    <div className="space-y-6">
+                      {fd?.strategicAlignment?.creatorConsistencyComment && (
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 mt-1">
+                            <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                              <svg className="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                              </svg>
+                            </div>
+                          </div>
+                          <p className="text-lg">{fd.strategicAlignment.creatorConsistencyComment}</p>
+                        </div>
+                      )}
+                      
+                      {fd?.strategicAlignment?.targetAudienceClarityComment && (
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 mt-1">
+                            <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                              <svg className="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                              </svg>
+                            </div>
+                          </div>
+                          <p className="text-lg">{fd.strategicAlignment.targetAudienceClarityComment}</p>
+                        </div>
+                      )}
+                      
+                      {fd?.strategicAlignment?.valuePropositionClarityComment && (
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0 mt-1">
+                            <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                              <svg className="h-4 w-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="16"></line>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                              </svg>
+                            </div>
+                          </div>
+                          <p className="text-lg">{fd.strategicAlignment.valuePropositionClarityComment}</p>
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
                 </Tabs>
               </div>
               
               <SuggestedCopy 
-                suggestedText={feedbackItem.seo.suggestedText || ""}
-                suggestedCopy={feedbackItem.seo.suggestedCopy || ""}
+                suggestedText={suggestedText}
+                suggestedCopy={suggestedCopy}
               />
             </div>
             

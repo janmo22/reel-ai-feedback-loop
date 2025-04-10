@@ -64,7 +64,6 @@ export interface SupabaseVideo {
   updated_at: string;
 }
 
-// Update the VideoUploadResponse interface with the missing properties
 export interface VideoUploadResponse {
   success?: boolean;
   videoId?: string;
@@ -75,21 +74,97 @@ export interface VideoUploadResponse {
 
 export interface AIFeedbackResponse {
   id: string;
-  feedback: string;
-  score: number;
-  suggestions: string;
-  tags: string[];
   created_at: string;
-  // Add missing properties used in ResultsFeedback.tsx and AIFeedbackCard
-  generalStudy: string;
-  contentType: string;
+  // Legacy properties for backward compatibility
+  feedback?: string;
+  score?: number;
+  suggestions?: string;
+  tags?: string[];
+  generalStudy?: string;
+  contentType?: string;
   contentTitle?: string;
   contentSubtitle?: string;
+  
+  // New enhanced structure
+  feedback_data?: {
+    userId?: string;
+    videoId?: string;
+    executiveSummary?: string;
+    finalEvaluation?: {
+      overallScore: number;
+      finalRecommendations: string[];
+    };
+    strategicAlignment?: {
+      recommendations: string;
+      creatorConsistencyComment: string;
+      targetAudienceClarityComment: string;
+      valuePropositionClarityComment: string;
+    };
+    contentTypeStrategy?: {
+      classification: string;
+      recommendations: string;
+      trendAdaptationCritique?: string;
+      seriesClarityAndHookComment?: string;
+    };
+    seoAndDiscoverability?: {
+      copySEOAnalysis: string;
+      recommendations: string;
+      hashtagsSEOAnalysis: string;
+      suggestedOptimizedCopy: string;
+      thematicClarityComment: string;
+      onScreenTextSEOAanalysis: string;
+      searchBarPotentialComment: string;
+      keywordIdentificationComment: string;
+      coverThumbnailPotentialComment: string;
+      suggestedOptimizedOnScreenText: string;
+      advancedDiscoveryFeaturesComment: string;
+    };
+    engagementOptimization?: {
+      recommendations: string;
+      viralityFactorsComment: string;
+      watchTimePotentialComment: string;
+      interactionHierarchyComment: string;
+    };
+    platformNativeElements?: {
+      recommendations: string;
+      identifiedElements: string;
+      integrationEffectivenessComment: string;
+    };
+    videoStructureAndPacing?: {
+      hook?: {
+        strengths: string;
+        weaknesses: string;
+        recommendations: string;
+        spokenHookAnalysis: string;
+        visualHookAnalysis: string;
+        auditoryHookAnalysis: string;
+        authenticityFeelComment: string;
+        attentionGrabbingComment: string;
+        patternDisruptionComment: string;
+        overallEffectivenessScore: number;
+        clarityAndSimplicityComment: string;
+        viewerBenefitCommunicationComment: string;
+      };
+      ctaAndEnding?: {
+        comment: string;
+        recommendations: string;
+      };
+      valueDelivery?: {
+        comment: string;
+        mainFunction: string;
+        qualityScore: number;
+        recommendations: string;
+      };
+      buildUpAndPacingComment?: string;
+      buildUpAndPacingRecommendations?: string;
+    };
+  };
+  
+  // Computed properties for compatibility with existing components
   overallEvaluation: {
     score: number;
     suggestions: string[];
   };
-  // Additional properties from existing definition
   structure?: {
     hook?: {
       general: string;
@@ -103,13 +178,13 @@ export interface AIFeedbackResponse {
       feel: string;
       invitation: string;
       patternBreak: string;
-    },
+    };
     buildUp?: string;
     value?: {
       comment: string;
       score: number;
       function: string;
-    },
+    };
     cta?: string;
   };
   seo: {

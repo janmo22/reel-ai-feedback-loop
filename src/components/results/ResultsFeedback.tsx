@@ -8,149 +8,197 @@ interface ResultsFeedbackProps {
 }
 
 const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
-  // Create a default structure for missing properties with null checks
-  const feedback = {
-    ...feedbackItem,
-    structure: feedbackItem.structure || {
-      hook: {
-        general: "No disponible",
-        spoken: "No disponible",
-        visual: "No disponible",
-        strengths: "No disponible",
-        weaknesses: "No disponible",
-        score: 0,
-        auditory: "No disponible",
-        clarity: "No disponible",
-        feel: "No disponible",
-        invitation: "No disponible",
-        patternBreak: "No disponible"
-      },
-      buildUp: "No disponible",
-      value: {
-        comment: "No disponible",
-        score: 0,
-        function: "No disponible"
-      },
-      cta: "No disponible"
+  // Access the new data structure if available
+  const fd = feedbackItem.feedback_data;
+  
+  // Prepare categories for feedback cards using the new data structure
+  
+  // Hook analysis
+  const hookCategories = fd?.videoStructureAndPacing?.hook ? [
+    {
+      name: "General",
+      score: fd.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
+      feedback: fd.videoStructureAndPacing.hook.attentionGrabbingComment || ""
     },
-    seo: feedbackItem.seo || {
-      keywordAnalysis: "No disponible",
-      clarity: "No disponible",
-      suggestedText: "No disponible",
-      suggestedCopy: "No disponible"
+    {
+      name: "Verbal",
+      score: fd.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
+      feedback: fd.videoStructureAndPacing.hook.spokenHookAnalysis || ""
     },
-    nativeCodes: feedbackItem.nativeCodes || "No disponible",
-    engagementPotential: feedbackItem.engagementPotential || {
-      interaction: "No disponible",
-      watchTime: "No disponible"
+    {
+      name: "Visual",
+      score: fd.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
+      feedback: fd.videoStructureAndPacing.hook.visualHookAnalysis || ""
     },
-    overallEvaluation: feedbackItem.overallEvaluation || {
-      score: 0,
-      suggestions: ["No hay sugerencias disponibles"]
+    {
+      name: "Fortalezas y Debilidades",
+      score: fd.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
+      feedback: `Fortalezas: ${fd.videoStructureAndPacing.hook.strengths || ""}. Debilidades: ${fd.videoStructureAndPacing.hook.weaknesses || ""}.`,
+      suggestions: [fd.videoStructureAndPacing.hook.recommendations || ""]
     }
-  };
+  ] : null;
+  
+  // Structure and value categories
+  const structureCategories = [
+    ...(fd?.videoStructureAndPacing?.valueDelivery ? [{
+      name: "Valor principal",
+      score: fd.videoStructureAndPacing.valueDelivery.qualityScore || 0,
+      feedback: fd.videoStructureAndPacing.valueDelivery.comment || "",
+      suggestions: [fd.videoStructureAndPacing.valueDelivery.recommendations || ""]
+    }] : []),
+    ...(fd?.videoStructureAndPacing?.buildUpAndPacingComment ? [{
+      name: "Desarrollo",
+      score: 7,
+      feedback: fd.videoStructureAndPacing.buildUpAndPacingComment || "",
+      suggestions: [fd.videoStructureAndPacing.buildUpAndPacingRecommendations || ""]
+    }] : []),
+    ...(fd?.videoStructureAndPacing?.ctaAndEnding ? [{
+      name: "Call to Action (CTA)",
+      score: 7,
+      feedback: fd.videoStructureAndPacing.ctaAndEnding.comment || "",
+      suggestions: [fd.videoStructureAndPacing.ctaAndEnding.recommendations || ""]
+    }] : [])
+  ];
+  
+  // SEO categories
+  const seoCategories = fd?.seoAndDiscoverability ? [
+    {
+      name: "Análisis de palabras clave",
+      score: 7,
+      feedback: fd.seoAndDiscoverability.keywordIdentificationComment || "",
+      suggestions: [fd.seoAndDiscoverability.recommendations || ""]
+    },
+    {
+      name: "Claridad temática",
+      score: 8,
+      feedback: fd.seoAndDiscoverability.thematicClarityComment || ""
+    },
+    {
+      name: "Hashtags y SEO",
+      score: 7,
+      feedback: fd.seoAndDiscoverability.hashtagsSEOAnalysis || ""
+    },
+    {
+      name: "Copy sugerido",
+      score: 9,
+      feedback: fd.seoAndDiscoverability.suggestedOptimizedCopy || ""
+    }
+  ] : null;
+  
+  // Native elements categories
+  const nativeCategories = fd?.platformNativeElements ? [
+    {
+      name: "Elementos identificados",
+      score: 7,
+      feedback: fd.platformNativeElements.identifiedElements || ""
+    },
+    {
+      name: "Efectividad de integración",
+      score: 7,
+      feedback: fd.platformNativeElements.integrationEffectivenessComment || "",
+      suggestions: [fd.platformNativeElements.recommendations || ""]
+    }
+  ] : null;
+  
+  // Engagement categories
+  const engagementCategories = fd?.engagementOptimization ? [
+    {
+      name: "Interacción",
+      score: 7,
+      feedback: fd.engagementOptimization.interactionHierarchyComment || "",
+      suggestions: [fd.engagementOptimization.recommendations || ""]
+    },
+    {
+      name: "Tiempo de visualización",
+      score: 7,
+      feedback: fd.engagementOptimization.watchTimePotentialComment || ""
+    },
+    {
+      name: "Factores de viralidad",
+      score: 7,
+      feedback: fd.engagementOptimization.viralityFactorsComment || ""
+    }
+  ] : null;
+  
+  // Strategic alignment categories
+  const strategicCategories = fd?.strategicAlignment ? [
+    {
+      name: "Consistencia del creador",
+      score: 8,
+      feedback: fd.strategicAlignment.creatorConsistencyComment || ""
+    },
+    {
+      name: "Claridad de audiencia objetivo",
+      score: 8,
+      feedback: fd.strategicAlignment.targetAudienceClarityComment || ""
+    },
+    {
+      name: "Propuesta de valor",
+      score: 8,
+      feedback: fd.strategicAlignment.valuePropositionClarityComment || "",
+      suggestions: [fd.strategicAlignment.recommendations || ""]
+    }
+  ] : null;
   
   return (
     <div className="space-y-6">
-      <AIFeedbackCard feedback={feedback} />
+      <AIFeedbackCard feedback={feedbackItem} />
       
-      {/* Only show additional feedback cards if structure is available */}
-      {feedback.structure && (
-        <div className="mt-6 space-y-6">
-          {feedback.structure.hook && (
-            <FeedbackCard
-              title="Evaluación del Hook"
-              overallScore={feedback.structure.hook.score}
-              categories={[
-                {
-                  name: "General",
-                  score: feedback.structure.hook.score,
-                  feedback: feedback.structure.hook.general
-                },
-                {
-                  name: "Verbal",
-                  score: feedback.structure.hook.score,
-                  feedback: feedback.structure.hook.spoken
-                },
-                {
-                  name: "Visual",
-                  score: feedback.structure.hook.score,
-                  feedback: feedback.structure.hook.visual
-                },
-                {
-                  name: "Fortalezas y Debilidades",
-                  score: feedback.structure.hook.score,
-                  feedback: `Fortalezas: ${feedback.structure.hook.strengths}. Debilidades: ${feedback.structure.hook.weaknesses}.`
-                }
-              ]}
-            />
-          )}
-          
-          {(feedback.structure.value || feedback.structure.buildUp || feedback.structure.cta) && (
-            <FeedbackCard
-              title="Evaluación de Valor y Estructura"
-              overallScore={feedback.structure.value?.score || 0}
-              categories={[
-                ...(feedback.structure.value ? [{
-                  name: "Valor principal",
-                  score: feedback.structure.value.score,
-                  feedback: feedback.structure.value.comment,
-                  suggestions: [`Función: ${feedback.structure.value.function}`]
-                }] : []),
-                ...(feedback.structure.buildUp ? [{
-                  name: "Desarrollo",
-                  score: 7,
-                  feedback: feedback.structure.buildUp
-                }] : []),
-                ...(feedback.structure.cta ? [{
-                  name: "Call to Action (CTA)",
-                  score: 6,
-                  feedback: feedback.structure.cta
-                }] : [])
-              ]}
-            />
-          )}
-          
+      <div className="mt-6 space-y-6">
+        {/* Hook Analysis */}
+        {hookCategories && hookCategories.length > 0 && (
           <FeedbackCard
-            title="SEO y Códigos Nativos"
-            overallScore={7}
-            categories={[
-              {
-                name: "Análisis de palabras clave",
-                score: 7,
-                feedback: feedback.seo.keywordAnalysis
-              },
-              {
-                name: "Claridad temática",
-                score: 8,
-                feedback: feedback.seo.clarity
-              },
-              {
-                name: "Códigos nativos",
-                score: 7,
-                feedback: feedback.nativeCodes
-              }
-            ]}
+            title="Evaluación del Hook"
+            overallScore={fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore || 0}
+            categories={hookCategories}
           />
-          
+        )}
+        
+        {/* Structure and Value Analysis */}
+        {structureCategories.length > 0 && (
+          <FeedbackCard
+            title="Evaluación de Valor y Estructura"
+            overallScore={fd?.videoStructureAndPacing?.valueDelivery?.qualityScore || 0}
+            categories={structureCategories}
+          />
+        )}
+        
+        {/* Strategic Alignment */}
+        {strategicCategories && strategicCategories.length > 0 && (
+          <FeedbackCard
+            title="Alineación Estratégica"
+            overallScore={8}
+            categories={strategicCategories}
+          />
+        )}
+        
+        {/* SEO Analysis */}
+        {seoCategories && seoCategories.length > 0 && (
+          <FeedbackCard
+            title="SEO y Descubribilidad"
+            overallScore={7}
+            categories={seoCategories}
+          />
+        )}
+        
+        {/* Native Elements */}
+        {nativeCategories && nativeCategories.length > 0 && (
+          <FeedbackCard
+            title="Elementos Nativos de la Plataforma"
+            overallScore={7}
+            categories={nativeCategories}
+          />
+        )}
+        
+        {/* Engagement Analysis */}
+        {engagementCategories && engagementCategories.length > 0 && (
           <FeedbackCard
             title="Potencial de Engagement"
             overallScore={7}
-            categories={[
-              {
-                name: "Interacción",
-                score: 7,
-                feedback: feedback.engagementPotential.interaction
-              },
-              {
-                name: "Tiempo de visualización",
-                score: 7,
-                feedback: feedback.engagementPotential.watchTime
-              }
-            ]}
+            categories={engagementCategories}
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

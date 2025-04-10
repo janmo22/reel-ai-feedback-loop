@@ -70,107 +70,68 @@ export const useVideoResults = (videoId?: string) => {
         for (const item of feedbackData) {
           try {
             // Safely cast the feedback_data to an object
-            const feedbackJson = item.feedback_data as Record<string, any>;
-            
-            if (!feedbackJson) continue;
+            const feedbackJson = item.feedback_data as Record<string, any> || {};
+            const finalEval = feedbackJson.finalEvaluation || {};
             
             // Create an AIFeedbackResponse using the actual data from the database
             const aiResponse: AIFeedbackResponse = {
               id: item.id,
-              feedback: typeof feedbackJson.feedback === 'string' ? feedbackJson.feedback : "Análisis completo del vídeo",
-              score: item.overall_score || 0,
-              suggestions: typeof feedbackJson.suggestions === 'string' ? feedbackJson.suggestions : "",
-              tags: Array.isArray(feedbackJson.tags) ? feedbackJson.tags : ["reel", "instagram", "contenido"],
               created_at: item.created_at,
-              generalStudy: typeof feedbackJson.generalStudy === 'string' ? feedbackJson.generalStudy : "Análisis del contenido del video",
-              contentType: typeof feedbackJson.contentType === 'string' ? feedbackJson.contentType : "Reel informativo",
-              contentTitle: typeof feedbackJson.contentTitle === 'string' ? feedbackJson.contentTitle : videoData.title,
-              contentSubtitle: typeof feedbackJson.contentSubtitle === 'string' ? feedbackJson.contentSubtitle : "Análisis de contenido",
+              feedback_data: feedbackJson,
+              
+              // Set compatibility fields for existing components
+              contentType: feedbackJson.contentTypeStrategy?.classification || "Contenido educativo",
+              generalStudy: feedbackJson.executiveSummary || "Análisis del contenido del video",
+              contentTitle: videoData.title,
+              contentSubtitle: "Análisis de rendimiento",
+              
+              // Calculate overall evaluation scores and suggestions
               overallEvaluation: {
-                score: item.overall_score || 0,
-                suggestions: Array.isArray(feedbackJson.overallEvaluation?.suggestions) ? 
-                  feedbackJson.overallEvaluation.suggestions : 
-                  typeof feedbackJson.suggestions === 'string' ? 
-                    [feedbackJson.suggestions] : 
-                    ["Mejora la introducción", "Refuerza el mensaje principal", "Añade una llamada a la acción clara"]
+                score: item.overall_score || finalEval.overallScore || 0,
+                suggestions: Array.isArray(finalEval.finalRecommendations) 
+                  ? finalEval.finalRecommendations 
+                  : ["Mejora la introducción", "Refuerza el mensaje principal", "Añade una llamada a la acción clara"]
               },
-              structure: typeof feedbackJson.structure === 'object' && feedbackJson.structure ? {
-                hook: typeof feedbackJson.structure.hook === 'object' && feedbackJson.structure.hook ? {
-                  general: typeof feedbackJson.structure.hook.general === 'string' ? feedbackJson.structure.hook.general : "Información no disponible",
-                  spoken: typeof feedbackJson.structure.hook.spoken === 'string' ? feedbackJson.structure.hook.spoken : "Información no disponible",
-                  visual: typeof feedbackJson.structure.hook.visual === 'string' ? feedbackJson.structure.hook.visual : "Información no disponible",
-                  strengths: typeof feedbackJson.structure.hook.strengths === 'string' ? feedbackJson.structure.hook.strengths : "Información no disponible",
-                  weaknesses: typeof feedbackJson.structure.hook.weaknesses === 'string' ? feedbackJson.structure.hook.weaknesses : "Información no disponible",
-                  score: typeof feedbackJson.structure.hook.score === 'number' ? feedbackJson.structure.hook.score : 0,
-                  auditory: typeof feedbackJson.structure.hook.auditory === 'string' ? feedbackJson.structure.hook.auditory : "Información no disponible",
-                  clarity: typeof feedbackJson.structure.hook.clarity === 'string' ? feedbackJson.structure.hook.clarity : "Información no disponible",
-                  feel: typeof feedbackJson.structure.hook.feel === 'string' ? feedbackJson.structure.hook.feel : "Información no disponible",
-                  invitation: typeof feedbackJson.structure.hook.invitation === 'string' ? feedbackJson.structure.hook.invitation : "Información no disponible",
-                  patternBreak: typeof feedbackJson.structure.hook.patternBreak === 'string' ? feedbackJson.structure.hook.patternBreak : "Información no disponible"
-                } : {
-                  general: "Información no disponible",
-                  spoken: "Información no disponible",
-                  visual: "Información no disponible",
-                  strengths: "Información no disponible",
-                  weaknesses: "Información no disponible",
-                  score: 0,
-                  auditory: "Información no disponible",
-                  clarity: "Información no disponible",
-                  feel: "Información no disponible",
-                  invitation: "Información no disponible",
-                  patternBreak: "Información no disponible"
-                },
-                buildUp: typeof feedbackJson.structure.buildUp === 'string' ? feedbackJson.structure.buildUp : "Información no disponible",
-                value: typeof feedbackJson.structure.value === 'object' && feedbackJson.structure.value ? {
-                  comment: typeof feedbackJson.structure.value.comment === 'string' ? feedbackJson.structure.value.comment : "Información no disponible",
-                  score: typeof feedbackJson.structure.value.score === 'number' ? feedbackJson.structure.value.score : 0,
-                  function: typeof feedbackJson.structure.value.function === 'string' ? feedbackJson.structure.value.function : "Información no disponible"
-                } : {
-                  comment: "Información no disponible",
-                  score: 0,
-                  function: "Información no disponible"
-                },
-                cta: typeof feedbackJson.structure.cta === 'string' ? feedbackJson.structure.cta : "Información no disponible"
-              } : {
-                hook: {
-                  general: "Información no disponible",
-                  spoken: "Información no disponible", 
-                  visual: "Información no disponible",
-                  strengths: "Información no disponible",
-                  weaknesses: "Información no disponible",
-                  score: 0,
-                  auditory: "Información no disponible",
-                  clarity: "Información no disponible",
-                  feel: "Información no disponible",
-                  invitation: "Información no disponible",
-                  patternBreak: "Información no disponible"
-                },
-                buildUp: "Información no disponible",
-                value: {
-                  comment: "Información no disponible",
-                  score: 0,
-                  function: "Información no disponible"
-                },
-                cta: "Información no disponible"
+              
+              // Map structure data
+              structure: {
+                hook: feedbackJson.videoStructureAndPacing?.hook ? {
+                  general: feedbackJson.videoStructureAndPacing.hook.attentionGrabbingComment || "",
+                  spoken: feedbackJson.videoStructureAndPacing.hook.spokenHookAnalysis || "",
+                  visual: feedbackJson.videoStructureAndPacing.hook.visualHookAnalysis || "",
+                  strengths: feedbackJson.videoStructureAndPacing.hook.strengths || "",
+                  weaknesses: feedbackJson.videoStructureAndPacing.hook.weaknesses || "",
+                  score: feedbackJson.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
+                  auditory: feedbackJson.videoStructureAndPacing.hook.auditoryHookAnalysis || "",
+                  clarity: feedbackJson.videoStructureAndPacing.hook.clarityAndSimplicityComment || "",
+                  feel: feedbackJson.videoStructureAndPacing.hook.authenticityFeelComment || "",
+                  invitation: feedbackJson.videoStructureAndPacing.hook.viewerBenefitCommunicationComment || "",
+                  patternBreak: feedbackJson.videoStructureAndPacing.hook.patternDisruptionComment || ""
+                } : undefined,
+                buildUp: feedbackJson.videoStructureAndPacing?.buildUpAndPacingComment || "",
+                value: feedbackJson.videoStructureAndPacing?.valueDelivery ? {
+                  comment: feedbackJson.videoStructureAndPacing.valueDelivery.comment || "",
+                  score: feedbackJson.videoStructureAndPacing.valueDelivery.qualityScore || 0,
+                  function: feedbackJson.videoStructureAndPacing.valueDelivery.mainFunction || ""
+                } : undefined,
+                cta: feedbackJson.videoStructureAndPacing?.ctaAndEnding?.comment || ""
               },
-              seo: typeof feedbackJson.seo === 'object' && feedbackJson.seo ? {
-                keywordAnalysis: typeof feedbackJson.seo.keywordAnalysis === 'string' ? feedbackJson.seo.keywordAnalysis : "Información no disponible",
-                clarity: typeof feedbackJson.seo.clarity === 'string' ? feedbackJson.seo.clarity : "Información no disponible",
-                suggestedText: typeof feedbackJson.seo.suggestedText === 'string' ? feedbackJson.seo.suggestedText : "Información no disponible",
-                suggestedCopy: typeof feedbackJson.seo.suggestedCopy === 'string' ? feedbackJson.seo.suggestedCopy : "Información no disponible"
-              } : {
-                keywordAnalysis: "Información no disponible",
-                clarity: "Información no disponible",
-                suggestedText: "Información no disponible",
-                suggestedCopy: "Información no disponible"
+              
+              // Map SEO data
+              seo: {
+                keywordAnalysis: feedbackJson.seoAndDiscoverability?.keywordIdentificationComment || "",
+                clarity: feedbackJson.seoAndDiscoverability?.thematicClarityComment || "",
+                suggestedText: feedbackJson.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "",
+                suggestedCopy: feedbackJson.seoAndDiscoverability?.suggestedOptimizedCopy || ""
               },
-              nativeCodes: typeof feedbackJson.nativeCodes === 'string' ? feedbackJson.nativeCodes : "Información no disponible",
-              engagementPotential: typeof feedbackJson.engagementPotential === 'object' && feedbackJson.engagementPotential ? {
-                interaction: typeof feedbackJson.engagementPotential.interaction === 'string' ? feedbackJson.engagementPotential.interaction : "Información no disponible",
-                watchTime: typeof feedbackJson.engagementPotential.watchTime === 'string' ? feedbackJson.engagementPotential.watchTime : "Información no disponible"
-              } : {
-                interaction: "Información no disponible",
-                watchTime: "Información no disponible"
+              
+              // Map native codes data
+              nativeCodes: feedbackJson.platformNativeElements?.integrationEffectivenessComment || "",
+              
+              // Map engagement potential data
+              engagementPotential: {
+                interaction: feedbackJson.engagementOptimization?.interactionHierarchyComment || "",
+                watchTime: feedbackJson.engagementOptimization?.watchTimePotentialComment || ""
               }
             };
             
