@@ -61,16 +61,7 @@ export interface FeedbackData {
 
 // Modificamos la interfaz VideoWithFeedback para que sea compatible con Video
 export interface VideoWithFeedback extends Video {
-  feedback: FeedbackData | null;
-}
-
-// Añadimos AIFeedbackResponse para los archivos que lo importan
-export interface AIFeedbackResponse {
-  id: string;
-  video_id: string;
-  overall_score: number;
-  feedback_data: any;
-  created_at: string;
+  feedback: FeedbackData[] | null;
 }
 
 // Añadimos Feedback para HistoryPage.tsx
@@ -78,4 +69,56 @@ export interface Feedback {
   id: string;
   overall_score: number;
   created_at: string;
+}
+
+// Updated AIFeedbackResponse interface with all required properties
+export interface AIFeedbackResponse {
+  id: string;
+  video_id: string;
+  overall_score: number;
+  feedback_data: any;
+  created_at: string;
+  
+  // Add properties used in ResultsFeedback and ResultsPage components
+  contentTitle?: string;
+  contentSubtitle?: string;
+  generalStudy: string;
+  contentType: string;
+  overallEvaluation: {
+    score: number;
+    suggestions: string[];
+  };
+  structure?: {
+    hook?: {
+      general: string;
+      spoken: string;
+      visual: string;
+      strengths: string;
+      weaknesses: string;
+      score: number;
+      auditory?: string;
+      clarity?: string;
+      feel?: string;
+      invitation?: string;
+      patternBreak?: string;
+    };
+    buildUp?: string;
+    value?: {
+      comment: string;
+      score: number;
+      function: string;
+    };
+    cta?: string;
+  };
+  seo: {
+    keywordAnalysis: string;
+    clarity: string;
+    suggestedText: string;
+    suggestedCopy: string;
+  };
+  nativeCodes: string;
+  engagementPotential: {
+    interaction: string;
+    watchTime: string;
+  };
 }
