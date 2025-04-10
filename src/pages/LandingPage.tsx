@@ -184,7 +184,7 @@ const LandingPage: React.FC = () => {
                 Cómo funciona
               </a>
               <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Iniciar sesi��n
+                Iniciar sesión
               </Link>
               <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Registrarse
