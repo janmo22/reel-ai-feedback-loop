@@ -1,3 +1,4 @@
+
 // Importamos FileWithPath de react-dropzone
 export interface FileWithPath extends File {
   path?: string;
