@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import VideoUploader from "@/components/video-upload/VideoUploader";
@@ -31,7 +31,7 @@ const UploadPage = () => {
   const { toast } = useToast();
   
   // Rotamos las frases divertidas cada 5 segundos durante el procesamiento
-  useState(() => {
+  useEffect(() => {
     if (uploadStep === "processing") {
       // Seleccionar frase inicial
       setLoadingPhrase(funnyLoadingPhrases[Math.floor(Math.random() * funnyLoadingPhrases.length)]);
@@ -45,7 +45,7 @@ const UploadPage = () => {
         clearInterval(phraseInterval);
       };
     }
-  });
+  }, [uploadStep]);
   
   const handleUploadComplete = (data: any) => {
     setUploadData(data);
@@ -61,6 +61,21 @@ const UploadPage = () => {
           videoData: {
             title: data.title || "Video sin título",
             description: data.description || "",
+          }
+        }
+      });
+    }
+  };
+  
+  // Handler for the continue button in the ProcessingSteps component
+  const handleContinue = () => {
+    if (uploadData && uploadData.response && uploadData.response.videoId) {
+      navigate("/results", {
+        state: {
+          videoId: uploadData.response.videoId,
+          videoData: {
+            title: uploadData.title || "Video sin título",
+            description: uploadData.description || "",
           }
         }
       });
@@ -92,6 +107,7 @@ const UploadPage = () => {
               <ProcessingSteps 
                 currentStep={uploadStep}
                 loadingPhrase={loadingPhrase}
+                onContinue={handleContinue}
               />
             )}
           </div>
