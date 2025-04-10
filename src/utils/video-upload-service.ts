@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { VideoUploadResponse } from "@/types";
 
@@ -76,34 +75,34 @@ export async function createVideoRecord(userId: string, title: string, descripti
 /**
  * Upload the video to the webhook - with improved handling for no-cors mode
  */
-export async function uploadVideoToWebhook({
-  videoId,
-  userId,
-  videoFile,
-  title,
-  description,
-  missions,
-  mainMessage
-}: UploadVideoParams): Promise<VideoUploadResponse> {
+export const uploadVideoToWebhook = async (params: {
+  videoId: string;
+  userId: string;
+  videoFile: File;
+  title: string;
+  description: string;
+  missions: string[];
+  mainMessage: string;
+}): Promise<VideoUploadResponse> => {
   console.log("Enviando datos al webhook:", WEBHOOK_URL);
   
   // Create a FormData object and add all the data
   const formData = new FormData();
-  formData.append("videoId", videoId);
-  formData.append("userId", userId);
-  formData.append("title", title);
-  formData.append("description", description || "");
-  formData.append("missions", JSON.stringify(missions));
-  formData.append("mainMessage", mainMessage);
+  formData.append("videoId", params.videoId);
+  formData.append("userId", params.userId);
+  formData.append("title", params.title);
+  formData.append("description", params.description || "");
+  formData.append("missions", JSON.stringify(params.missions));
+  formData.append("mainMessage", params.mainMessage);
   
   // Add the video file to FormData
-  formData.append("video", videoFile);
+  formData.append("video", params.videoFile);
   
-  console.log("Enviando datos y video en binario al webhook con videoId:", videoId);
+  console.log("Enviando datos y video en binario al webhook con videoId:", params.videoId);
   
   try {
     // Update video status to processing before sending to webhook
-    await updateVideoStatus(videoId, 'processing');
+    await updateVideoStatus(params.videoId, 'processing');
     
     // Using regular fetch mode first to try to get a response
     const response = await fetch(WEBHOOK_URL, {
@@ -116,7 +115,7 @@ export async function uploadVideoToWebhook({
       
       return { 
         status: "processing", 
-        videoId,
+        videoId: params.videoId,
         message: "Video enviado para procesamiento. Revisa los resultados más tarde."
       };
     }
@@ -138,19 +137,19 @@ export async function uploadVideoToWebhook({
       
       return { 
         status: "processing", 
-        videoId,
+        videoId: params.videoId,
         message: "Video enviado para procesamiento. Revisa los resultados más tarde."
       };
     } catch (noCorsError) {
       console.error("Error en ambos métodos de envío:", noCorsError);
       
       // Update video status to error
-      await updateVideoStatus(videoId, 'error');
+      await updateVideoStatus(params.videoId, 'error');
       
       throw new Error(`Error al enviar el video: ${noCorsError.message}`);
     }
   }
-}
+};
 
 /**
  * Check if a video has feedback

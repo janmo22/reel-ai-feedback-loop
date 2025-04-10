@@ -288,7 +288,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
           description,
           missions,
           mainMessage,
-          response: { status: "success", videoId },
+          response: { success: true, videoId },
         });
       } else {
         console.error("Error en la respuesta del webhook:", response.status);

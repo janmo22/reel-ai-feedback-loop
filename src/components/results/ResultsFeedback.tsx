@@ -9,7 +9,7 @@ interface ResultsFeedbackProps {
 
 const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   // Create a default structure for missing properties
-  const feedbackWithStructure = {
+  const feedback = {
     ...feedbackItem,
     structure: feedbackItem.structure || {
       hook: {
@@ -32,6 +32,15 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
         function: "No disponible"
       },
       cta: "No disponible"
+    },
+    seo: feedbackItem.seo || {
+      keywordAnalysis: "No disponible",
+      clarity: "No disponible"
+    },
+    nativeCodes: feedbackItem.nativeCodes || "No disponible",
+    engagementPotential: feedbackItem.engagementPotential || {
+      interaction: "No disponible",
+      watchTime: "No disponible"
     }
   };
   
@@ -40,57 +49,57 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
       <AIFeedbackCard feedback={feedbackItem} />
       
       {/* Only show additional feedback cards if structure is available */}
-      {feedbackWithStructure.structure && (
+      {feedback.structure && (
         <div className="mt-6 space-y-6">
-          {feedbackWithStructure.structure.hook && (
+          {feedback.structure.hook && (
             <FeedbackCard
               title="Evaluación del Hook"
-              overallScore={feedbackWithStructure.structure.hook.score}
+              overallScore={feedback.structure.hook.score}
               categories={[
                 {
                   name: "General",
-                  score: feedbackWithStructure.structure.hook.score,
-                  feedback: feedbackWithStructure.structure.hook.general
+                  score: feedback.structure.hook.score,
+                  feedback: feedback.structure.hook.general
                 },
                 {
                   name: "Verbal",
-                  score: feedbackWithStructure.structure.hook.score,
-                  feedback: feedbackWithStructure.structure.hook.spoken
+                  score: feedback.structure.hook.score,
+                  feedback: feedback.structure.hook.spoken
                 },
                 {
                   name: "Visual",
-                  score: feedbackWithStructure.structure.hook.score,
-                  feedback: feedbackWithStructure.structure.hook.visual
+                  score: feedback.structure.hook.score,
+                  feedback: feedback.structure.hook.visual
                 },
                 {
                   name: "Fortalezas y Debilidades",
-                  score: feedbackWithStructure.structure.hook.score,
-                  feedback: `Fortalezas: ${feedbackWithStructure.structure.hook.strengths}. Debilidades: ${feedbackWithStructure.structure.hook.weaknesses}.`
+                  score: feedback.structure.hook.score,
+                  feedback: `Fortalezas: ${feedback.structure.hook.strengths}. Debilidades: ${feedback.structure.hook.weaknesses}.`
                 }
               ]}
             />
           )}
           
-          {(feedbackWithStructure.structure.value || feedbackWithStructure.structure.buildUp || feedbackWithStructure.structure.cta) && (
+          {(feedback.structure.value || feedback.structure.buildUp || feedback.structure.cta) && (
             <FeedbackCard
               title="Evaluación de Valor y Estructura"
-              overallScore={feedbackWithStructure.structure.value?.score || 0}
+              overallScore={feedback.structure.value?.score || 0}
               categories={[
-                ...(feedbackWithStructure.structure.value ? [{
+                ...(feedback.structure.value ? [{
                   name: "Valor principal",
-                  score: feedbackWithStructure.structure.value.score,
-                  feedback: feedbackWithStructure.structure.value.comment,
-                  suggestions: [`Función: ${feedbackWithStructure.structure.value.function}`]
+                  score: feedback.structure.value.score,
+                  feedback: feedback.structure.value.comment,
+                  suggestions: [`Función: ${feedback.structure.value.function}`]
                 }] : []),
-                ...(feedbackWithStructure.structure.buildUp ? [{
+                ...(feedback.structure.buildUp ? [{
                   name: "Desarrollo",
                   score: 7,
-                  feedback: feedbackWithStructure.structure.buildUp
+                  feedback: feedback.structure.buildUp
                 }] : []),
-                ...(feedbackWithStructure.structure.cta ? [{
+                ...(feedback.structure.cta ? [{
                   name: "Call to Action (CTA)",
                   score: 6,
-                  feedback: feedbackWithStructure.structure.cta
+                  feedback: feedback.structure.cta
                 }] : [])
               ]}
             />
@@ -103,17 +112,17 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
               {
                 name: "Análisis de palabras clave",
                 score: 7,
-                feedback: feedbackItem.seo.keywordAnalysis
+                feedback: feedback.seo.keywordAnalysis
               },
               {
                 name: "Claridad temática",
                 score: 8,
-                feedback: feedbackItem.seo.clarity
+                feedback: feedback.seo.clarity
               },
               {
                 name: "Códigos nativos",
                 score: 7,
-                feedback: feedbackItem.nativeCodes
+                feedback: feedback.nativeCodes
               }
             ]}
           />
@@ -125,12 +134,12 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
               {
                 name: "Interacción",
                 score: 7,
-                feedback: feedbackItem.engagementPotential.interaction
+                feedback: feedback.engagementPotential.interaction
               },
               {
                 name: "Tiempo de visualización",
                 score: 7,
-                feedback: feedbackItem.engagementPotential.watchTime
+                feedback: feedback.engagementPotential.watchTime
               }
             ]}
           />

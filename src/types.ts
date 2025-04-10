@@ -64,11 +64,13 @@ export interface SupabaseVideo {
   updated_at: string;
 }
 
-// Add the missing types that were causing errors
+// Update the VideoUploadResponse interface with the missing properties
 export interface VideoUploadResponse {
-  success: boolean;
+  success?: boolean;
   videoId?: string;
   error?: string;
+  status?: string;
+  message?: string;
 }
 
 export interface AIFeedbackResponse {
@@ -78,6 +80,38 @@ export interface AIFeedbackResponse {
   suggestions: string;
   tags: string[];
   created_at: string;
+  // Add the missing properties that are used in ResultsFeedback.tsx
+  structure?: {
+    hook?: {
+      general: string;
+      spoken: string;
+      visual: string;
+      strengths: string;
+      weaknesses: string;
+      score: number;
+      auditory: string;
+      clarity: string;
+      feel: string;
+      invitation: string;
+      patternBreak: string;
+    },
+    buildUp?: string;
+    value?: {
+      comment: string;
+      score: number;
+      function: string;
+    },
+    cta?: string;
+  };
+  seo: {
+    keywordAnalysis: string;
+    clarity: string;
+  };
+  nativeCodes: string;
+  engagementPotential: {
+    interaction: string;
+    watchTime: string;
+  };
 }
 
 // Update the VideoWithFeedback interface to match Video interface properly

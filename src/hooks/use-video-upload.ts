@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -143,7 +142,7 @@ export function useVideoUpload(onUploadComplete: (data: {
         missions,
         mainMessage,
         response: {
-          status: "processing",
+          success: true,
           videoId,
           message: "Video enviado para procesamiento"
         },
