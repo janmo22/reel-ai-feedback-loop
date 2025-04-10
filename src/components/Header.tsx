@@ -32,7 +32,7 @@ const Header = () => {
         <div className="flex items-center gap-6">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2">
             <img 
-              src="/lovable-uploads/43d0d4b9-0d80-4f4b-bd92-87de16ec68d8.png" 
+              src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" 
               alt="FLOW Logo" 
               className="h-8" 
             />

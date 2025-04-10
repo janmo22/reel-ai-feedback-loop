@@ -7,7 +7,7 @@ const Footer: React.FC = () => {
       <div className="container mx-auto max-w-6xl">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center mb-6 md:mb-0">
-            <img src="/lovable-uploads/23bce40c-310f-4879-a62c-17047b61ab18.png" alt="Flow Logo" className="h-8 mr-2" />
+            <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="Flow Logo" className="h-8 mr-2" />
             <span className="font-bold text-lg bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">Flow ReelAI</span>
           </div>
           <div className="text-sm text-muted-foreground">

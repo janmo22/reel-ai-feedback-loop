@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ const LandingPage: React.FC = () => {
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <img 
-              src="/lovable-uploads/43d0d4b9-0d80-4f4b-bd92-87de16ec68d8.png" 
+              src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" 
               alt="FLOW Logo" 
               className="h-8" 
             />
@@ -63,7 +64,7 @@ const LandingPage: React.FC = () => {
                 </div>
                 <div className="absolute -bottom-4 -right-4 md:bottom-0 md:-right-12 w-24 h-24 md:w-32 md:h-32 bg-white rounded-xl shadow-xl p-4 flex items-center justify-center">
                   <img 
-                    src="/lovable-uploads/23bce40c-310f-4879-a62c-17047b61ab18.png" 
+                    src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" 
                     alt="Flow Logo" 
                     className="w-full" 
                   />
@@ -175,7 +176,7 @@ const LandingPage: React.FC = () => {
         <div className="container mx-auto max-w-5xl">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center">
-              <img src="/lovable-uploads/23bce40c-310f-4879-a62c-17047b61ab18.png" alt="Flow Logo" className="h-8 mr-2" />
+              <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="Flow Logo" className="h-8 mr-2" />
               <span className="font-bold text-lg bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">Analiza con Flow</span>
             </div>
             
