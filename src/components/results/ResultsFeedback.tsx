@@ -35,7 +35,9 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     },
     seo: feedbackItem.seo || {
       keywordAnalysis: "No disponible",
-      clarity: "No disponible"
+      clarity: "No disponible",
+      suggestedText: "No disponible",
+      suggestedCopy: "No disponible"
     },
     nativeCodes: feedbackItem.nativeCodes || "No disponible",
     engagementPotential: feedbackItem.engagementPotential || {

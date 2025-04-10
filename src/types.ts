@@ -80,7 +80,16 @@ export interface AIFeedbackResponse {
   suggestions: string;
   tags: string[];
   created_at: string;
-  // Add the missing properties that are used in ResultsFeedback.tsx
+  // Add missing properties used in ResultsFeedback.tsx and AIFeedbackCard
+  generalStudy: string;
+  contentType: string;
+  contentTitle?: string;
+  contentSubtitle?: string;
+  overallEvaluation: {
+    score: number;
+    suggestions: string[];
+  };
+  // Additional properties from existing definition
   structure?: {
     hook?: {
       general: string;
@@ -106,6 +115,8 @@ export interface AIFeedbackResponse {
   seo: {
     keywordAnalysis: string;
     clarity: string;
+    suggestedText?: string;
+    suggestedCopy?: string;
   };
   nativeCodes: string;
   engagementPotential: {

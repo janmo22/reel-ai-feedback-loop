@@ -2,16 +2,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThumbsUp } from "lucide-react";
+import { AIFeedbackResponse } from "@/types";
 
 interface AIFeedbackProps {
-  feedback: {
-    generalStudy: string;
-    contentType: string;
-    overallEvaluation: {
-      score: number;
-      suggestions: string[];
-    };
-  };
+  feedback: AIFeedbackResponse;
 }
 
 const AIFeedbackCard = ({ feedback }: AIFeedbackProps) => {
