@@ -23,7 +23,7 @@ export const useVideoResults = (videoId?: string) => {
     setError(null);
     
     try {
-      // Fixed: Using supabase directly instead of useSupabaseClient hook
+      // Get the video data
       const { data: videoData, error: videoError } = await supabase
         .from('videos')
         .select('*')
@@ -33,26 +33,28 @@ export const useVideoResults = (videoId?: string) => {
       if (videoError) throw new Error(videoError.message);
       if (!videoData) throw new Error('Video not found');
       
+      // Get feedback data from the correct table
       const { data: feedbackData, error: feedbackError } = await supabase
-        .from('video_feedback')
+        .from('feedback')  // Fixed: Using "feedback" table instead of "video_feedback"
         .select('*')
         .eq('video_id', queryVideoId)
         .order('created_at', { ascending: false });
       
       if (feedbackError) throw new Error(feedbackError.message);
       
+      // Create the final video object with proper typings
       const finalVideo: Video = {
         id: videoData.id,
         title: videoData.title,
-        description: videoData.description,
+        description: videoData.description || '',
         status: videoData.status,
         created_at: videoData.created_at,
         video_url: videoData.video_url,
         user_id: videoData.user_id,
         thumbnail_url: videoData.thumbnail_url || '',
-        is_favorite: videoData.is_favorite || false,
-        updated_at: videoData.updated_at,
-        feedback: feedbackData || []
+        is_favorite: videoData.is_favorite || false,  // Provide default value if not present
+        updated_at: videoData.updated_at || videoData.created_at,
+        feedback: [] // Will be populated if there's feedback data
       };
       
       setVideo(finalVideo);
@@ -60,6 +62,7 @@ export const useVideoResults = (videoId?: string) => {
       // Mock feedback data for now - this would typically come from another API call
       // or be part of the feedback data from Supabase
       if (feedbackData && feedbackData.length > 0) {
+        // Create a proper AIFeedbackResponse object with the data we have
         const mockFeedbackResponse: AIFeedbackResponse = {
           id: feedbackData[0].id,
           feedback: "Análisis completo del vídeo",
@@ -130,13 +133,18 @@ export const useVideoResults = (videoId?: string) => {
     try {
       const newFavoriteStatus = !video.is_favorite;
       
+      // Update is_favorite in Supabase
       const { error } = await supabase
         .from('videos')
-        .update({ is_favorite: newFavoriteStatus })
+        .update({ 
+          is_favorite: newFavoriteStatus,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', video.id);
         
       if (error) throw error;
       
+      // Update local state
       setVideo({
         ...video,
         is_favorite: newFavoriteStatus
