@@ -36,6 +36,9 @@ const Header = () => {
               alt="FLOW Logo" 
               className="h-8" 
             />
+            <span className="font-medium text-lg bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">
+              Analiza con Flow
+            </span>
           </Link>
           
           <nav className="hidden md:flex gap-6">

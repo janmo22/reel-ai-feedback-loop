@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,7 +16,7 @@ const LandingPage: React.FC = () => {
               className="h-8" 
             />
             <span className="font-bold text-xl bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">
-              Flow ReelAI
+              Analiza con Flow
             </span>
           </div>
           <div className="flex gap-4">
@@ -177,7 +176,7 @@ const LandingPage: React.FC = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center">
               <img src="/lovable-uploads/23bce40c-310f-4879-a62c-17047b61ab18.png" alt="Flow Logo" className="h-8 mr-2" />
-              <span className="font-bold text-lg bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">Flow ReelAI</span>
+              <span className="font-bold text-lg bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">Analiza con Flow</span>
             </div>
             
             <div className="flex gap-8">
