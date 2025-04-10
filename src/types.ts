@@ -33,6 +33,8 @@ export interface VideoUploadResponse {
 export interface AIFeedbackResponse {
   videoId?: string;
   userId?: string;
+  contentTitle?: string;
+  contentSubtitle?: string;
   generalStudy: string;
   contentType: string;
   engagementPotential: {

@@ -10,6 +10,7 @@ import LoadingResults from "@/components/results/LoadingResults";
 import NoResults from "@/components/results/NoResults";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Footer from "@/components/layout/Footer";
 
 const ResultsPage = () => {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ const ResultsPage = () => {
         <main className="flex-1 py-8 px-4 flex items-center justify-center">
           <LoadingResults />
         </main>
+        <Footer />
       </div>
     );
   }
@@ -51,12 +53,15 @@ const ResultsPage = () => {
             <NoResults />
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
   
   // Get the first feedback item
   const feedbackItem = feedback![0];
+  const contentTitle = feedbackItem.contentTitle || videoData?.title || "Análisis de Reel";
+  const contentSubtitle = feedbackItem.contentSubtitle || "Evaluación de contenido";
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -77,10 +82,10 @@ const ResultsPage = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
               <div>
                 <h1 className="text-4xl font-bold mb-2">
-                  {feedbackItem.contentTitle || "5 tips para hacer mejores reels"}
+                  {contentTitle}
                 </h1>
                 <p className="text-lg text-muted-foreground">
-                  {feedbackItem.contentSubtitle || "Consejos para aumentar engagement"}
+                  {contentSubtitle}
                 </p>
               </div>
               
@@ -299,6 +304,8 @@ const ResultsPage = () => {
           </div>
         </div>
       </main>
+      
+      <Footer />
     </div>
   );
 };
