@@ -11,7 +11,7 @@ const Footer: React.FC = () => {
             <span className="font-bold text-lg bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">Flow ReelAI</span>
           </div>
           <div className="text-sm text-muted-foreground">
-            &copy; {new Date().getFullYear()} Flow · Creado por <a href="https://instagram.com/janmoliner.ai" target="_blank" rel="noopener noreferrer" className="text-flow-blue hover:text-flow-accent transition-colors">@janmoliner.ia</a>
+            &copy; {new Date().getFullYear()} Flow · Creado por <a href="https://instagram.com/janmoliner.ia" target="_blank" rel="noopener noreferrer" className="text-flow-blue hover:text-flow-accent transition-colors">@janmoliner.ia</a>
           </div>
         </div>
       </div>
