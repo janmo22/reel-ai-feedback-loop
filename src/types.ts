@@ -1,4 +1,3 @@
-
 // Importamos FileWithPath de react-dropzone
 export interface FileWithPath extends File {
   path?: string;
@@ -10,7 +9,6 @@ export interface VideoUploadResponse {
   message?: string;
 }
 
-// Added is_favorite to the Video interface
 export interface Video {
   id: string;
   title: string;
@@ -64,14 +62,12 @@ export interface VideoWithFeedback extends Video {
   feedback: FeedbackData[] | null;
 }
 
-// Añadimos Feedback para HistoryPage.tsx
 export interface Feedback {
   id: string;
   overall_score: number;
   created_at: string;
 }
 
-// Updated AIFeedbackResponse interface with all required properties
 export interface AIFeedbackResponse {
   id: string;
   video_id: string;

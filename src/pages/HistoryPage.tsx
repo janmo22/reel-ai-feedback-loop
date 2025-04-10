@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -104,8 +105,7 @@ const HistoryPage = () => {
         created_at: item.created_at,
         title: item.title,
         description: item.description,
-        status: item.status as 'processing' | 'completed' | 'failed',
-        url: item.video_url || null,
+        status: item.status,
         video_url: item.video_url,
         user_id: item.user_id,
         thumbnail_url: item.thumbnail_url,
