@@ -82,7 +82,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button type="submit" disabled={!title || isUploading || missions.length === 0 || !mainMessage} className="w-full sm:w-auto bg-flow-electric hover:bg-flow-electric/90 font-medium py-6 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:bg-gray-300 text-flow-dark">
+              <Button type="submit" disabled={!title || isUploading || missions.length === 0 || !mainMessage} className="w-full sm:w-auto bg-flow-electric hover:bg-flow-electric/90 font-medium py-6 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-flow-dark bg-zinc-400 hover:bg-zinc-300">
                 {isUploading ? <>
                     <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
                     Procesando...
