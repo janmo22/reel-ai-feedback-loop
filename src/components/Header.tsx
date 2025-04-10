@@ -30,7 +30,7 @@ const Header = () => {
     <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-40">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2">
             <img 
               src="/lovable-uploads/43d0d4b9-0d80-4f4b-bd92-87de16ec68d8.png" 
               alt="FLOW Logo" 
@@ -40,9 +40,9 @@ const Header = () => {
           
           <nav className="hidden md:flex gap-6">
             <Link
-              to="/"
+              to="/dashboard"
               className={`text-sm font-medium transition-colors flex items-center gap-1 ${
-                isActiveRoute("/")
+                isActiveRoute("/dashboard")
                   ? "text-flow-blue"
                   : "text-muted-foreground hover:text-foreground"
               }`}
