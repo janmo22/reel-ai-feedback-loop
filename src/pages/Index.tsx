@@ -16,7 +16,7 @@ const Index: React.FC = () => {
   const userName = user?.user_metadata?.first_name || user?.email || '';
   
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-gray-50">
       <Header />
       
       <main className="flex-1">
