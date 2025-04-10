@@ -6,7 +6,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Trash2, FileVideo, Eye, Clock, Star, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import EmptyState from '@/components/EmptyState';
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -22,6 +22,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 // Interface updated to work with the Video type
 interface VideoWithFeedback extends Omit<Video, 'feedback'> {
@@ -34,17 +37,36 @@ const HistoryPage: React.FC = () => {
   const [updatingFavorite, setUpdatingFavorite] = useState(false);
   const [activeTab, setActiveTab] = useState<"all" | "favorites">("all");
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+
+  // Get error message from location state if present
+  useEffect(() => {
+    if (location.state?.error) {
+      setError(location.state.error);
+      // Clear the error from location state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   useEffect(() => {
-    fetchVideos();
-  }, []);
+    if (user) {
+      fetchVideos();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const fetchVideos = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('videos')
         .select('*, feedback(*)')
+        .eq('user_id', user.id) // Only fetch videos belonging to current user
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -78,11 +100,14 @@ const HistoryPage: React.FC = () => {
   };
 
   const deleteVideo = async (videoId: string) => {
+    if (!user) return;
+    
     try {
       const { error } = await supabase
         .from('videos')
         .delete()
-        .eq('id', videoId);
+        .eq('id', videoId)
+        .eq('user_id', user.id); // Ensure only deleting user's own videos
 
       if (error) {
         throw error;
@@ -104,6 +129,8 @@ const HistoryPage: React.FC = () => {
   };
 
   const toggleFavorite = async (videoId: string, currentStatus: boolean) => {
+    if (!user) return;
+    
     try {
       setUpdatingFavorite(true);
       
@@ -114,7 +141,8 @@ const HistoryPage: React.FC = () => {
           is_favorite: !currentStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', videoId);
+        .eq('id', videoId)
+        .eq('user_id', user.id); // Ensure only updating user's own videos
       
       if (error) throw error;
       
@@ -151,10 +179,28 @@ const HistoryPage: React.FC = () => {
     return format(parseISO(dateString), "d 'de' MMMM, yyyy", { locale: es });
   };
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user && !loading) {
+      navigate('/auth', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
   // Filter videos based on active tab
   const filteredVideos = activeTab === "favorites" 
     ? videos.filter(video => video.is_favorite)
     : videos;
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <div className="container mx-auto py-8 flex items-center justify-center">
+          <p>Por favor, inicia sesión para ver tu historial.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -164,6 +210,16 @@ const HistoryPage: React.FC = () => {
           <h1 className="text-2xl font-bold">Historial de Videos</h1>
           <Button onClick={handleNavigateToUpload}>Subir nuevo video</Button>
         </div>
+        
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
         
         <Tabs defaultValue="all" className="mb-6" onValueChange={(value) => setActiveTab(value as "all" | "favorites")}>
           <TabsList>

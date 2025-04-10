@@ -2,19 +2,29 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, AIFeedbackResponse } from '@/types';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useVideoResults = (videoId?: string) => {
   const [searchParams] = useSearchParams();
   const queryVideoId = videoId || searchParams.get('videoId');
+  const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [video, setVideo] = useState<Video | null>(null);
   const [feedback, setFeedback] = useState<AIFeedbackResponse[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [unauthorized, setUnauthorized] = useState(false);
 
   const fetchVideo = useCallback(async () => {
     if (!queryVideoId) {
+      setLoading(false);
+      return;
+    }
+    
+    if (!user) {
+      setUnauthorized(true);
       setLoading(false);
       return;
     }
@@ -23,15 +33,27 @@ export const useVideoResults = (videoId?: string) => {
     setError(null);
     
     try {
-      // Get the video data
+      // Get the video data and ensure it belongs to the current user
       const { data: videoData, error: videoError } = await supabase
         .from('videos')
         .select('*')
         .eq('id', queryVideoId)
+        .eq('user_id', user.id) // Ensure the video belongs to the current user
         .single();
       
-      if (videoError) throw new Error(videoError.message);
-      if (!videoData) throw new Error('Video not found');
+      if (videoError) {
+        // If error is 'No rows found', it means the video doesn't exist or doesn't belong to this user
+        if (videoError.code === 'PGRST116') {
+          setUnauthorized(true);
+          throw new Error('No tienes permiso para acceder a este video o no existe');
+        }
+        throw new Error(videoError.message);
+      }
+      
+      if (!videoData) {
+        setUnauthorized(true);
+        throw new Error('Video no encontrado');
+      }
       
       // Get feedback data from the feedback table
       const { data: feedbackData, error: feedbackError } = await supabase
@@ -152,10 +174,10 @@ export const useVideoResults = (videoId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [queryVideoId]);
+  }, [queryVideoId, user]);
 
   const toggleFavorite = async () => {
-    if (!video) return;
+    if (!video || !user) return;
     
     try {
       const newFavoriteStatus = !video.is_favorite;
@@ -167,7 +189,8 @@ export const useVideoResults = (videoId?: string) => {
           is_favorite: newFavoriteStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', video.id);
+        .eq('id', video.id)
+        .eq('user_id', user.id); // Ensure only updating user's own videos
         
       if (error) throw error;
       
@@ -186,6 +209,18 @@ export const useVideoResults = (videoId?: string) => {
     fetchVideo();
   }, [fetchVideo]);
 
+  // Redirect users if they're unauthorized
+  useEffect(() => {
+    if (unauthorized) {
+      navigate('/history', { 
+        replace: true,
+        state: { 
+          error: 'No tienes permiso para acceder a este video o no existe'
+        }
+      });
+    }
+  }, [unauthorized, navigate]);
+
   const videoData = video;
   const hasFeedback = feedback && feedback.length > 0;
 
@@ -196,6 +231,7 @@ export const useVideoResults = (videoId?: string) => {
     hasFeedback,
     toggleFavorite,
     loading, 
-    error 
+    error,
+    unauthorized
   };
 };

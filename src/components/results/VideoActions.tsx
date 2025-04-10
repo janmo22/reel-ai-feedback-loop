@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { BookmarkPlus, Share2, Star } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface VideoActionsProps {
   onSave?: () => void;
@@ -13,9 +14,10 @@ interface VideoActionsProps {
 const VideoActions = ({ onSave, onShare, isFavorite = false }: VideoActionsProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const handleSave = async () => {
-    if (!onSave) return;
+    if (!onSave || !user) return;
     
     try {
       setIsProcessing(true);
@@ -46,7 +48,7 @@ const VideoActions = ({ onSave, onShare, isFavorite = false }: VideoActionsProps
           isFavorite ? 'bg-blue-50 border-blue-200 text-blue-700' : ''
         }`}
         onClick={handleSave}
-        disabled={isProcessing}
+        disabled={isProcessing || !user}
       >
         {isFavorite ? (
           <Star className="mr-2 h-4 w-4 fill-blue-400 text-blue-500" />
@@ -61,6 +63,7 @@ const VideoActions = ({ onSave, onShare, isFavorite = false }: VideoActionsProps
         size="lg"
         className="w-full justify-center"
         onClick={onShare}
+        disabled={!user}
       >
         <Share2 className="mr-2 h-4 w-4" />
         Compartir

@@ -10,13 +10,23 @@ import NoResults from "@/components/results/NoResults";
 import { useToast } from "@/components/ui/use-toast";
 import Footer from "@/components/layout/Footer";
 import ResultsFeedback from "@/components/results/ResultsFeedback";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
 
 const ResultsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const isProcessing = location.state?.videoData?.isProcessing === true;
-  const { feedback, videoData, loading, hasFeedback, toggleFavorite, error } = useVideoResults();
+  const { feedback, videoData, loading, hasFeedback, toggleFavorite, error, unauthorized } = useVideoResults();
   const { toast } = useToast();
+  
+  // Ensure the user is authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth', { replace: true });
+    }
+  }, [user, navigate]);
   
   const handleShare = () => {
     toast({
@@ -24,6 +34,8 @@ const ResultsPage = () => {
       description: "Funcionalidad de compartir en desarrollo."
     });
   };
+  
+  // If the user isn't authorized to view this video, the hook will handle redirection
   
   // Show loading screen if the video is currently being processed or if we're still loading data
   if (loading || isProcessing) {
@@ -39,13 +51,13 @@ const ResultsPage = () => {
   }
   
   // Show error state if there was an error loading the data
-  if (error) {
+  if (error || unauthorized) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">
         <Header />
         <main className="flex-1 py-8 px-4">
           <div className="container mx-auto max-w-5xl">
-            <NoResults />
+            <NoResults error={error} />
           </div>
         </main>
         <Footer />
@@ -53,7 +65,7 @@ const ResultsPage = () => {
     );
   }
   
-  // Ensure feedback data is available
+  // Ensure feedback data is available and the video belongs to the current user
   if (!hasFeedback || !feedback || !videoData) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-50">
