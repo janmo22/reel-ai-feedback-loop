@@ -31,7 +31,7 @@ const DashboardActions: React.FC = () => {
         <p className="text-sm text-muted-foreground mb-6">
           Accede a todos tus análisis previos para comparar resultados y ver tu progreso.
         </p>
-        <Button asChild variant="outline" className="w-full border-flow-blue/30 text-flow-blue hover:bg-flow-blue/5">
+        <Button asChild className="w-full bg-flow-blue hover:bg-flow-blue/90 transition-all">
           <Link to="/history" className="flex items-center justify-between">
             Ver análisis previos
             <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />

@@ -18,20 +18,23 @@ const StatCard: React.FC<StatCardProps> = ({
   trendUp = true,
 }) => {
   return (
-    <Card className="border-none bg-white shadow-sm">
+    <Card className="overflow-hidden border-none bg-white shadow-sm hover:shadow-md transition-all">
       <CardContent className="pt-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="text-flow-blue">{icon}</div>
-          <span
-            className={`text-xs ${
-              trendUp ? "text-emerald-500" : "text-red-500"
-            }`}
-          >
-            {trend}
-          </span>
+        <div className="flex flex-col">
+          <div className="text-flow-blue mb-5">{icon}</div>
+          
+          <h3 className="text-xl font-semibold mb-2">{title}</h3>
+          
+          <div className="mt-1">
+            <p className="text-2xl font-medium">{value}</p>
+            
+            <p className={`text-sm mt-1 ${
+              trendUp ? "text-emerald-600" : "text-red-500"
+            }`}>
+              {trend}
+            </p>
+          </div>
         </div>
-        <h4 className="text-2xl font-medium mb-1">{value}</h4>
-        <p className="text-xs text-muted-foreground">{title}</p>
       </CardContent>
     </Card>
   );
