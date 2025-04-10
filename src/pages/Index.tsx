@@ -16,7 +16,7 @@ const Index: React.FC = () => {
   const userName = user?.user_metadata?.first_name || user?.email || '';
   
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-muted/30">
+    <div className="min-h-screen flex flex-col bg-white">
       <Header />
       
       <main className="flex-1">
@@ -24,7 +24,7 @@ const Index: React.FC = () => {
           <div className="container mx-auto py-12 px-4 max-w-6xl">
             <DashboardHeader userName={userName} />
             
-            <div className="mb-10">
+            <div className="mb-12">
               <DashboardTabs />
             </div>
             

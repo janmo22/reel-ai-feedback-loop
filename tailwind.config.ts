@@ -63,13 +63,13 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Paleta actualizada para Flow
+				// Simplified color palette with focus on electric blue
 				flow: {
-					blue: '#005DFF',     // Azul Flow principal (más oscuro y vibrante)
-					light: '#7DCFF9',    // Azul claro Flow
+					blue: '#0066FF',     // Electric blue as the main color
+					light: '#E6F0FF',    // Very light blue for backgrounds
 					dark: '#1A242C',     // Color oscuro para contraste
-					accent: '#4DBCE9',    // Color de acento
-					electric: '#005DFF'   // Azul eléctrico (antes más claro)
+					accent: '#0066FF',   // Same as blue for consistency
+					electric: '#0066FF'  // Same as blue for consistency
 				},
 				reel: {
 					purple: '#8B5CF6',
@@ -105,8 +105,8 @@ export default {
 					}
 				},
 				'pulse-border': {
-					'0%, 100%': { borderColor: 'rgba(0, 93, 255, 0.3)' },
-					'50%': { borderColor: 'rgba(0, 93, 255, 0.9)' },
+					'0%, 100%': { borderColor: 'rgba(0, 102, 255, 0.3)' },
+					'50%': { borderColor: 'rgba(0, 102, 255, 0.9)' },
 				},
 				'fade-in': {
 					'0%': { opacity: '0' },

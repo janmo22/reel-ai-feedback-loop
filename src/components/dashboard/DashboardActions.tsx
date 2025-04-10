@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 const DashboardActions: React.FC = () => {
   return (
     <div className="grid gap-8 md:grid-cols-2">
-      <Card className="overflow-hidden group border-flow-blue/20 hover:border-flow-blue/60 transition-all duration-300 shadow-sm hover:shadow-md">
-        <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/10 pb-6">
+      <Card className="overflow-hidden group border-transparent hover:border-flow-blue/20 transition-all duration-300 shadow-sm hover:shadow-md">
+        <CardHeader className="pb-6 border-b border-border/10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-flow-blue/20 rounded-full">
+            <div className="p-2.5 bg-flow-blue/10 rounded-full">
               <Upload className="h-6 w-6 text-flow-blue" />
             </div>
             <CardTitle>Nuevo análisis</CardTitle>
@@ -25,7 +25,7 @@ const DashboardActions: React.FC = () => {
             Nuestra IA analizará tu contenido para brindarte recomendaciones personalizadas
             que te ayudarán a mejorar el alcance de tus reels.
           </p>
-          <Button asChild className="w-full bg-flow-blue hover:bg-flow-blue/90 group-hover:bg-flow-electric transition-all duration-300">
+          <Button asChild className="w-full bg-flow-blue hover:bg-flow-blue/90 group-hover:shadow-md transition-all duration-300">
             <Link to="/upload" className="flex items-center justify-between">
               Subir nuevo reel
               <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
@@ -34,11 +34,11 @@ const DashboardActions: React.FC = () => {
         </CardContent>
       </Card>
       
-      <Card className="overflow-hidden group border-flow-accent/20 hover:border-flow-accent/60 transition-all duration-300 shadow-sm hover:shadow-md">
-        <CardHeader className="bg-gradient-to-r from-flow-accent/5 to-flow-blue/10 pb-6">
+      <Card className="overflow-hidden group border-transparent hover:border-flow-blue/20 transition-all duration-300 shadow-sm hover:shadow-md">
+        <CardHeader className="pb-6 border-b border-border/10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2.5 bg-flow-accent/20 rounded-full">
-              <History className="h-6 w-6 text-flow-accent" />
+            <div className="p-2.5 bg-flow-blue/10 rounded-full">
+              <History className="h-6 w-6 text-flow-blue" />
             </div>
             <CardTitle>Ver historial</CardTitle>
           </div>
@@ -51,7 +51,7 @@ const DashboardActions: React.FC = () => {
             Accede a todos tus análisis previos para comparar resultados
             y ver tu progreso a lo largo del tiempo.
           </p>
-          <Button asChild variant="outline" className="w-full border-flow-accent/30 text-flow-accent hover:bg-flow-accent/10 hover:text-flow-accent">
+          <Button asChild variant="outline" className="w-full border-flow-blue/30 text-flow-blue hover:bg-flow-blue/10 hover:text-flow-blue">
             <Link to="/history" className="flex items-center justify-between">
               Ver análisis previos
               <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />

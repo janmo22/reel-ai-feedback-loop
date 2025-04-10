@@ -15,7 +15,7 @@ const DashboardAnalytics: React.FC = () => {
       />
       
       <StatCard 
-        icon={<Sparkles className="h-5 w-5 text-flow-accent" />}
+        icon={<Sparkles className="h-5 w-5 text-flow-blue" />}
         title="Recomendaciones"
         value="24"
         trend="12 aplicadas"
@@ -23,7 +23,7 @@ const DashboardAnalytics: React.FC = () => {
       />
       
       <StatCard 
-        icon={<TrendingUp className="h-5 w-5 text-green-500" />}
+        icon={<TrendingUp className="h-5 w-5 text-flow-blue" />}
         title="Mejoras detectadas"
         value="68%"
         trend="+12% vs anterior"
