@@ -23,75 +23,85 @@ export function useVideoResults() {
       setLoading(false);
       console.log("Using feedback data from state:", state.feedback);
     } else if (state && state.videoId) {
-      // If we only have the videoId, try to get the data from the database
+      // Si solo tenemos el videoId, buscamos los datos en la base de datos
       const fetchVideoData = async () => {
         try {
-          // Get the video data
+          // Obtenemos los datos del video
           const { data: videoData, error: videoError } = await supabase
             .from('videos')
             .select('*')
             .eq('id', state.videoId)
-            .single();
+            .maybeSingle();
           
           if (videoError) {
-            console.error("Error getting video data:", videoError);
+            console.error("Error obteniendo datos del video:", videoError);
             setLoading(true);
             return;
           }
           
+          if (!videoData) {
+            console.error("No se encontraron datos para el video:", state.videoId);
+            setLoading(true);
+            return;
+          }
+          
+          console.log("Video data obtenido:", videoData);
           setVideoData(videoData);
           
-          // Check if the video is completed
-          if (videoData.status === "completed") {
-            // Look for associated feedback
+          // Comprobamos el estado del video
+          if (videoData.status === "completed" || videoData.feedback_received === true) {
+            // Buscamos feedback asociado
             const { data: feedbackData, error: feedbackError } = await supabase
               .from('feedback')
               .select('*')
               .eq('video_id', state.videoId)
-              .single();
+              .maybeSingle();
             
             if (feedbackError) {
-              console.error("Error getting feedback:", feedbackError);
-              // Don't throw error, just keep loading as true
+              console.error("Error obteniendo feedback:", feedbackError);
               setLoading(true);
             } else if (feedbackData) {
-              // Convert feedback data to the expected format with proper type casting
-              const formattedFeedback = feedbackData.feedback_data as unknown as AIFeedbackResponse[];
+              // Convertimos los datos de feedback al formato esperado
+              const formattedFeedback = 
+                Array.isArray(feedbackData.feedback_data) 
+                  ? feedbackData.feedback_data 
+                  : [feedbackData.feedback_data] as AIFeedbackResponse[];
+                  
               setFeedback(formattedFeedback);
               setLoading(false);
-              console.log("Feedback data obtained from DB:", formattedFeedback);
+              console.log("Feedback data obtenido de DB:", formattedFeedback);
               
-              // Show a toast when the feedback is ready
+              // Mostramos toast cuando el feedback está listo
               toast({
                 title: "¡Análisis completado!",
                 description: "Los resultados de tu video ya están listos para revisar.",
               });
             } else {
-              // No feedback found but don't show an error
+              // No se encontró feedback
+              console.log("No se encontró feedback para el video:", state.videoId);
               setLoading(true);
             }
           } else {
-            // The video is still processing - this is expected in some cases
+            // El video aún está procesándose
             setLoading(true);
             console.log("El video aún está en procesamiento. Estado actual:", videoData.status);
           }
         } catch (error) {
-          console.error("Error getting data:", error);
+          console.error("Error obteniendo datos:", error);
           setLoading(true);
-          // Don't show toast error for loading state
         }
       };
       
       fetchVideoData();
 
-      // Poll for updates every few seconds if the video is still processing
-      const intervalId = setInterval(fetchVideoData, 10000); // Check every 10 seconds
+      // Hacemos polling cada pocos segundos si el video aún se está procesando
+      const intervalId = setInterval(fetchVideoData, 10000); // Verificamos cada 10 segundos
       
       return () => {
-        clearInterval(intervalId); // Clean up on component unmount
+        clearInterval(intervalId); // Limpiamos al desmontar el componente
       };
     } else {
-      // If we don't have data in the state, keep loading state
+      // Si no tenemos datos en el state, mantenemos el estado de carga
       setLoading(true);
     }
   }, [location, toast]);

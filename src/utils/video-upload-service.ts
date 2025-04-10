@@ -22,7 +22,9 @@ export async function saveVideoMetadata(
   videoId: string,
   userId: string, 
   title: string, 
-  description: string
+  description: string,
+  missions: string[] = [],
+  mainMessage: string = ""
 ) {
   console.log("Guardando metadatos en Supabase...");
   
@@ -36,7 +38,9 @@ export async function saveVideoMetadata(
           title,
           description,
           video_url: "placeholder-url", // URL placeholder since we're not uploading the video to Supabase
-          status: 'processing'
+          status: 'processing',
+          missions,
+          main_message: mainMessage
         }
       ]);
     
@@ -94,6 +98,9 @@ export async function uploadVideoToWebhook({
   console.log("Enviando datos y video en binario al webhook");
   
   try {
+    // Save all metadata to Supabase including missions and main message
+    await saveVideoMetadata(videoId, userId, title, description, missions, mainMessage);
+    
     // Using no-cors mode means we won't be able to read the response,
     // but at least we can send the request
     await fetch(WEBHOOK_URL, {
@@ -122,5 +129,58 @@ export async function uploadVideoToWebhook({
       videoId,
       message: "Video enviado para procesamiento. La conexión puede haber fallado pero el análisis continuará en segundo plano."
     };
+  }
+}
+
+/**
+ * Create a feedback entry in Supabase
+ */
+export async function saveFeedbackResponse(videoId: string, feedbackData: any, overallScore: number = 0) {
+  try {
+    const { data, error } = await supabase
+      .from('feedback')
+      .insert([
+        {
+          video_id: videoId,
+          feedback_data: feedbackData,
+          overall_score: overallScore,
+          webhook_response: feedbackData,
+          processing_completed_at: new Date().toISOString()
+        }
+      ]);
+      
+    if (error) {
+      console.error("Error al guardar el feedback:", error);
+      return false;
+    }
+    
+    console.log("Feedback guardado correctamente para el video:", videoId);
+    return true;
+  } catch (error) {
+    console.error("Error al guardar el feedback:", error);
+    return false;
+  }
+}
+
+/**
+ * Check if a video has feedback
+ */
+export async function checkVideoFeedback(videoId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('feedback')
+      .select('*')
+      .eq('video_id', videoId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error("Error al verificar feedback:", error);
+      return false;
+    }
+    
+    return !!data; // Return true if feedback exists
+  } catch (error) {
+    console.error("Error al verificar feedback:", error);
+    return false;
   }
 }
