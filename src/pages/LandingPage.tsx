@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -104,8 +103,8 @@ const LandingPage: React.FC = () => {
               </div>
               
               <div className="bg-gradient-to-br from-background to-muted/30 p-6 rounded-xl border shadow-sm">
-                <div className="h-12 w-12 rounded-full bg-flow-electric/10 flex items-center justify-center mb-4">
-                  <CheckCircle className="h-6 w-6 text-flow-electric" />
+                <div className="h-12 w-12 rounded-full bg-flow-blue/10 flex items-center justify-center mb-4">
+                  <CheckCircle className="h-6 w-6 text-flow-blue" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Mejora continua</h3>
                 <p className="text-muted-foreground">
@@ -185,7 +184,7 @@ const LandingPage: React.FC = () => {
                 Cómo funciona
               </a>
               <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Iniciar sesión
+                Iniciar sesi��n
               </Link>
               <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                 Registrarse
