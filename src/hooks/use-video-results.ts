@@ -12,6 +12,48 @@ export function useVideoResults() {
   const [videoData, setVideoData] = useState<Video | null>(null);
   const { toast } = useToast();
   
+  const toggleFavorite = async () => {
+    if (!videoData?.id) return;
+    
+    try {
+      const newFavoriteStatus = !videoData.is_favorite;
+      
+      // Actualizar en la base de datos
+      const { error } = await supabase
+        .from('videos')
+        .update({ 
+          is_favorite: newFavoriteStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', videoData.id);
+      
+      if (error) throw error;
+      
+      // Actualizar el estado local
+      setVideoData(prev => {
+        if (!prev) return null;
+        return { ...prev, is_favorite: newFavoriteStatus };
+      });
+      
+      toast({
+        title: newFavoriteStatus 
+          ? "Análisis guardado en favoritos" 
+          : "Análisis eliminado de favoritos",
+        description: newFavoriteStatus 
+          ? "Puedes encontrarlo en tu dashboard" 
+          : "Ya no aparecerá en tu lista de favoritos",
+      });
+      
+    } catch (error) {
+      console.error("Error al cambiar estado de favorito:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el análisis en favoritos",
+        variant: "destructive"
+      });
+    }
+  };
+  
   useEffect(() => {
     // Check if we have data from the state
     const state = location.state;
@@ -176,6 +218,7 @@ export function useVideoResults() {
     feedback,
     videoData,
     loading,
-    hasFeedback: feedback && feedback.length > 0
+    hasFeedback: feedback && feedback.length > 0,
+    toggleFavorite
   };
 }

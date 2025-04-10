@@ -13,6 +13,7 @@ export interface Video {
   feedback_received?: boolean;
   missions?: string[];
   main_message?: string;
+  is_favorite?: boolean;
 }
 
 export interface Feedback {
