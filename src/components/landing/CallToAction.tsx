@@ -12,7 +12,7 @@ const CallToAction: React.FC = () => {
           Únete hoy y comienza a mejorar tus reels con el poder de la inteligencia artificial.
         </p>
         <Button asChild size="lg" className="bg-flow-blue hover:bg-flow-electric transition-all duration-300 shadow-md hover:shadow-lg">
-          <Link to="/auth">Crear cuenta gratis</Link>
+          <Link to="/auth">Empieza ya</Link>
         </Button>
       </div>
     </section>

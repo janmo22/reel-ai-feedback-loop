@@ -7,7 +7,7 @@ import { ArrowRight, CheckCircle, Star, BarChart2 } from "lucide-react";
 const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Hero Section */}
+      {/* Header */}
       <header className="bg-gradient-to-r from-flow-blue/10 to-flow-accent/5 border-b">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -50,7 +50,7 @@ const LandingPage: React.FC = () => {
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Button asChild size="lg" className="bg-flow-blue hover:bg-flow-electric text-white transition-all duration-300 shadow-lg hover:shadow-flow-blue/20">
-                    <Link to="/auth">Comenzar ahora</Link>
+                    <Link to="/auth">Empieza ya</Link>
                   </Button>
                   <Button asChild variant="outline" size="lg">
                     <a href="#como-funciona">Cómo funciona <ArrowRight className="ml-2 h-4 w-4" /></a>
@@ -165,7 +165,7 @@ const LandingPage: React.FC = () => {
             
             <div className="text-center mt-12">
               <Button asChild size="lg" className="bg-flow-blue hover:bg-flow-electric">
-                <Link to="/auth">Pruébalo gratis</Link>
+                <Link to="/auth">Empieza ya</Link>
               </Button>
             </div>
           </div>

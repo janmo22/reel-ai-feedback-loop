@@ -22,7 +22,7 @@ const HeroSection: React.FC = () => {
             </p>
             <div className="flex flex-wrap gap-4">
               <Button asChild size="lg" className="bg-flow-blue hover:bg-flow-electric text-white transition-all duration-300 shadow-lg hover:shadow-flow-blue/20">
-                <Link to="/auth">Comenzar ahora</Link>
+                <Link to="/auth">Empieza ya</Link>
               </Button>
             </div>
           </div>
