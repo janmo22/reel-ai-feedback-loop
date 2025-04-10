@@ -24,7 +24,7 @@ import PasswordUpdateForm from "./PasswordUpdateForm";
 const profileSchema = z.object({
   firstName: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
   lastName: z.string().min(2, "El apellido debe tener al menos 2 caracteres"),
-  email: z.string().email("Ingrese un email válido").disabled(),
+  email: z.string().email("Ingrese un email válido"),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -41,6 +41,7 @@ const SettingsForm: React.FC = () => {
       lastName: "",
       email: user?.email || "",
     },
+    mode: "onChange"
   });
 
   // Load user data when component mounts
