@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
 import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Trash2, FileVideo, Eye, Clock, Star } from 'lucide-react';
+import { Heart, Trash2, FileVideo, Eye, Clock, Star, Filter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from 'react-router-dom';
 import EmptyState from '@/components/EmptyState';
@@ -20,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Interface updated to work with the Video type
 interface VideoWithFeedback extends Omit<Video, 'feedback'> {
@@ -30,6 +32,7 @@ const HistoryPage: React.FC = () => {
   const [videos, setVideos] = useState<VideoWithFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingFavorite, setUpdatingFavorite] = useState(false);
+  const [activeTab, setActiveTab] = useState<"all" | "favorites">("all");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -148,11 +151,26 @@ const HistoryPage: React.FC = () => {
     return format(parseISO(dateString), "d 'de' MMMM, yyyy", { locale: es });
   };
 
+  // Filter videos based on active tab
+  const filteredVideos = activeTab === "favorites" 
+    ? videos.filter(video => video.is_favorite)
+    : videos;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
       <div className="container mx-auto py-8">
-        <h1 className="text-2xl font-bold mb-4">Historial de Videos</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Historial de Videos</h1>
+          <Button onClick={handleNavigateToUpload}>Subir nuevo video</Button>
+        </div>
+        
+        <Tabs defaultValue="all" className="mb-6" onValueChange={(value) => setActiveTab(value as "all" | "favorites")}>
+          <TabsList>
+            <TabsTrigger value="all">Todos</TabsTrigger>
+            <TabsTrigger value="favorites">Favoritos</TabsTrigger>
+          </TabsList>
+        </Tabs>
         
         {loading ? (
           <div className="space-y-4">
@@ -160,11 +178,11 @@ const HistoryPage: React.FC = () => {
             <Skeleton className="h-12 w-full" />
             <Skeleton className="h-12 w-full" />
           </div>
-        ) : videos.length === 0 ? (
+        ) : filteredVideos.length === 0 ? (
           <EmptyState 
             icon={<FileVideo />}
-            title="No hay videos en tu historial"
-            description="Sube un video para comenzar a recibir análisis"
+            title={activeTab === "favorites" ? "No hay videos favoritos" : "No hay videos en tu historial"}
+            description={activeTab === "favorites" ? "No has marcado ningún video como favorito" : "Sube un video para comenzar a recibir análisis"}
             actionText="Subir video"
             onAction={handleNavigateToUpload}
           />
@@ -181,7 +199,7 @@ const HistoryPage: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {videos.map((video) => (
+                {filteredVideos.map((video) => (
                   <TableRow key={video.id}>
                     <TableCell className="font-medium">{video.title}</TableCell>
                     <TableCell>
@@ -201,7 +219,7 @@ const HistoryPage: React.FC = () => {
                         onClick={() => toggleFavorite(video.id, video.is_favorite)}
                         disabled={updatingFavorite}
                       >
-                        <Star className={`h-4 w-4 ${video.is_favorite ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                        <Star className={`h-4 w-4 ${video.is_favorite ? "fill-blue-400 text-blue-400" : "text-muted-foreground"}`} />
                       </Button>
                     </TableCell>
                     <TableCell className="text-right space-x-2">

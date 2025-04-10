@@ -121,9 +121,9 @@ const ResultsPage = () => {
                       <Star 
                         key={idx} 
                         className={`h-5 w-5 ${
-                          filled ? 'text-violet-400 fill-violet-400' : 
-                          half ? 'text-violet-400 fill-violet-400/50' : 
-                          'text-violet-200'
+                          filled ? 'text-blue-400 fill-blue-400' : 
+                          half ? 'text-blue-400 fill-blue-400/50' : 
+                          'text-blue-200'
                         }`}
                       />
                     );

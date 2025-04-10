@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { VideoUploadResponse } from "@/types";
 
@@ -74,6 +75,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
 
 /**
  * Upload the video to the webhook - with improved handling for no-cors mode
+ * and clear MIME type indication
  */
 export const uploadVideoToWebhook = async (params: {
   videoId: string;
@@ -86,6 +88,10 @@ export const uploadVideoToWebhook = async (params: {
 }): Promise<VideoUploadResponse> => {
   console.log("Enviando datos al webhook:", WEBHOOK_URL);
   
+  // Get MIME type from the file
+  const mimeType = params.videoFile.type;
+  console.log(`Tipo de archivo (MIME Type): ${mimeType}`);
+  
   // Create a FormData object and add all the data
   const formData = new FormData();
   formData.append("videoId", params.videoId);
@@ -94,11 +100,13 @@ export const uploadVideoToWebhook = async (params: {
   formData.append("description", params.description || "");
   formData.append("missions", JSON.stringify(params.missions));
   formData.append("mainMessage", params.mainMessage);
+  formData.append("mimeType", mimeType); // Include MIME type explicitly
   
   // Add the video file to FormData
+  // Set the content type explicitly in the append operation
   formData.append("video", params.videoFile);
   
-  console.log("Enviando datos y video en binario al webhook con videoId:", params.videoId);
+  console.log(`Enviando video: Nombre=${params.videoFile.name}, Tamaño=${params.videoFile.size} bytes, Tipo=${mimeType}`);
   
   try {
     // Update video status to processing before sending to webhook
@@ -108,6 +116,10 @@ export const uploadVideoToWebhook = async (params: {
     const response = await fetch(WEBHOOK_URL, {
       method: "POST",
       body: formData,
+      headers: {
+        // Note: We don't set Content-Type manually for FormData as the browser sets it automatically with boundary
+        "X-Content-Type": mimeType, // Custom header for additional MIME type info
+      }
     });
     
     if (response.ok) {
@@ -131,6 +143,9 @@ export const uploadVideoToWebhook = async (params: {
         method: "POST",
         body: formData,
         mode: "no-cors", // Fallback to no-cors mode
+        headers: {
+          "X-Content-Type": mimeType, // Custom header for additional MIME type info
+        }
       });
       
       console.log("Datos enviados al webhook usando modo no-cors");

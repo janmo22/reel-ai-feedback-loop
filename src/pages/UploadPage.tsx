@@ -107,7 +107,7 @@ const UploadPage = () => {
       <main className="flex-1 py-8 px-4 bg-gradient-to-b from-background to-muted/20">
         <div className="container mx-auto max-w-6xl">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl md:text-4xl font-bold mb-3 electric-text tracking-tight">
+            <h1 className="text-3xl md:text-4xl font-bold mb-3 text-flow-blue tracking-tight">
               ANALIZA TU REEL CON IA
             </h1>
             <p className="text-muted-foreground font-satoshi text-lg max-w-xl mx-auto">

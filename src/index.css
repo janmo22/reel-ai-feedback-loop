@@ -109,14 +109,6 @@
     @apply border-flow-blue bg-flow-blue/10;
   }
   
-  .electric-gradient {
-    @apply bg-gradient-to-r from-flow-light to-flow-blue;
-  }
-  
-  .electric-text {
-    @apply bg-gradient-to-r from-flow-light to-flow-blue bg-clip-text text-transparent;
-  }
-  
   .flow-card {
     @apply border border-border/40 rounded-lg p-6 bg-background shadow-sm hover:shadow-md transition-all duration-300;
   }
