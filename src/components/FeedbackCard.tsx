@@ -1,9 +1,9 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ThumbsUp, Lightbulb, MessageSquare, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronUp, ThumbsUp } from "lucide-react";
 
 interface FeedbackCardProps {
   title: string;
@@ -25,7 +25,7 @@ const FeedbackCard = ({
   categories, 
   isDetailed = true, 
   icon, 
-  accentColor = "bg-blue-50 border-blue-100" 
+  accentColor = "bg-slate-50 border-slate-100" 
 }: FeedbackCardProps) => {
   const [expanded, setExpanded] = useState(isDetailed);
   
@@ -36,17 +36,16 @@ const FeedbackCard = ({
   };
   
   return (
-    <Card className={`transition-all duration-300 ease-in-out hover:shadow-md ${expanded ? 'shadow-md' : 'shadow-sm'}`}>
+    <Card className="border shadow-sm">
       <CardHeader className={`pb-3 ${expanded ? accentColor : ''}`}>
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2">
             {icon && <div className="flex-shrink-0">{icon}</div>}
             <div>
               <CardTitle className="text-lg font-semibold text-slate-800">{title}</CardTitle>
-              <CardDescription>Análisis de IA</CardDescription>
             </div>
           </div>
-          <Badge className={`text-white ${getScoreColor(overallScore)} px-3 py-1`}>
+          <Badge variant="outline" className={`border ${getScoreColor(overallScore)} border-opacity-20 text-slate-700 px-3 py-1`}>
             {overallScore}/10
           </Badge>
         </div>
@@ -58,17 +57,17 @@ const FeedbackCard = ({
           className="flex w-full justify-between items-center mb-2 py-1 hover:bg-slate-50"
           onClick={() => setExpanded(!expanded)}
         >
-          <span className="font-medium">{expanded ? "Ocultar detalles" : "Ver detalles"}</span>
-          {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          <span className="font-medium text-sm text-slate-600">{expanded ? "Ocultar detalles" : "Ver detalles"}</span>
+          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </Button>
         
         {expanded && (
-          <div className="space-y-4 mt-3 animate-in fade-in-50 duration-300">
+          <div className="space-y-3 mt-3 animate-in fade-in-50 duration-300">
             {categories.map((category, index) => (
-              <div key={index} className="border rounded-lg p-4 hover:shadow-sm transition-shadow">
+              <div key={index} className="border-b last:border-b-0 pb-3 last:pb-0 mb-3 last:mb-0">
                 <div className="flex justify-between items-center mb-2">
                   <h4 className="font-medium text-slate-800">{category.name}</h4>
-                  <Badge className={`${getScoreColor(category.score)}`}>
+                  <Badge variant="outline" className={`border-${getScoreColor(category.score).replace('bg-', '')}-200 text-slate-700`}>
                     {category.score}/10
                   </Badge>
                 </div>
@@ -76,15 +75,12 @@ const FeedbackCard = ({
                 <p className="text-sm text-slate-700 mb-3">{category.feedback}</p>
                 
                 {category.suggestions && category.suggestions.length > 0 && (
-                  <div className="space-y-2 bg-amber-50 p-3 rounded-md mt-3 border border-amber-100">
-                    <h5 className="text-sm font-medium flex items-center text-amber-800">
-                      <Lightbulb size={16} className="text-amber-600 mr-2" />
-                      Recomendaciones:
-                    </h5>
+                  <div className="bg-slate-50 p-3 rounded-md mt-3 border-l-2 border-amber-500">
+                    <h5 className="text-sm font-medium text-slate-700 mb-2">Recomendaciones:</h5>
                     <ul className="space-y-2">
                       {category.suggestions.map((suggestion, idx) => (
                         <li key={idx} className="text-sm flex gap-2">
-                          <ThumbsUp size={16} className="text-green-600 flex-shrink-0 mt-1" />
+                          <ThumbsUp size={14} className="text-amber-600 flex-shrink-0 mt-1" />
                           <span className="text-slate-700">{suggestion}</span>
                         </li>
                       ))}

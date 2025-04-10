@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookmarkPlus, Share2, Star } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { BookmarkPlus, Share2, Star } from "lucide-react";
 
 interface VideoActionsProps {
   onSave?: () => void;
@@ -10,46 +9,31 @@ interface VideoActionsProps {
 }
 
 const VideoActions = ({ onSave, onShare, isFavorite = false }: VideoActionsProps) => {
-  const navigate = useNavigate();
-  
   return (
-    <div className="bg-white shadow-sm rounded-lg border border-slate-100">
-      <div className="p-4 border-b border-slate-100">
-        <h3 className="text-lg font-medium">Acciones</h3>
-      </div>
+    <div className="flex flex-row gap-2 md:flex-col">
+      <Button
+        variant="outline"
+        size="sm"
+        className={`flex-1 justify-center md:justify-start ${isFavorite ? 'bg-amber-50 border-amber-200 text-amber-700' : ''}`}
+        onClick={onSave}
+      >
+        {isFavorite ? (
+          <Star className="mr-2 h-4 w-4 fill-amber-400 text-amber-500" />
+        ) : (
+          <BookmarkPlus className="mr-2 h-4 w-4" />
+        )}
+        {isFavorite ? 'Guardado' : 'Guardar'}
+      </Button>
       
-      <div className="p-4 space-y-3">
-        <Button
-          variant="outline"
-          className={`w-full justify-start ${isFavorite ? 'bg-yellow-50 border-yellow-200 text-yellow-700' : ''}`}
-          onClick={onSave}
-        >
-          {isFavorite ? (
-            <Star className="mr-2 h-4 w-4 fill-yellow-400 text-yellow-500" />
-          ) : (
-            <BookmarkPlus className="mr-2 h-4 w-4" />
-          )}
-          {isFavorite ? 'Guardado en favoritos' : 'Guardar análisis'}
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          className="w-full justify-start"
-          onClick={onShare}
-        >
-          <Share2 className="mr-2 h-4 w-4" />
-          Compartir resultados
-        </Button>
-        
-        <Button 
-          variant="ghost" 
-          className="w-full justify-start text-slate-600"
-          onClick={() => navigate('/upload')}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver a subir
-        </Button>
-      </div>
+      <Button 
+        variant="outline" 
+        size="sm"
+        className="flex-1 justify-center md:justify-start"
+        onClick={onShare}
+      >
+        <Share2 className="mr-2 h-4 w-4" />
+        Compartir
+      </Button>
     </div>
   );
 };

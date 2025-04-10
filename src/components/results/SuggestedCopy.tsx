@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { Copy, Check } from "lucide-react";
 
 interface SuggestedCopyProps {
   suggestedText: string;
@@ -24,14 +25,29 @@ const SuggestedCopy = ({ suggestedText, suggestedCopy }: SuggestedCopyProps) => 
   };
   
   return (
-    <div className="bg-muted/30 rounded-lg p-6 mt-8">
-      <h3 className="text-xl font-semibold mb-4">Copia sugerida para publicación</h3>
-      <div className="bg-white p-4 rounded-md border mb-4 dark:bg-sidebar-accent">
-        <p className="font-medium text-lg mb-2">{suggestedText}</p>
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{suggestedCopy}</p>
+    <div className="bg-white rounded-lg p-5 border shadow-sm">
+      <h3 className="text-lg font-semibold mb-4 flex items-center">Copy sugerido</h3>
+      <div className="bg-slate-50 p-4 rounded-md border mb-4">
+        <p className="font-medium text-md mb-2">{suggestedText}</p>
+        <p className="text-sm text-slate-600 whitespace-pre-wrap">{suggestedCopy}</p>
       </div>
-      <Button onClick={handleCopy}>
-        {copied ? "¡Copiado!" : "Copiar texto"}
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={handleCopy}
+        className="flex items-center gap-2"
+      >
+        {copied ? (
+          <>
+            <Check size={14} />
+            Copiado
+          </>
+        ) : (
+          <>
+            <Copy size={14} />
+            Copiar texto
+          </>
+        )}
       </Button>
     </div>
   );

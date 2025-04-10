@@ -3,18 +3,17 @@ import AIFeedbackCard from "@/components/AIFeedbackCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import { AIFeedbackResponse } from "@/types";
 import { 
-  HelpingHand, 
-  Lightbulb, 
+  Rocket, 
   Layout, 
   Search, 
-  MessageSquare, 
-  Gauge, 
-  Zap,
+  MessageSquare,
   BarChart,
-  ArrowUpRight,
-  Rocket
+  Gauge,
+  Copy,
+  Lightbulb
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SuggestedCopy from "./SuggestedCopy";
 
 interface ResultsFeedbackProps {
   feedbackItem: AIFeedbackResponse;
@@ -115,11 +114,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
       feedback: fd.seoAndDiscoverability.onScreenTextSEOAanalysis || ""
     },
     {
-      name: "Miniatura",
-      score: 6,
-      feedback: fd.seoAndDiscoverability.coverThumbnailPotentialComment || ""
-    },
-    {
       name: "Funciones avanzadas",
       score: 6,
       feedback: fd.seoAndDiscoverability.advancedDiscoveryFeaturesComment || ""
@@ -201,71 +195,38 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }] : [])
   ] : [];
   
-  // Final recommendations
-  const finalRecommendations = fd?.finalEvaluation?.finalRecommendations || [];
-  
   // Suggested copy content
   const suggestedOptimizedCopy = fd?.seoAndDiscoverability?.suggestedOptimizedCopy || "";
   const suggestedOptimizedOnScreenText = fd?.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "";
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <AIFeedbackCard feedback={feedbackItem} />
       
-      {/* Sugerencias de Copy Optimizado */}
-      {(suggestedOptimizedCopy || suggestedOptimizedOnScreenText) && (
-        <div className="bg-white rounded-lg p-5 border shadow-sm mt-6">
-          <h3 className="text-xl font-semibold mb-4 text-slate-800 flex items-center">
-            <ArrowUpRight className="mr-2 text-blue-600" /> 
-            Copy y Texto Sugerido
-          </h3>
-          
-          {suggestedOptimizedCopy && (
-            <div className="mb-4">
-              <h4 className="font-medium text-slate-700 mb-2">Copy optimizado sugerido:</h4>
-              <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
-                <p className="text-slate-800 whitespace-pre-wrap">{suggestedOptimizedCopy}</p>
-              </div>
-            </div>
-          )}
-          
-          {suggestedOptimizedOnScreenText && (
-            <div>
-              <h4 className="font-medium text-slate-700 mb-2">Texto en pantalla sugerido:</h4>
-              <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg">
-                <p className="text-slate-800 font-medium text-center">{suggestedOptimizedOnScreenText}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4 text-slate-800">Análisis Detallado</h2>
-        
+      <div>
         <Tabs defaultValue="hook" className="w-full">
-          <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-6 w-full">
-            <TabsTrigger value="hook" className="flex gap-1 items-center">
+          <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-1 h-auto bg-transparent p-0 mb-6 w-full">
+            <TabsTrigger value="hook" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-slate-50 data-[state=active]:border-slate-200">
               <Rocket className="h-4 w-4" /> Hook
             </TabsTrigger>
-            <TabsTrigger value="estructura" className="flex gap-1 items-center">
+            <TabsTrigger value="estructura" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-slate-50 data-[state=active]:border-slate-200">
               <Layout className="h-4 w-4" /> Estructura
             </TabsTrigger>
-            <TabsTrigger value="seo" className="flex gap-1 items-center">
+            <TabsTrigger value="seo" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-slate-50 data-[state=active]:border-slate-200">
               <Search className="h-4 w-4" /> SEO
             </TabsTrigger>
-            <TabsTrigger value="engagement" className="flex gap-1 items-center">
+            <TabsTrigger value="engagement" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-slate-50 data-[state=active]:border-slate-200">
               <MessageSquare className="h-4 w-4" /> Engagement
             </TabsTrigger>
-            <TabsTrigger value="estrategia" className="flex gap-1 items-center">
+            <TabsTrigger value="estrategia" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-slate-50 data-[state=active]:border-slate-200">
               <BarChart className="h-4 w-4" /> Estrategia
             </TabsTrigger>
-            <TabsTrigger value="elementos" className="flex gap-1 items-center">
+            <TabsTrigger value="elementos" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-slate-50 data-[state=active]:border-slate-200">
               <Gauge className="h-4 w-4" /> Elementos
             </TabsTrigger>
           </TabsList>
           
-          <div className="bg-white p-5 rounded-lg border mt-2">
+          <div className="bg-white p-0 rounded-lg">
             <TabsContent value="hook" className="mt-0">
               <h3 className="text-xl font-semibold mb-4 flex items-center">
                 <Rocket className="mr-2 text-amber-500" /> Análisis del Hook
@@ -277,7 +238,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   overallScore={fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore || 0}
                   categories={hookCategories}
                   icon={<Rocket className="h-5 w-5 text-amber-500" />}
-                  accentColor="bg-amber-50 border-amber-100"
+                  accentColor="bg-slate-50 border-slate-100"
                 />
               ) : (
                 <p>No hay datos disponibles para el análisis del hook.</p>
@@ -286,7 +247,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
             
             <TabsContent value="estructura" className="mt-0">
               <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <Layout className="mr-2 text-indigo-600" /> Estructura y Valor
+                <Layout className="mr-2 text-slate-700" /> Estructura y Valor
               </h3>
               <p className="text-slate-600 mb-4">La estructura óptima mantiene al espectador interesado mientras se entrega el valor principal del contenido.</p>
               {structureCategories.length > 0 ? (
@@ -294,8 +255,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   title="Evaluación de Estructura"
                   overallScore={fd?.videoStructureAndPacing?.valueDelivery?.qualityScore || 7}
                   categories={structureCategories}
-                  icon={<Layout className="h-5 w-5 text-indigo-600" />}
-                  accentColor="bg-indigo-50 border-indigo-100"
+                  icon={<Layout className="h-5 w-5 text-slate-700" />}
+                  accentColor="bg-slate-50 border-slate-100"
                 />
               ) : (
                 <p>No hay datos disponibles para el análisis de estructura.</p>
@@ -304,7 +265,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
             
             <TabsContent value="seo" className="mt-0">
               <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <Search className="mr-2 text-blue-600" /> SEO y Descubribilidad
+                <Search className="mr-2 text-slate-700" /> SEO y Descubribilidad
               </h3>
               <p className="text-slate-600 mb-4">La optimización para motores de búsqueda aumenta la visibilidad de tu contenido en la plataforma.</p>
               {seoCategories.length > 0 ? (
@@ -312,17 +273,26 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   title="SEO y Descubribilidad"
                   overallScore={7}
                   categories={seoCategories}
-                  icon={<Search className="h-5 w-5 text-blue-600" />}
-                  accentColor="bg-blue-50 border-blue-100"
+                  icon={<Search className="h-5 w-5 text-slate-700" />}
+                  accentColor="bg-slate-50 border-slate-100"
                 />
               ) : (
                 <p>No hay datos disponibles para el análisis de SEO.</p>
+              )}
+              
+              {(suggestedOptimizedCopy || suggestedOptimizedOnScreenText) && (
+                <div className="mt-6">
+                  <SuggestedCopy
+                    suggestedText={suggestedOptimizedOnScreenText}
+                    suggestedCopy={suggestedOptimizedCopy}
+                  />
+                </div>
               )}
             </TabsContent>
             
             <TabsContent value="engagement" className="mt-0">
               <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <MessageSquare className="mr-2 text-green-600" /> Potencial de Engagement
+                <MessageSquare className="mr-2 text-slate-700" /> Potencial de Engagement
               </h3>
               <p className="text-slate-600 mb-4">El engagement determina cómo tu contenido se distribuye y cuántas interacciones recibe.</p>
               {engagementCategories.length > 0 ? (
@@ -330,8 +300,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   title="Potencial de Engagement"
                   overallScore={7}
                   categories={engagementCategories}
-                  icon={<MessageSquare className="h-5 w-5 text-green-600" />}
-                  accentColor="bg-green-50 border-green-100"
+                  icon={<MessageSquare className="h-5 w-5 text-slate-700" />}
+                  accentColor="bg-slate-50 border-slate-100"
                 />
               ) : (
                 <p>No hay datos disponibles para el análisis de engagement.</p>
@@ -340,7 +310,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
             
             <TabsContent value="estrategia" className="mt-0">
               <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <BarChart className="mr-2 text-purple-600" /> Alineación Estratégica
+                <BarChart className="mr-2 text-slate-700" /> Alineación Estratégica
               </h3>
               <p className="text-slate-600 mb-4">La alineación estratégica asegura que tu contenido refuerza tu marca personal y conecta con tu audiencia.</p>
               <div className="space-y-6">
@@ -349,8 +319,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                     title="Alineación Estratégica"
                     overallScore={8}
                     categories={strategicCategories}
-                    icon={<BarChart className="h-5 w-5 text-purple-600" />}
-                    accentColor="bg-purple-50 border-purple-100"
+                    icon={<BarChart className="h-5 w-5 text-slate-700" />}
+                    accentColor="bg-slate-50 border-slate-100"
                   />
                 ) : (
                   <p>No hay datos disponibles para la alineación estratégica.</p>
@@ -361,8 +331,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                     title="Estrategia de Tipo de Contenido"
                     overallScore={8}
                     categories={contentTypeCategories}
-                    icon={<Lightbulb className="h-5 w-5 text-yellow-600" />}
-                    accentColor="bg-yellow-50 border-yellow-100"
+                    icon={<Lightbulb className="h-5 w-5 text-slate-700" />}
+                    accentColor="bg-slate-50 border-slate-100"
                   />
                 )}
               </div>
@@ -370,7 +340,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
             
             <TabsContent value="elementos" className="mt-0">
               <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <Gauge className="mr-2 text-orange-600" /> Elementos Nativos
+                <Gauge className="mr-2 text-slate-700" /> Elementos Nativos
               </h3>
               <p className="text-slate-600 mb-4">Los elementos nativos de la plataforma ayudan a que tu contenido se sienta más natural y auténtico.</p>
               {nativeCategories.length > 0 ? (
@@ -378,8 +348,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   title="Elementos Nativos de la Plataforma"
                   overallScore={7}
                   categories={nativeCategories}
-                  icon={<Gauge className="h-5 w-5 text-orange-600" />}
-                  accentColor="bg-orange-50 border-orange-100"
+                  icon={<Gauge className="h-5 w-5 text-slate-700" />}
+                  accentColor="bg-slate-50 border-slate-100"
                 />
               ) : (
                 <p>No hay datos disponibles para elementos nativos.</p>
@@ -388,25 +358,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
           </div>
         </Tabs>
       </div>
-      
-      {finalRecommendations.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-6 border border-amber-200 shadow-sm mt-8">
-          <h3 className="text-xl font-semibold mb-4 text-amber-800 flex items-center">
-            <Zap className="mr-2 text-amber-600" /> 
-            Recomendaciones Finales
-          </h3>
-          <ul className="space-y-4">
-            {finalRecommendations.map((rec, idx) => (
-              <li key={idx} className="flex gap-3">
-                <div className="mt-1 flex-shrink-0 h-6 w-6 rounded-full bg-amber-100 flex items-center justify-center">
-                  <span className="text-amber-800 font-semibold text-sm">{idx + 1}</span>
-                </div>
-                <p className="text-slate-800">{rec}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 };

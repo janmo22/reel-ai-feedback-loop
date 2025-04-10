@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ThumbsUp, BarChart3, Star, Lightbulb, Award } from "lucide-react";
+import { Star, Lightbulb } from "lucide-react";
 import { AIFeedbackResponse } from "@/types";
 
 interface AIFeedbackProps {
@@ -21,25 +21,24 @@ const AIFeedbackCard = ({ feedback }: AIFeedbackProps) => {
   const finalRecommendations = feedback.feedback_data?.finalEvaluation?.finalRecommendations || feedback.overallEvaluation?.suggestions || [];
 
   return (
-    <Card className="border-flow-electric/20 shadow-lg">
-      <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+    <Card className="border-flow-electric/20 shadow-md">
+      <CardHeader className="pb-4 bg-gradient-to-r from-slate-50 to-slate-100">
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="text-2xl font-bold text-slate-800">Análisis General</CardTitle>
             <div className="flex items-center mt-2">
-              <Badge className="bg-blue-500 mr-2 px-2 py-1">{contentType}</Badge>
+              <Badge variant="outline" className="border-slate-200 text-slate-700 mr-2 px-2 py-1">{contentType}</Badge>
               {feedback.feedback_data?.videoStructureAndPacing?.valueDelivery?.mainFunction && (
-                <Badge className="bg-purple-500 mr-2 px-2 py-1">
+                <Badge variant="outline" className="border-slate-200 text-slate-700 mr-2 px-2 py-1">
                   {feedback.feedback_data.videoStructureAndPacing.valueDelivery.mainFunction}
                 </Badge>
               )}
             </div>
           </div>
           <div className="text-center">
-            <div className={`${getScoreColor(score)} text-white rounded-full w-16 h-16 flex items-center justify-center`}>
+            <div className={`${getScoreColor(score)} text-white rounded-full w-14 h-14 flex items-center justify-center`}>
               <span className="text-xl font-bold">{score}/10</span>
             </div>
-            <div className="text-xs mt-1 text-muted-foreground">Puntuación global</div>
           </div>
         </div>
       </CardHeader>
@@ -53,7 +52,7 @@ const AIFeedbackCard = ({ feedback }: AIFeedbackProps) => {
           <p className="text-base text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100">{executiveSummary}</p>
         </div>
         
-        <div className="mt-8">
+        <div className="mt-6">
           <h4 className="font-semibold text-lg text-slate-800 mb-3 flex items-center">
             <Lightbulb className="mr-2 h-5 w-5 text-amber-500" />
             Recomendaciones principales
@@ -61,24 +60,14 @@ const AIFeedbackCard = ({ feedback }: AIFeedbackProps) => {
           <div className="space-y-3 rounded-lg bg-amber-50 p-4 border border-amber-100">
             {finalRecommendations.map((recommendation, idx) => (
               <div key={idx} className="flex gap-3">
-                <Award className="text-amber-600 flex-shrink-0 mt-1 h-5 w-5" />
+                <div className="mt-1 flex-shrink-0 h-5 w-5 rounded-full bg-amber-100 flex items-center justify-center">
+                  <span className="text-amber-800 font-medium text-xs">{idx + 1}</span>
+                </div>
                 <p className="text-base text-slate-700">{recommendation}</p>
               </div>
             ))}
           </div>
         </div>
-        
-        {feedback.feedback_data?.strategicAlignment && (
-          <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
-            <h4 className="font-semibold text-lg text-slate-800 mb-2 flex items-center">
-              <BarChart3 className="mr-2 h-5 w-5 text-indigo-600" />
-              Alineación estratégica
-            </h4>
-            <p className="text-base text-slate-700">
-              {feedback.feedback_data.strategicAlignment.creatorConsistencyComment}
-            </p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
