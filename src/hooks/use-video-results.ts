@@ -49,7 +49,8 @@ export function useVideoResults() {
           setVideoData(videoData);
           
           // Comprobamos el estado del video
-          if (videoData.status === "completed" || videoData.feedback_received === true) {
+          // Fix: Check if status is completed or if the feedback_received field exists and is true
+          if (videoData.status === "completed" || (videoData.hasOwnProperty('feedback_received') && videoData.feedback_received === true)) {
             // Buscamos feedback asociado
             const { data: feedbackData, error: feedbackError } = await supabase
               .from('feedback')
@@ -61,21 +62,36 @@ export function useVideoResults() {
               console.error("Error obteniendo feedback:", feedbackError);
               setLoading(true);
             } else if (feedbackData) {
-              // Convertimos los datos de feedback al formato esperado
-              const formattedFeedback = 
-                Array.isArray(feedbackData.feedback_data) 
-                  ? feedbackData.feedback_data 
-                  : [feedbackData.feedback_data] as AIFeedbackResponse[];
-                  
-              setFeedback(formattedFeedback);
-              setLoading(false);
-              console.log("Feedback data obtenido de DB:", formattedFeedback);
+              // Fix: Cast the feedback_data to AIFeedbackResponse with proper type handling
+              let formattedFeedback: AIFeedbackResponse[];
               
-              // Mostramos toast cuando el feedback está listo
-              toast({
-                title: "¡Análisis completado!",
-                description: "Los resultados de tu video ya están listos para revisar.",
-              });
+              if (feedbackData.feedback_data) {
+                try {
+                  // Handle both array and single object cases with proper type assertion
+                  const feedbackContent = Array.isArray(feedbackData.feedback_data) 
+                    ? feedbackData.feedback_data 
+                    : [feedbackData.feedback_data];
+                    
+                  // Type assertion to ensure it matches AIFeedbackResponse structure
+                  formattedFeedback = feedbackContent as unknown as AIFeedbackResponse[];
+                  
+                  setFeedback(formattedFeedback);
+                  setLoading(false);
+                  console.log("Feedback data obtenido de DB:", formattedFeedback);
+                  
+                  // Mostramos toast cuando el feedback está listo
+                  toast({
+                    title: "¡Análisis completado!",
+                    description: "Los resultados de tu video ya están listos para revisar.",
+                  });
+                } catch (parseError) {
+                  console.error("Error parsing feedback data:", parseError);
+                  setLoading(false);
+                }
+              } else {
+                console.log("No feedback_data found in the response");
+                setLoading(false);
+              }
             } else {
               // No se encontró feedback
               console.log("No se encontró feedback para el video:", state.videoId);
