@@ -10,7 +10,7 @@ export interface VideoUploadResponse {
   message?: string;
 }
 
-// Ensure we add is_favorite to the Video interface
+// Added is_favorite to the Video interface
 export interface Video {
   id: string;
   title: string;
@@ -59,7 +59,7 @@ export interface FeedbackData {
   processing_completed_at: string | null;
 }
 
-// Modificamos la interfaz VideoWithFeedback para que sea compatible con Video
+// Updated to ensure it extends Video properly
 export interface VideoWithFeedback extends Video {
   feedback: FeedbackData[] | null;
 }
