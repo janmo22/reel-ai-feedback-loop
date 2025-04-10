@@ -38,9 +38,11 @@ const HistoryPage: React.FC = () => {
       }
 
       // Map the data to include is_favorite property if it doesn't exist
+      // Use type assertion to help TypeScript understand the structure
       const videosWithFavorites = data?.map(video => ({
         ...video,
-        is_favorite: video.is_favorite || false
+        // Add is_favorite with a default value if it doesn't exist in the database
+        is_favorite: 'is_favorite' in video ? video.is_favorite : false
       })) || [];
 
       setVideos(videosWithFavorites as VideoWithFeedback[]);
