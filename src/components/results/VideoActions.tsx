@@ -1,22 +1,17 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, BookmarkPlus, Share2 } from "lucide-react";
+import { ArrowLeft, BookmarkPlus, Share2, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 interface VideoActionsProps {
   onSave?: () => void;
   onShare?: () => void;
+  isFavorite?: boolean;
 }
 
-const VideoActions = ({ onSave, onShare }: VideoActionsProps) => {
+const VideoActions = ({ onSave, onShare, isFavorite = false }: VideoActionsProps) => {
   const navigate = useNavigate();
-  const [isSaved, setIsSaved] = useState(false);
-  
-  const handleSave = () => {
-    setIsSaved(true);
-    if (onSave) onSave();
-  };
   
   return (
     <div className="bg-white shadow-sm rounded-lg border border-slate-100">
@@ -27,11 +22,15 @@ const VideoActions = ({ onSave, onShare }: VideoActionsProps) => {
       <div className="p-4 space-y-3">
         <Button
           variant="outline"
-          className={`w-full justify-start ${isSaved ? 'bg-slate-50 border-slate-200 text-indigo-600' : ''}`}
-          onClick={handleSave}
+          className={`w-full justify-start ${isFavorite ? 'bg-yellow-50 border-yellow-200 text-yellow-700' : ''}`}
+          onClick={onSave}
         >
-          <BookmarkPlus className={`mr-2 h-4 w-4 ${isSaved ? 'text-indigo-600' : ''}`} />
-          {isSaved ? 'Guardado en favoritos' : 'Guardar análisis'}
+          {isFavorite ? (
+            <Star className="mr-2 h-4 w-4 fill-yellow-400 text-yellow-500" />
+          ) : (
+            <BookmarkPlus className="mr-2 h-4 w-4" />
+          )}
+          {isFavorite ? 'Guardado en favoritos' : 'Guardar análisis'}
         </Button>
         
         <Button 

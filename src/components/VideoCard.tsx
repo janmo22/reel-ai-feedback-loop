@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash2, Clock, Loader2 } from "lucide-react";
+import { Eye, Trash2, Clock, Loader2, Star, BookmarkPlus } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -10,8 +10,10 @@ export interface VideoCardProps {
   thumbnailUrl: string | null;
   status: string;
   createdAt: string | null;
+  isFavorite?: boolean;
   onView: () => void;
   onDelete: () => void;
+  onToggleFavorite?: () => void;
 }
 
 const VideoCard = ({ 
@@ -19,8 +21,10 @@ const VideoCard = ({
   thumbnailUrl,
   status,
   createdAt,
+  isFavorite = false,
   onView,
-  onDelete
+  onDelete,
+  onToggleFavorite
 }: VideoCardProps) => {
   const formattedDate = createdAt 
     ? format(parseISO(createdAt), "d 'de' MMMM, yyyy", { locale: es })
@@ -28,33 +32,30 @@ const VideoCard = ({
     
   return (
     <Card className="overflow-hidden h-full flex flex-col">
-      <div className="relative overflow-hidden bg-muted h-48">
-        {thumbnailUrl ? (
-          <img
-            src={thumbnailUrl}
-            alt={title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="rounded-full bg-accent/10 p-4">
-              <video className="w-12 h-12 text-accent" />
-            </div>
-          </div>
-        )}
-        <div className="absolute top-0 left-0 w-full p-3 flex justify-between items-start">
+      <CardContent className="p-4 flex-grow space-y-3">
+        <div className="flex justify-between items-start">
           <div className={`
-            px-3 py-1.5 rounded-full text-xs font-medium flex items-center
+            px-3 py-1.5 rounded-full text-xs font-medium inline-flex items-center
             ${status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}
           `}>
             {status === "processing" && <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />}
             {status === "completed" ? "Completado" : "Procesando"}
           </div>
+          
+          {onToggleFavorite && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0" 
+              onClick={onToggleFavorite}
+            >
+              <Star className={`h-4 w-4 ${isFavorite ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+            </Button>
+          )}
         </div>
-      </div>
-      
-      <CardContent className="p-4 flex-grow">
-        <h3 className="font-semibold line-clamp-2 mb-2">{title}</h3>
+        
+        <h3 className="font-semibold line-clamp-2">{title}</h3>
+        
         <div className="flex items-center text-xs text-muted-foreground">
           <Clock className="h-3 w-3 mr-1" />
           <span>{formattedDate}</span>

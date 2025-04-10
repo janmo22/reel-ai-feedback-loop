@@ -11,12 +11,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Video, Feedback } from "@/types";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
 const HistoryPage = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [viewType, setViewType] = useState<'grid' | 'table'>('table');
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -149,6 +151,53 @@ const HistoryPage = () => {
       setSelectedVideo(null);
     }
   };
+
+  const toggleFavorite = async (video: Video) => {
+    try {
+      const newFavoriteStatus = !video.is_favorite;
+      
+      // Update in database
+      const { error } = await supabase
+        .from('videos')
+        .update({ 
+          is_favorite: newFavoriteStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', video.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setVideos(prevVideos => 
+        prevVideos.map(v => 
+          v.id === video.id ? { ...v, is_favorite: newFavoriteStatus } : v
+        )
+      );
+      
+      toast({
+        title: newFavoriteStatus 
+          ? "Análisis guardado en favoritos" 
+          : "Análisis eliminado de favoritos",
+        description: newFavoriteStatus 
+          ? "Puedes encontrarlo en tu dashboard" 
+          : "Ya no aparecerá en tu lista de favoritos",
+      });
+    } catch (error) {
+      console.error("Error al cambiar estado de favorito:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de favorito",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getScoreColor = (score?: number) => {
+    if (!score) return "text-gray-400";
+    if (score >= 8) return "text-green-500";
+    if (score >= 6) return "text-yellow-500";
+    return "text-red-500";
+  };
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -166,13 +215,31 @@ const HistoryPage = () => {
                 Revisa tus análisis anteriores
               </p>
             </div>
-            <Button 
-              onClick={() => navigate('/upload')}
-              className="bg-flow-electric hover:bg-flow-electric/90"
-            >
-              <VideoIcon className="mr-2 h-4 w-4" />
-              Nuevo Análisis
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                size="sm"
+                className={viewType === 'grid' ? 'bg-muted' : ''}
+                onClick={() => setViewType('grid')}
+              >
+                Cuadrícula
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
+                className={viewType === 'table' ? 'bg-muted' : ''}
+                onClick={() => setViewType('table')}
+              >
+                Tabla
+              </Button>
+              <Button 
+                onClick={() => navigate('/upload')}
+                className="bg-flow-electric hover:bg-flow-electric/90 ml-4"
+              >
+                <VideoIcon className="mr-2 h-4 w-4" />
+                Nuevo Análisis
+              </Button>
+            </div>
           </div>
           
           {loading ? (
@@ -188,19 +255,101 @@ const HistoryPage = () => {
               actionText="Enviar mi primer reel"
               actionIcon={<VideoIcon className="mr-2 h-4 w-4" />}
             />
-          ) : (
+          ) : viewType === 'grid' ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {videos.map((video) => (
                 <VideoCard
                   key={video.id}
                   title={video.title}
-                  thumbnailUrl={video.thumbnail_url || "/placeholder.svg"}
+                  thumbnailUrl={video.thumbnail_url}
                   status={video.status}
                   createdAt={video.created_at}
+                  isFavorite={video.is_favorite}
                   onView={() => handleViewFeedback(video.id)}
                   onDelete={() => confirmDeleteVideo(video)}
+                  onToggleFavorite={() => toggleFavorite(video)}
                 />
               ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Puntuación</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {videos.map((video) => {
+                    // Extract overall score from feedback if available
+                    const overallScore = video.feedback && 
+                      Array.isArray(video.feedback) && 
+                      video.feedback.length > 0 ? 
+                      video.feedback[0].overall_score : undefined;
+                    
+                    return (
+                      <TableRow key={video.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center">
+                            {video.is_favorite && <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-2" />}
+                            {video.title}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {video.created_at ? 
+                            format(parseISO(video.created_at), "d MMM, yyyy", { locale: es }) : 
+                            "—"}
+                        </TableCell>
+                        <TableCell>
+                          <div className={`
+                            px-2 py-1 rounded-full text-xs font-medium inline-flex items-center w-fit
+                            ${video.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}
+                          `}>
+                            {video.status === "processing" && <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />}
+                            {video.status === "completed" ? "Completado" : "Procesando"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`font-semibold ${getScoreColor(overallScore)}`}>
+                            {overallScore !== undefined ? `${overallScore}/10` : "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleFavorite(video)}
+                            >
+                              <Star className={`h-4 w-4 ${video.is_favorite ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={video.status === "processing"}
+                              onClick={() => handleViewFeedback(video.id)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => confirmDeleteVideo(video)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>
