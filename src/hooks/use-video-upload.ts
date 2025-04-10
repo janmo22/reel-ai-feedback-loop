@@ -109,7 +109,7 @@ export function useVideoUpload(onUploadComplete: (data: {
         user.id,
         title,
         description,
-        missions,
+        missions, // We still pass missions even though it's not stored directly in the videos table
         mainMessage
       );
       

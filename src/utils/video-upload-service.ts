@@ -40,6 +40,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
   try {
     console.log("Creando registro de video en Supabase...");
     
+    // Remove missions from the direct insertion since the column doesn't exist
     const { data: videoData, error: videoError } = await supabase
       .from('videos')
       .insert([
@@ -49,8 +50,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
           user_id: userId,
           video_url: "placeholder-url", // Will be updated later
           status: 'uploading',
-          missions: missions,  // Add missions as an array
-          // No incluimos main_message porque no existe en la tabla
+          // missions field is removed from here
         }
       ])
       .select()
