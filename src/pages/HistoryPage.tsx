@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -29,18 +28,15 @@ const HistoryPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Fetch videos when component mounts
   useEffect(() => {
     if (user) {
       fetchUserVideos();
     }
   }, [user]);
   
-  // Subscribe to Supabase Realtime for updates
   useEffect(() => {
     if (!user) return;
     
-    // Listen for new videos, feedback entries, or status updates
     const videosChannel = supabase
       .channel('public:videos')
       .on('postgres_changes', 
@@ -50,8 +46,8 @@ const HistoryPage = () => {
           table: 'videos',
           filter: `user_id=eq.${user.id}`
         },
-        () => {
-          // Fetch updated list when any video changes
+        (payload) => {
+          console.log("Video update detected:", payload);
           fetchUserVideos();
         }
       )
@@ -65,9 +61,17 @@ const HistoryPage = () => {
           schema: 'public', 
           table: 'feedback' 
         },
-        () => {
-          // Fetch updated list when any feedback changes
+        (payload) => {
+          console.log("Feedback update detected:", payload);
           fetchUserVideos();
+          
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: "¡Nuevo análisis completado!",
+              description: "Uno de tus videos ha sido analizado. Revisa los resultados ahora.",
+              duration: 10000,
+            });
+          }
         }
       )
       .subscribe();
@@ -76,13 +80,12 @@ const HistoryPage = () => {
       supabase.removeChannel(videosChannel);
       supabase.removeChannel(feedbackChannel);
     };
-  }, [user]);
+  }, [user, toast]);
   
   const fetchUserVideos = async () => {
     try {
       if (!user) return;
       
-      // Get all videos for this user first
       const { data, error } = await supabase
         .from('videos')
         .select(`
@@ -96,13 +99,13 @@ const HistoryPage = () => {
       
       console.log("Videos fetched:", data);
       
-      // Transform the data to match our VideoWithFeedback interface
       const transformedData: VideoWithFeedback[] = data?.map(item => ({
         id: item.id,
         created_at: item.created_at,
         title: item.title,
+        description: item.description,
         status: item.status as 'processing' | 'completed' | 'failed',
-        url: item.url || null,
+        url: item.video_url || null,
         video_url: item.video_url,
         user_id: item.user_id,
         thumbnail_url: item.thumbnail_url,
@@ -137,7 +140,6 @@ const HistoryPage = () => {
     if (!selectedVideo) return;
     
     try {
-      // Delete feedback entries associated with this video
       const { error: feedbackError } = await supabase
         .from('feedback')
         .delete()
@@ -147,7 +149,6 @@ const HistoryPage = () => {
         console.error('Error deleting associated feedback:', feedbackError);
       }
       
-      // Delete the video entry
       const { error: dbError } = await supabase
         .from('videos')
         .delete()
@@ -155,7 +156,6 @@ const HistoryPage = () => {
       
       if (dbError) throw dbError;
       
-      // Update the UI
       setVideos(prevVideos => prevVideos.filter(v => v.id !== selectedVideo.id));
       toast({
         title: "Análisis eliminado",
@@ -178,7 +178,6 @@ const HistoryPage = () => {
     try {
       const newFavoriteStatus = !video.is_favorite;
       
-      // Update in database
       const { error } = await supabase
         .from('videos')
         .update({ 
@@ -189,7 +188,6 @@ const HistoryPage = () => {
       
       if (error) throw error;
       
-      // Update local state
       setVideos(prevVideos => 
         prevVideos.map(v => 
           v.id === video.id ? { ...v, is_favorite: newFavoriteStatus } : v
@@ -215,7 +213,7 @@ const HistoryPage = () => {
   };
 
   const getScoreColor = (score?: number) => {
-    if (!score) return "text-gray-400";
+    if (!score && score !== 0) return "text-gray-400";
     if (score >= 8) return "text-green-500";
     if (score >= 6) return "text-yellow-500";
     return "text-red-500";
@@ -307,7 +305,6 @@ const HistoryPage = () => {
                 </TableHeader>
                 <TableBody>
                   {videos.map((video) => {
-                    // Extract overall score from feedback if available
                     const overallScore = video.feedback && 
                       Array.isArray(video.feedback) && 
                       video.feedback.length > 0 ? 

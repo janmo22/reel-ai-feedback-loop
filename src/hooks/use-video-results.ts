@@ -96,7 +96,7 @@ export function useVideoResults() {
             title: videoData.title,
             description: videoData.description,
             status: videoData.status as 'processing' | 'completed' | 'failed',
-            url: videoData.url || null,
+            url: videoData.video_url || null, // Use video_url as url if needed
             video_url: videoData.video_url,
             user_id: videoData.user_id,
             thumbnail_url: videoData.thumbnail_url,

@@ -85,6 +85,11 @@ serve(async (req) => {
       );
     }
     
+    // Crear cliente de Supabase
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
     // Procesar cada elemento del array
     for (const item of requestData) {
       const { videoId, userId } = item;
@@ -95,26 +100,54 @@ serve(async (req) => {
         continue; // Skip this item and process the next one
       }
       
-      // Crear cliente de Supabase
-      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      // Guardar los datos de feedback en la tabla de feedback
-      const { data: feedbackData, error: feedbackError } = await supabase
+      // Verificar si ya existe un feedback para este video para evitar duplicados
+      const { data: existingFeedback, error: checkError } = await supabase
         .from("feedback")
-        .insert({
-          video_id: videoId,
-          overall_score: item.overallEvaluation?.score || 0,
-          feedback_data: item,
-          webhook_response: requestData,
-          processing_completed_at: new Date().toISOString(),
-        });
+        .select("id")
+        .eq("video_id", videoId)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error("Error al verificar si existe feedback previo:", checkError);
+      }
+      
+      // Si ya existe feedback, actualizamos en lugar de insertar
+      if (existingFeedback) {
+        console.log(`Ya existe feedback para el video ${videoId}, actualizando...`);
         
-      if (feedbackError) {
-        console.error("Error al guardar feedback para video " + videoId + ":", feedbackError);
+        const { data: updateData, error: updateError } = await supabase
+          .from("feedback")
+          .update({
+            overall_score: item.overallEvaluation?.score || 0,
+            feedback_data: item,
+            webhook_response: requestData,
+            processing_completed_at: new Date().toISOString(),
+          })
+          .eq("id", existingFeedback.id)
+          .select();
+          
+        if (updateError) {
+          console.error(`Error al actualizar feedback para video ${videoId}:`, updateError);
+        } else {
+          console.log(`Feedback actualizado correctamente para el video ${videoId}`);
+        }
       } else {
-        console.log("Feedback guardado correctamente para el video:", videoId);
+        // Guardar los datos de feedback en la tabla de feedback
+        const { data: feedbackData, error: feedbackError } = await supabase
+          .from("feedback")
+          .insert({
+            video_id: videoId,
+            overall_score: item.overallEvaluation?.score || 0,
+            feedback_data: item,
+            webhook_response: requestData,
+            processing_completed_at: new Date().toISOString(),
+          });
+          
+        if (feedbackError) {
+          console.error("Error al guardar feedback para video " + videoId + ":", feedbackError);
+        } else {
+          console.log("Feedback guardado correctamente para el video:", videoId);
+        }
       }
       
       // Actualizar el estado del video a "completed"
