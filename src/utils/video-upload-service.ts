@@ -34,6 +34,46 @@ export async function updateVideoStatus(videoId: string, status: string) {
 }
 
 /**
+ * Create a new video record in Supabase
+ */
+export async function createVideoRecord(userId: string, title: string, description: string, missions: string[], mainMessage: string) {
+  try {
+    console.log("Creando registro de video en Supabase...");
+    
+    const { data: videoData, error: videoError } = await supabase
+      .from('videos')
+      .insert([
+        {
+          title,
+          description,
+          user_id: userId,
+          video_url: "placeholder-url", // Will be updated later
+          status: 'uploading',
+          missions: missions,  // Add missions as an array
+          // No incluimos main_message porque no existe en la tabla
+        }
+      ])
+      .select()
+      .single();
+    
+    if (videoError) {
+      console.error("Error creando registro de video:", videoError);
+      throw new Error(`Error al crear registro de video: ${videoError.message}`);
+    }
+    
+    if (!videoData || !videoData.id) {
+      throw new Error("No se pudo obtener el ID del video creado");
+    }
+    
+    console.log("Video registrado en Supabase con ID:", videoData.id);
+    return videoData;
+  } catch (error) {
+    console.error("Error creando registro de video:", error);
+    throw error;
+  }
+}
+
+/**
  * Upload the video to the webhook - with improved handling for no-cors mode
  */
 export async function uploadVideoToWebhook({

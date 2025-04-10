@@ -24,7 +24,7 @@ export function useVideoResults() {
       console.log("Using feedback data from state:", state.feedback);
     } else if (state && state.videoId) {
       // Si solo tenemos el videoId, buscamos los datos en la base de datos
-      const fetchVideoData = async () => {
+      const fetchData = async () => {
         try {
           // Obtenemos los datos del video
           const { data: videoData, error: videoError } = await supabase
@@ -48,7 +48,7 @@ export function useVideoResults() {
           console.log("Video data obtenido:", videoData);
           setVideoData(videoData as Video);
           
-          // Comprobamos el estado del video y buscamos feedback existente
+          // Comprobamos si hay feedback existente
           const { data: feedbackData, error: feedbackError } = await supabase
             .from('feedback')
             .select('*')
@@ -74,8 +74,7 @@ export function useVideoResults() {
                 await supabase
                   .from('videos')
                   .update({ 
-                    status: 'completed', 
-                    feedback_received: true 
+                    status: 'completed'
                   })
                   .eq('id', state.videoId);
               }
@@ -91,7 +90,7 @@ export function useVideoResults() {
               setLoading(true);
             }
           } else {
-            // No hay feedback, seguimos en estado de carga
+            // No hay feedback, seguimos en estado de carga pero mostramos el video
             console.log("No hay feedback aún para el video. Estado:", videoData.status);
             setLoading(true);
           }
@@ -101,10 +100,10 @@ export function useVideoResults() {
         }
       };
       
-      fetchVideoData();
+      fetchData();
 
       // Hacemos polling cada pocos segundos si el video aún se está procesando
-      const intervalId = setInterval(fetchVideoData, 10000); // Verificamos cada 10 segundos
+      const intervalId = setInterval(fetchData, 10000); // Verificamos cada 10 segundos
       
       // Subscribe to Supabase Realtime for feedback updates
       console.log("Suscribiéndose a actualizaciones en tiempo real para el video:", state.videoId);
@@ -146,8 +145,7 @@ export function useVideoResults() {
               await supabase
                 .from('videos')
                 .update({ 
-                  status: 'completed', 
-                  feedback_received: true 
+                  status: 'completed'
                 })
                 .eq('id', state.videoId);
               

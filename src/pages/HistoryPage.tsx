@@ -28,12 +28,28 @@ const HistoryPage = () => {
     }
   }, [user]);
   
-  // Subscribe to Supabase Realtime for feedback updates
+  // Subscribe to Supabase Realtime for updates
   useEffect(() => {
     if (!user) return;
     
-    // Listen for new feedback entries or status updates
-    const channel = supabase
+    // Listen for new videos, feedback entries, or status updates
+    const videosChannel = supabase
+      .channel('public:videos')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'videos',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          // Fetch updated list when any video changes
+          fetchUserVideos();
+        }
+      )
+      .subscribe();
+    
+    const feedbackChannel = supabase
       .channel('public:feedback')
       .on('postgres_changes', 
         { 
@@ -49,7 +65,8 @@ const HistoryPage = () => {
       .subscribe();
     
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(videosChannel);
+      supabase.removeChannel(feedbackChannel);
     };
   }, [user]);
   
@@ -57,7 +74,7 @@ const HistoryPage = () => {
     try {
       if (!user) return;
       
-      // Get videos with their feedback data using a join
+      // Get all videos for this user first
       const { data, error } = await supabase
         .from('videos')
         .select(`
@@ -69,7 +86,7 @@ const HistoryPage = () => {
       
       if (error) throw error;
       
-      console.log("Videos fetched with feedback:", data);
+      console.log("Videos fetched:", data);
       setVideos(data || []);
     } catch (error: any) {
       console.error('Error fetching videos:', error);
@@ -84,18 +101,6 @@ const HistoryPage = () => {
   };
   
   const handleViewFeedback = (videoId: string) => {
-    // Check if video has completed processing
-    const video = videos.find(v => v.id === videoId);
-    
-    if (video?.status === "processing" || video?.status === "uploading") {
-      toast({
-        title: "Análisis en proceso",
-        description: "Este análisis aún está siendo procesado. Por favor, inténtalo más tarde.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     navigate(`/results`, { state: { videoId } });
   };
   

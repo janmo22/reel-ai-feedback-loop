@@ -2,13 +2,12 @@
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { v4 as uuidv4 } from 'uuid';
 import { useUploadProgress } from "@/hooks/use-upload-progress";
 import { VideoUploadResponse } from "@/types";
 import { useVideoFile } from "@/hooks/use-video-file";
 import { useMissions } from "@/hooks/use-missions";
-import { supabase } from "@/integrations/supabase/client";
 import { 
+  createVideoRecord,
   uploadVideoToWebhook 
 } from "@/utils/video-upload-service";
 
@@ -106,34 +105,15 @@ export function useVideoUpload(onUploadComplete: (data: {
     
     try {
       // Step 1: First create a video record in Supabase videos table
-      console.log("Creando registro de video en Supabase...");
-      const { data: videoData, error: videoError } = await supabase
-        .from('videos')
-        .insert([
-          {
-            title,
-            description,
-            user_id: user.id,
-            video_url: "placeholder-url", // Will be updated later if needed
-            status: 'uploading',
-            missions,
-            main_message: mainMessage
-          }
-        ])
-        .select()
-        .single();
-      
-      if (videoError) {
-        console.error("Error creando registro de video:", videoError);
-        throw new Error(`Error al crear registro de video: ${videoError.message}`);
-      }
-      
-      if (!videoData || !videoData.id) {
-        throw new Error("No se pudo obtener el ID del video creado");
-      }
+      const videoData = await createVideoRecord(
+        user.id,
+        title,
+        description,
+        missions,
+        mainMessage
+      );
       
       const videoId = videoData.id;
-      console.log("Video registrado en Supabase con ID:", videoId);
       
       // Step 2: Only after creating the video record, send data to webhook
       console.log("Enviando video al webhook con videoId:", videoId);
