@@ -49,7 +49,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
           description,
           user_id: userId,
           video_url: "placeholder-url", // Will be updated later
-          status: 'uploading',
+          status: 'processing', // Changed from 'uploading' to 'processing' to match valid status values
           // missions field is removed from here
         }
       ])
