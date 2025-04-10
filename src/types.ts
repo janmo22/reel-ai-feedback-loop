@@ -63,3 +63,24 @@ export interface SupabaseVideo {
   is_favorite: boolean;
   updated_at: string;
 }
+
+// Add the missing types that were causing errors
+export interface VideoUploadResponse {
+  success: boolean;
+  videoId?: string;
+  error?: string;
+}
+
+export interface AIFeedbackResponse {
+  id: string;
+  feedback: string;
+  score: number;
+  suggestions: string;
+  tags: string[];
+  created_at: string;
+}
+
+// Update the VideoWithFeedback interface to match Video interface properly
+export interface VideoWithFeedback extends Omit<Video, 'feedback'> {
+  feedback?: Feedback[];
+}
