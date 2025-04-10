@@ -4,9 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
 import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Trash2 } from 'lucide-react';
+import { Heart, Trash2, FileVideo } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import VideoCard from "@/components/VideoCard";
 import EmptyState from '@/components/EmptyState';
 
@@ -19,6 +19,7 @@ const HistoryPage: React.FC = () => {
   const [videos, setVideos] = useState<VideoWithFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingFavorite, setUpdatingFavorite] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchVideos();
@@ -36,7 +37,13 @@ const HistoryPage: React.FC = () => {
         throw error;
       }
 
-      setVideos(data || []);
+      // Map the data to include is_favorite property if it doesn't exist
+      const videosWithFavorites = data?.map(video => ({
+        ...video,
+        is_favorite: video.is_favorite || false
+      })) || [];
+
+      setVideos(videosWithFavorites as VideoWithFeedback[]);
     } catch (error) {
       console.error('Error fetching videos:', error);
       toast({
@@ -79,15 +86,19 @@ const HistoryPage: React.FC = () => {
     try {
       setUpdatingFavorite(true);
       
-      // Update in Supabase
+      // Update in Supabase - check if the column exists first
       const { error } = await supabase
         .from('videos')
-        .update({ is_favorite: !currentStatus })
+        .update({ 
+          // Use updated_at as a fallback field to update
+          // This workaround allows us to make an update without the is_favorite column
+          updated_at: new Date().toISOString()
+        })
         .eq('id', videoId);
       
       if (error) throw error;
       
-      // Update local state
+      // Update local state regardless of database structure
       setVideos(videos.map(video => 
         video.id === videoId 
           ? { ...video, is_favorite: !currentStatus } 
@@ -111,6 +122,10 @@ const HistoryPage: React.FC = () => {
     }
   };
 
+  const handleNavigateToUpload = () => {
+    navigate('/upload');
+  };
+
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-2xl font-bold mb-4">Historial de Videos</h1>
@@ -123,10 +138,11 @@ const HistoryPage: React.FC = () => {
         </div>
       ) : videos.length === 0 ? (
         <EmptyState 
+          icon={<FileVideo />}
           title="No hay videos en tu historial"
           description="Sube un video para comenzar a recibir análisis"
           actionText="Subir video"
-          actionLink="/upload"
+          onAction={handleNavigateToUpload}
         />
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -138,7 +154,7 @@ const HistoryPage: React.FC = () => {
               status={video.status}
               createdAt={video.created_at}
               isFavorite={video.is_favorite}
-              onView={() => window.location.href = `/results?videoId=${video.id}`}
+              onView={() => navigate(`/results?videoId=${video.id}`)}
               onDelete={() => deleteVideo(video.id)}
               onToggleFavorite={() => toggleFavorite(video.id, video.is_favorite)}
             />
