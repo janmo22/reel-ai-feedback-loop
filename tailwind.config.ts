@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -66,17 +65,10 @@ export default {
 				// Simplified color palette with focus on electric blue
 				flow: {
 					blue: '#0066FF',     // Electric blue as the main color
-					light: '#E6F0FF',    // Very light blue for backgrounds
+					light: '#F5F9FF',    // Even lighter blue for backgrounds
 					dark: '#1A242C',     // Color oscuro para contraste
 					accent: '#0066FF',   // Same as blue for consistency
-					electric: '#0066FF'  // Same as blue for consistency
 				},
-				reel: {
-					purple: '#8B5CF6',
-					pink: '#D946EF',
-					dark: '#1A1F2C',
-					light: '#F1F0FB'
-				}
 			},
 			fontFamily: {
 				'satoshi': ['Satoshi', 'sans-serif'],
