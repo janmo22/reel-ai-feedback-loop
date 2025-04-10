@@ -4,7 +4,6 @@ import Header from "@/components/Header";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardTabs from "@/components/dashboard/DashboardTabs";
-import DashboardFeatures from "@/components/dashboard/DashboardFeatures";
 import HeroSection from "@/components/landing/HeroSection";
 import HowItWorks from "@/components/landing/HowItWorks";
 import CallToAction from "@/components/landing/CallToAction";
@@ -24,7 +23,6 @@ const Index: React.FC = () => {
           <div className="container mx-auto py-16 px-4 max-w-5xl">
             <DashboardHeader userName={userName} />
             <DashboardTabs />
-            <DashboardFeatures />
           </div>
         ) : (
           <>
