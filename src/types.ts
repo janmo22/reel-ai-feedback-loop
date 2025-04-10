@@ -1,4 +1,8 @@
-import { FileWithPath } from "react-dropzone";
+
+// Importamos FileWithPath de react-dropzone
+export interface FileWithPath extends File {
+  path?: string;
+}
 
 export interface VideoUploadResponse {
   status: "success" | "error" | "processing";
@@ -55,6 +59,23 @@ export interface FeedbackData {
   processing_completed_at: string | null;
 }
 
+// Modificamos la interfaz VideoWithFeedback para que sea compatible con Video
 export interface VideoWithFeedback extends Video {
   feedback: FeedbackData | null;
+}
+
+// Añadimos AIFeedbackResponse para los archivos que lo importan
+export interface AIFeedbackResponse {
+  id: string;
+  video_id: string;
+  overall_score: number;
+  feedback_data: any;
+  created_at: string;
+}
+
+// Añadimos Feedback para HistoryPage.tsx
+export interface Feedback {
+  id: string;
+  overall_score: number;
+  created_at: string;
 }

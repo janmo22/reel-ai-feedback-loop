@@ -176,7 +176,7 @@ const MissionButton = ({ id, isSelected, onClick, title, description }) => {
       }`}
     >
       <div className="flex items-center justify-between w-full">
-        <span className="font-medium">{title}</span>
+        <span className={`font-medium ${isSelected ? "text-flow-electric" : ""}`}>{title}</span>
         {isSelected && <Check className="h-4 w-4 text-flow-electric" />}
       </div>
       <span className="text-xs text-muted-foreground mt-1">{description}</span>

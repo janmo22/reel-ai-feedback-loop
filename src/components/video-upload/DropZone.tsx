@@ -1,6 +1,6 @@
 
 import React, { useRef } from "react";
-import { Upload, FileType, ArrowUpFromLine } from "lucide-react";
+import { ArrowUpFromLine, FileType } from "lucide-react";
 
 interface DropZoneProps {
   dragActive: boolean;
