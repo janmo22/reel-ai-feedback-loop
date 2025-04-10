@@ -1,82 +1,60 @@
-
-export interface User {
-  id: string;
-  email: string | null;
-  user_metadata: {
-    [key: string]: any;
-  };
-}
-
-export interface AIFeedbackResponse {
-  videoId?: string;
-  userId?: string;
-  contentTitle?: string;
-  contentSubtitle?: string;
-  generalStudy: string;
-  contentType: string;
-  engagementPotential: {
-    interaction: string;
-    watchTime: string;
-  };
-  nativeCodes: string;
-  overallEvaluation: {
-    score: number;
-    suggestions: string[];
-  };
-  seo: {
-    keywordAnalysis: string;
-    suggestedCopy: string;
-    suggestedText: string;
-    clarity: string;
-  };
-  structure?: {
-    hook?: {
-      general: string;
-      spoken: string;
-      auditory: string;
-      visual: string;
-      clarity: string;
-      feel: string;
-      invitation: string;
-      patternBreak: string;
-      strengths: string;
-      weaknesses: string;
-      score: number;
-    };
-    buildUp?: string;
-    value?: {
-      comment: string;
-      score: number;
-      function: string;
-    };
-    cta?: string;
-  };
-}
-
-export interface Video {
-  id: string;
-  created_at: string | null;
-  title: string;
-  description?: string | null;
-  status: 'processing' | 'completed' | 'failed';
-  url?: string | null;
-  video_url?: string;
-  user_id: string;
-  thumbnail_url: string | null;
-  is_favorite: boolean;
-  updated_at: string | null;
-}
-
-export interface Feedback {
-  id: string;
-  video_id?: string;
-  overall_score: number;
-  feedback_data?: any;
-  created_at: string;
-}
+import { FileWithPath } from "react-dropzone";
 
 export interface VideoUploadResponse {
-  status: string;
-  videoId: string;
+  status: "success" | "error" | "processing";
+  videoId?: string;
   message?: string;
+}
+
+// Ensure we add is_favorite to the Video interface
+export interface Video {
+  id: string;
+  title: string;
+  description: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  is_favorite: boolean;
+  feedback?: {
+    id: string;
+    overall_score: number;
+    created_at: string;
+  }[];
+}
+
+export interface AuthProvider {
+  id: string;
+  name: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  provider: AuthProvider;
+}
+
+export interface UserSession {
+  user: UserProfile | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+}
+
+export interface FeedbackData {
+  id: string;
+  video_id: string;
+  overall_score: number;
+  feedback_data: any;
+  webhook_response: any;
+  created_at: string;
+  processing_completed_at: string | null;
+}
+
+export interface VideoWithFeedback extends Video {
+  feedback: FeedbackData | null;
 }

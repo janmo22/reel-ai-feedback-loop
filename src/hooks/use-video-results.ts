@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -90,19 +89,22 @@ export function useVideoResults() {
           console.log("Video data obtenido:", videoData);
           
           // Transform data to match our Video interface
-          const transformedVideoData: Video = {
-            id: videoData.id,
-            created_at: videoData.created_at,
-            title: videoData.title,
-            description: videoData.description,
-            status: videoData.status as 'processing' | 'completed' | 'failed',
-            url: videoData.video_url || null, // Use video_url as url if needed
-            video_url: videoData.video_url,
-            user_id: videoData.user_id,
-            thumbnail_url: videoData.thumbnail_url,
-            is_favorite: videoData.is_favorite === true, // Explicitly convert to boolean
-            updated_at: videoData.updated_at
+          const transformVideoData = (videoData: any): Video => {
+            return {
+              id: videoData.id,
+              title: videoData.title,
+              description: videoData.description || "",
+              status: videoData.status,
+              created_at: videoData.created_at,
+              video_url: videoData.video_url,
+              user_id: videoData.user_id,
+              thumbnail_url: videoData.thumbnail_url,
+              is_favorite: Boolean(videoData.is_favorite),
+              updated_at: videoData.updated_at
+            };
           };
+          
+          const transformedVideoData = transformVideoData(videoData);
           
           setVideoData(transformedVideoData);
           

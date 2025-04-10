@@ -218,7 +218,25 @@ const HistoryPage = () => {
     if (score >= 6) return "text-yellow-500";
     return "text-red-500";
   };
-  
+
+  const processVideos = (data: any[] | null): Video[] => {
+    return (data?.map(item => {
+      return {
+        id: item.id,
+        title: item.title,
+        description: item.description || "",
+        status: item.status,
+        created_at: item.created_at,
+        video_url: item.video_url,
+        user_id: item.user_id,
+        thumbnail_url: item.thumbnail_url,
+        is_favorite: Boolean(item.is_favorite),
+        updated_at: item.updated_at,
+        feedback: item.feedback
+      };
+    })) || [];
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />

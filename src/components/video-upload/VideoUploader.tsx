@@ -6,6 +6,7 @@ import DropZone from "./DropZone";
 import VideoPreview from "./VideoPreview";
 import UploadForm from "./UploadForm";
 import { VideoUploadResponse } from "@/types";
+import { Separator } from "@/components/ui/separator";
 
 interface VideoUploaderProps {
   onUploadComplete: (data: {
@@ -69,7 +70,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   };
 
   return (
-    <Card className="w-full max-w-3xl mx-auto p-6">
+    <Card className="w-full max-w-3xl mx-auto p-6 shadow-lg border-border/40">
       {!videoSrc ? (
         <DropZone
           dragActive={dragActive}
@@ -78,11 +79,14 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
           handleChange={handleChange}
         />
       ) : (
-        <VideoPreview videoSrc={videoSrc} onRemove={removeVideo} />
+        <>
+          <VideoPreview videoSrc={videoSrc} onRemove={removeVideo} />
+          <Separator className="my-6" />
+        </>
       )}
 
       {videoFile && (
-        <div className="mt-6">
+        <div className={videoSrc ? "mt-0" : "mt-6"}>
           <UploadForm
             title={title}
             description={description}
