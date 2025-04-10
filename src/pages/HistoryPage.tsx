@@ -6,18 +6,24 @@ import VideoCard from "@/components/VideoCard";
 import EmptyState from "@/components/EmptyState";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Video as VideoIcon, HistoryIcon, Loader2 } from "lucide-react";
+import { Video as VideoIcon, HistoryIcon, Loader2, Star, Eye, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 import { Video, Feedback } from "@/types";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
+
+interface VideoWithFeedback extends Video {
+  feedback?: Feedback[];
+}
 
 const HistoryPage = () => {
-  const [videos, setVideos] = useState<Video[]>([]);
+  const [videos, setVideos] = useState<VideoWithFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<VideoWithFeedback | null>(null);
   const [viewType, setViewType] = useState<'grid' | 'table'>('table');
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -106,7 +112,7 @@ const HistoryPage = () => {
     navigate(`/results`, { state: { videoId } });
   };
   
-  const confirmDeleteVideo = (video: Video) => {
+  const confirmDeleteVideo = (video: VideoWithFeedback) => {
     setSelectedVideo(video);
     setShowDeleteConfirm(true);
   };
@@ -152,7 +158,7 @@ const HistoryPage = () => {
     }
   };
 
-  const toggleFavorite = async (video: Video) => {
+  const toggleFavorite = async (video: VideoWithFeedback) => {
     try {
       const newFavoriteStatus = !video.is_favorite;
       
