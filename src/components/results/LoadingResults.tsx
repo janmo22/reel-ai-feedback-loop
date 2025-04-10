@@ -7,14 +7,16 @@ const LoadingResults = () => {
   const navigate = useNavigate();
   
   return (
-    <EmptyState 
-      icon={<Loader className="h-6 w-6 animate-spin text-flow-blue" />}
-      title="Procesando video"
-      description="Estamos analizando tu reel con IA. Este proceso puede tardar varios minutos y ocurre en segundo plano. La página se actualizará automáticamente cuando el análisis esté listo. Si sales de esta página, podrás consultar los resultados más tarde en tu historial."
-      actionText="Volver a historial"
-      onAction={() => navigate('/history')}
-      actionIcon={<ArrowLeft className="mr-2 h-4 w-4" />}
-    />
+    <div className="w-full h-full flex items-center justify-center py-16">
+      <EmptyState 
+        icon={<Loader className="h-6 w-6 animate-spin text-flow-blue" />}
+        title="Procesando video"
+        description="Estamos analizando tu reel con IA. Este proceso puede tardar varios minutos y ocurre en segundo plano. La página se actualizará automáticamente cuando el análisis esté listo. Si sales de esta página, podrás consultar los resultados más tarde en tu historial."
+        actionText="Volver a historial"
+        onAction={() => navigate('/history')}
+        actionIcon={<ArrowLeft className="mr-2 h-4 w-4" />}
+      />
+    </div>
   );
 };
 

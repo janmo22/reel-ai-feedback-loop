@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -132,9 +133,8 @@ export function useVideoUpload(onUploadComplete: (data: {
         description: "Tu reel ha sido enviado para análisis. Te notificaremos cuando esté listo.",
       });
       
-      setIsUploading(false);
-      
-      // Step 3: Call onUploadComplete with the videoId and other data
+      // Call onUploadComplete BEFORE setting isUploading to false
+      // This ensures the parent component receives the data before any state updates
       onUploadComplete({
         video: videoFile,
         title,
@@ -147,6 +147,8 @@ export function useVideoUpload(onUploadComplete: (data: {
           message: "Video enviado para procesamiento"
         },
       });
+      
+      setIsUploading(false);
     } catch (error: any) {
       console.error("Error en el proceso:", error);
       stopSimulation(0);

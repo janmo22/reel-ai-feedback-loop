@@ -10,6 +10,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import EmptyState from '@/components/EmptyState';
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
+import Header from '@/components/Header';
 import {
   Table,
   TableBody,
@@ -148,86 +149,89 @@ const HistoryPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-4">Historial de Videos</h1>
-      
-      {loading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </div>
-      ) : videos.length === 0 ? (
-        <EmptyState 
-          icon={<FileVideo />}
-          title="No hay videos en tu historial"
-          description="Sube un video para comenzar a recibir análisis"
-          actionText="Subir video"
-          onAction={handleNavigateToUpload}
-        />
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Título</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Favorito</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {videos.map((video) => (
-                <TableRow key={video.id}>
-                  <TableCell className="font-medium">{video.title}</TableCell>
-                  <TableCell>
-                    <div className={`
-                      px-3 py-1 rounded-full text-xs font-medium inline-flex items-center
-                      ${video.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}
-                    `}>
-                      {video.status === "completed" ? "Completado" : "Procesando"}
-                    </div>
-                  </TableCell>
-                  <TableCell>{formatDate(video.created_at)}</TableCell>
-                  <TableCell>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0" 
-                      onClick={() => toggleFavorite(video.id, video.is_favorite)}
-                      disabled={updatingFavorite}
-                    >
-                      <Star className={`h-4 w-4 ${video.is_favorite ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
-                    </Button>
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="inline-flex items-center"
-                      onClick={() => navigate(`/results?videoId=${video.id}`)}
-                      disabled={video.status === "processing"}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      Ver
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="inline-flex items-center text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                      onClick={() => deleteVideo(video.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Eliminar
-                    </Button>
-                  </TableCell>
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <div className="container mx-auto py-8">
+        <h1 className="text-2xl font-bold mb-4">Historial de Videos</h1>
+        
+        {loading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : videos.length === 0 ? (
+          <EmptyState 
+            icon={<FileVideo />}
+            title="No hay videos en tu historial"
+            description="Sube un video para comenzar a recibir análisis"
+            actionText="Subir video"
+            onAction={handleNavigateToUpload}
+          />
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Favorito</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+              </TableHeader>
+              <TableBody>
+                {videos.map((video) => (
+                  <TableRow key={video.id}>
+                    <TableCell className="font-medium">{video.title}</TableCell>
+                    <TableCell>
+                      <div className={`
+                        px-3 py-1 rounded-full text-xs font-medium inline-flex items-center
+                        ${video.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}
+                      `}>
+                        {video.status === "completed" ? "Completado" : "Procesando"}
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatDate(video.created_at)}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0" 
+                        onClick={() => toggleFavorite(video.id, video.is_favorite)}
+                        disabled={updatingFavorite}
+                      >
+                        <Star className={`h-4 w-4 ${video.is_favorite ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="inline-flex items-center"
+                        onClick={() => navigate(`/results?videoId=${video.id}`)}
+                        disabled={video.status === "processing"}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="inline-flex items-center text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                        onClick={() => deleteVideo(video.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Eliminar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
