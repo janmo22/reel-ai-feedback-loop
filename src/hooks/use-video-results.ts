@@ -49,10 +49,13 @@ export function useVideoResults() {
           setVideoData(videoData as Video);
           
           // Comprobamos el estado del video
-          // Check if status is completed or if the feedback_received field is true (cast to Video type first)
-          const videoWithTyping = videoData as Video;
+          // Check if status is completed or if the feedback_received field is true
+          const videoTyped = videoData as Video;
+          const feedbackReceived = 
+            videoTyped.feedback_received === true || 
+            videoData.status === "completed";
           
-          if (videoData.status === "completed" || videoWithTyping.feedback_received === true) {
+          if (feedbackReceived) {
             // Buscamos feedback asociado
             const { data: feedbackData, error: feedbackError } = await supabase
               .from('feedback')
@@ -115,8 +118,63 @@ export function useVideoResults() {
       // Hacemos polling cada pocos segundos si el video aún se está procesando
       const intervalId = setInterval(fetchVideoData, 10000); // Verificamos cada 10 segundos
       
+      // Subscribe to Supabase Realtime for feedback updates
+      const channel = supabase
+        .channel(`feedback-${state.videoId}`)
+        .on('postgres_changes', 
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'feedback',
+            filter: `video_id=eq.${state.videoId}`
+          },
+          async (payload) => {
+            console.log("Realtime update received for feedback:", payload);
+            
+            // Fetch the complete feedback data
+            const { data: newFeedback, error: feedbackError } = await supabase
+              .from('feedback')
+              .select('*')
+              .eq('id', payload.new.id)
+              .maybeSingle();
+              
+            if (feedbackError || !newFeedback) {
+              console.error("Error fetching feedback data after realtime update:", feedbackError);
+              return;
+            }
+            
+            try {
+              const feedbackContent = Array.isArray(newFeedback.feedback_data) 
+                ? newFeedback.feedback_data 
+                : [newFeedback.feedback_data];
+              
+              const formattedFeedback = feedbackContent as unknown as AIFeedbackResponse[];
+              setFeedback(formattedFeedback);
+              setLoading(false);
+              
+              // Update video status to completed
+              await supabase
+                .from('videos')
+                .update({ 
+                  status: 'completed', 
+                  feedback_received: true 
+                })
+                .eq('id', state.videoId);
+              
+              toast({
+                title: "¡Análisis completado!",
+                description: "Los resultados de tu video ya están listos para revisar.",
+              });
+            } catch (parseError) {
+              console.error("Error processing realtime feedback data:", parseError);
+            }
+          }
+        )
+        .subscribe();
+      
       return () => {
         clearInterval(intervalId); // Limpiamos al desmontar el componente
+        supabase.removeChannel(channel); // Unsubscribe from realtime updates
       };
     } else {
       // Si no tenemos datos en el state, mantenemos el estado de carga

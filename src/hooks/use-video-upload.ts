@@ -106,12 +106,13 @@ export function useVideoUpload(onUploadComplete: (data: {
     startSimulation(); // Start a progress simulation
     
     try {
+      // Generate a unique ID for the video
       const videoId = uuidv4();
       
-      // Save metadata to the database with "processing" status
-      await saveVideoMetadata(videoId, user.id, title, description);
+      // Save metadata to the database with "uploading" status
+      await saveVideoMetadata(videoId, user.id, title, description, missions, mainMessage);
       
-      // Send data to webhook using fetch directly
+      // Send data to webhook
       const response = await uploadVideoToWebhook({
         videoId,
         userId: user.id,
@@ -122,13 +123,10 @@ export function useVideoUpload(onUploadComplete: (data: {
         mainMessage
       });
       
-      // Update video status in database (still "processing")
-      await updateVideoStatus(videoId, 'processing');
-      
       stopSimulation(100);
       toast({
         title: "¡Video enviado!",
-        description: "Tu reel ha sido enviado para análisis.",
+        description: "Tu reel ha sido enviado para análisis. Te notificaremos cuando esté listo.",
       });
       
       setIsUploading(false);

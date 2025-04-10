@@ -38,13 +38,14 @@ export async function saveVideoMetadata(
           title,
           description,
           video_url: "placeholder-url", // URL placeholder since we're not uploading the video to Supabase
-          status: 'processing',
+          status: 'uploading',
           missions,
           main_message: mainMessage
         }
       ]);
     
     console.log("Metadatos guardados en Supabase correctamente");
+    return videoId;
   } catch (dbError) {
     console.error("Error guardando en Supabase:", dbError);
     throw new Error(`Error guardando metadatos: ${dbError}`);
@@ -95,88 +96,59 @@ export async function uploadVideoToWebhook({
   // Add the video file to FormData
   formData.append("video", videoFile);
   
-  console.log("Enviando datos y video en binario al webhook");
+  console.log("Enviando datos y video en binario al webhook con videoId:", videoId);
   
   try {
-    // Save all metadata to Supabase including missions and main message
-    await saveVideoMetadata(videoId, userId, title, description, missions, mainMessage);
-    
-    try {
-      // Using regular fetch mode first to try to get a response
-      const response = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        body: formData,
-      });
-      
-      if (response.ok) {
-        console.log("Datos enviados correctamente al webhook con respuesta");
-        return { 
-          status: "success", 
-          videoId,
-          message: "Video enviado para procesamiento. Revisa los resultados más tarde."
-        };
-      }
-      
-      console.warn("La respuesta del webhook no fue exitosa, usando modo no-cors como respaldo");
-    } catch (fetchError) {
-      console.warn("Error al intentar fetch con modo normal:", fetchError);
-    }
-    
-    // Fallback to no-cors mode
-    await fetch(WEBHOOK_URL, {
+    // Using regular fetch mode first to try to get a response
+    const response = await fetch(WEBHOOK_URL, {
       method: "POST",
       body: formData,
-      mode: "no-cors", // Fallback to no-cors mode
     });
     
-    console.log("Datos enviados al webhook usando modo no-cors");
-    
-    return { 
-      status: "processing", 
-      videoId,
-      message: "Video enviado para procesamiento. Revisa los resultados más tarde."
-    };
-  } catch (error) {
-    // Even with no-cors, network errors can still be caught
-    console.error("Error en la conexión con el webhook", error);
-    
-    // Instead of failing, we return a success response with a processing status
-    // The user will wait for the webhook to complete processing
-    return { 
-      status: "processing", 
-      videoId,
-      message: "Video enviado para procesamiento. La conexión puede haber fallado pero el análisis continuará en segundo plano."
-    };
-  }
-}
-
-/**
- * Create a feedback entry in Supabase
- */
-export async function saveFeedbackResponse(videoId: string, feedbackData: any, overallScore: number = 0) {
-  try {
-    const { data, error } = await supabase
-      .from('feedback')
-      .insert([
-        {
-          video_id: videoId,
-          feedback_data: feedbackData,
-          overall_score: overallScore,
-          webhook_response: feedbackData,
-          processing_completed_at: new Date().toISOString()
-        }
-      ]);
+    if (response.ok) {
+      console.log("Datos enviados correctamente al webhook con respuesta");
       
-    if (error) {
-      console.error("Error al guardar el feedback:", error);
-      return false;
+      // Update the video status to processing
+      await updateVideoStatus(videoId, 'processing');
+      
+      return { 
+        status: "processing", 
+        videoId,
+        message: "Video enviado para procesamiento. Revisa los resultados más tarde."
+      };
     }
     
-    console.log("Feedback guardado correctamente para el video:", videoId);
-    return true;
-  } catch (error) {
-    console.error("Error al guardar el feedback:", error);
-    return false;
+    console.warn("La respuesta del webhook no fue exitosa, usando modo no-cors como respaldo");
+    throw new Error("La respuesta del webhook no fue exitosa");
+  } catch (fetchError) {
+    console.warn("Error al intentar fetch con modo normal:", fetchError);
+    
+    try {
+      // Fallback to no-cors mode
+      await fetch(WEBHOOK_URL, {
+        method: "POST",
+        body: formData,
+        mode: "no-cors", // Fallback to no-cors mode
+      });
+      
+      console.log("Datos enviados al webhook usando modo no-cors");
+      
+      // Update the video status to processing
+      await updateVideoStatus(videoId, 'processing');
+      
+      return { 
+        status: "processing", 
+        videoId,
+        message: "Video enviado para procesamiento. Revisa los resultados más tarde."
+      };
+    } catch (noCorsError) {
+      console.error("Error en ambos métodos de envío:", noCorsError);
+      
+      // Update video status to error
+      await updateVideoStatus(videoId, 'error');
+      
+      throw new Error(`Error al enviar el video: ${noCorsError.message}`);
+    }
   }
 }
 

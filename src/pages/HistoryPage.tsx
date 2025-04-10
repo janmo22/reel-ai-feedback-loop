@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -20,37 +21,55 @@ const HistoryPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
+  // Fetch videos when component mounts
   useEffect(() => {
     if (user) {
       fetchUserVideos();
     }
   }, [user]);
   
-  // Fetch videos with polling to update status
+  // Subscribe to Supabase Realtime for feedback updates
   useEffect(() => {
-    if (user) {
-      // Initial fetch
-      fetchUserVideos();
-      
-      // Set up polling for video status updates
-      const pollingInterval = setInterval(fetchUserVideos, 30000); // Poll every 30 seconds
-      
-      return () => {
-        clearInterval(pollingInterval);
-      };
-    }
+    if (!user) return;
+    
+    // Listen for new feedback entries or status updates
+    const channel = supabase
+      .channel('public:feedback')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'feedback' 
+        },
+        () => {
+          // Fetch updated list when any feedback changes
+          fetchUserVideos();
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
   
   const fetchUserVideos = async () => {
     try {
+      if (!user) return;
+      
+      // Get videos with their feedback data using a join
       const { data, error } = await supabase
         .from('videos')
-        .select('*')
-        .eq('user_id', user?.id)
+        .select(`
+          *,
+          feedback:feedback(id, overall_score, created_at)
+        `)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
+      console.log("Videos fetched with feedback:", data);
       setVideos(data || []);
     } catch (error: any) {
       console.error('Error fetching videos:', error);
@@ -68,7 +87,7 @@ const HistoryPage = () => {
     // Check if video has completed processing
     const video = videos.find(v => v.id === videoId);
     
-    if (video?.status === "processing") {
+    if (video?.status === "processing" || video?.status === "uploading") {
       toast({
         title: "Análisis en proceso",
         description: "Este análisis aún está siendo procesado. Por favor, inténtalo más tarde.",
@@ -89,7 +108,17 @@ const HistoryPage = () => {
     if (!selectedVideo) return;
     
     try {
-      // Solo eliminamos de la base de datos ya que no hay video en Supabase Storage
+      // Delete feedback entries associated with this video
+      const { error: feedbackError } = await supabase
+        .from('feedback')
+        .delete()
+        .eq('video_id', selectedVideo.id);
+      
+      if (feedbackError) {
+        console.error('Error deleting associated feedback:', feedbackError);
+      }
+      
+      // Delete the video entry
       const { error: dbError } = await supabase
         .from('videos')
         .delete()
