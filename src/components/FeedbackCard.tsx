@@ -31,7 +31,7 @@ const FeedbackCard = ({
   
   const getScoreColor = (score: number) => {
     if (score >= 8) return "bg-green-500";
-    if (score >= 6) return "bg-violet-500";
+    if (score >= 6) return "bg-blue-500";
     return "bg-red-500";
   };
   
@@ -75,12 +75,12 @@ const FeedbackCard = ({
                 <p className="text-sm text-slate-700 mb-4">{category.feedback}</p>
                 
                 {category.suggestions && category.suggestions.length > 0 && (
-                  <div className="bg-violet-50 p-4 rounded-md mt-4 border-l-2 border-violet-500">
+                  <div className="bg-blue-50 p-4 rounded-md mt-4 border-l-2 border-blue-500">
                     <h5 className="text-sm font-medium text-slate-700 mb-2">Recomendaciones:</h5>
                     <ul className="space-y-3">
                       {category.suggestions.map((suggestion, idx) => (
                         <li key={idx} className="text-sm flex gap-2">
-                          <ThumbsUp size={14} className="text-violet-600 flex-shrink-0 mt-1" />
+                          <ThumbsUp size={14} className="text-blue-600 flex-shrink-0 mt-1" />
                           <span className="text-slate-700">{suggestion}</span>
                         </li>
                       ))}
