@@ -12,8 +12,8 @@ export interface UploadVideoParams {
   mainMessage: string;
 }
 
-// The webhook URL for uploading videos (updated to test webhook)
-export const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
+// The webhook URL for uploading videos (updated to production webhook)
+export const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
 /**
  * Save the initial video metadata to Supabase
@@ -101,20 +101,38 @@ export async function uploadVideoToWebhook({
     // Save all metadata to Supabase including missions and main message
     await saveVideoMetadata(videoId, userId, title, description, missions, mainMessage);
     
-    // Using no-cors mode means we won't be able to read the response,
-    // but at least we can send the request
+    try {
+      // Using regular fetch mode first to try to get a response
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (response.ok) {
+        console.log("Datos enviados correctamente al webhook con respuesta");
+        return { 
+          status: "success", 
+          videoId,
+          message: "Video enviado para procesamiento. Revisa los resultados más tarde."
+        };
+      }
+      
+      console.warn("La respuesta del webhook no fue exitosa, usando modo no-cors como respaldo");
+    } catch (fetchError) {
+      console.warn("Error al intentar fetch con modo normal:", fetchError);
+    }
+    
+    // Fallback to no-cors mode
     await fetch(WEBHOOK_URL, {
       method: "POST",
       body: formData,
-      mode: "no-cors", // Important to avoid CORS errors with third-party webhooks
+      mode: "no-cors", // Fallback to no-cors mode
     });
     
-    console.log("Datos enviados correctamente al webhook");
+    console.log("Datos enviados al webhook usando modo no-cors");
     
-    // Since we can't get the actual response with no-cors, we assume it was successful
-    // The webhook will process the video and update the database when it's done
     return { 
-      status: "success", 
+      status: "processing", 
       videoId,
       message: "Video enviado para procesamiento. Revisa los resultados más tarde."
     };

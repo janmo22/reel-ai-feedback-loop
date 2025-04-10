@@ -10,6 +10,9 @@ export interface Video {
   created_at: string | null;
   updated_at: string | null;
   user_id: string;
+  feedback_received?: boolean;
+  missions?: string[];
+  main_message?: string;
 }
 
 export interface Feedback {
@@ -23,11 +26,13 @@ export interface Feedback {
 export interface VideoUploadResponse {
   status: string;
   videoId: string;
-  message?: string; // Added the message property as optional
+  message?: string;
 }
 
 // Define the AIFeedbackResponse interface to match the webhook response structure
 export interface AIFeedbackResponse {
+  videoId?: string;
+  userId?: string;
   generalStudy: string;
   contentType: string;
   engagementPotential: {

@@ -5,11 +5,27 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AIFeedbackResponse } from "@/types";
 
+// Add a type for the video data to avoid TypeScript errors
+interface VideoData {
+  id: string;
+  title: string;
+  description: string | null;
+  video_url: string;
+  thumbnail_url: string | null;
+  status: string;
+  created_at: string | null;
+  updated_at: string | null;
+  user_id: string;
+  feedback_received?: boolean;
+  main_message?: string;
+  missions?: string[];
+}
+
 export function useVideoResults() {
   const location = useLocation();
   const [feedback, setFeedback] = useState<AIFeedbackResponse[] | null>(null);
   const [loading, setLoading] = useState(true);
-  const [videoData, setVideoData] = useState<any>(null);
+  const [videoData, setVideoData] = useState<VideoData | null>(null);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -46,11 +62,11 @@ export function useVideoResults() {
           }
           
           console.log("Video data obtenido:", videoData);
-          setVideoData(videoData);
+          setVideoData(videoData as VideoData);
           
           // Comprobamos el estado del video
-          // Fix: Check if status is completed or if the feedback_received field exists and is true
-          if (videoData.status === "completed" || (videoData.hasOwnProperty('feedback_received') && videoData.feedback_received === true)) {
+          // Check if status is completed or if the feedback_received field exists and is true
+          if (videoData.status === "completed" || (Object.prototype.hasOwnProperty.call(videoData, 'feedback_received') && videoData.feedback_received === true)) {
             // Buscamos feedback asociado
             const { data: feedbackData, error: feedbackError } = await supabase
               .from('feedback')
@@ -62,7 +78,7 @@ export function useVideoResults() {
               console.error("Error obteniendo feedback:", feedbackError);
               setLoading(true);
             } else if (feedbackData) {
-              // Fix: Cast the feedback_data to AIFeedbackResponse with proper type handling
+              // Cast the feedback_data to AIFeedbackResponse with proper type handling
               let formattedFeedback: AIFeedbackResponse[];
               
               if (feedbackData.feedback_data) {

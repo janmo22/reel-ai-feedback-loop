@@ -3,13 +3,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Tipos para las respuestas del webhook
-interface WebhookResponse {
+interface WebhookResponseItem {
   videoId: string;
   userId: string;
-  feedback: FeedbackData;
-}
-
-interface FeedbackData {
   generalStudy: string;
   contentType: string;
   engagementPotential: {
@@ -80,62 +76,70 @@ serve(async (req) => {
     const requestData = await req.json();
     console.log("Datos recibidos del webhook:", requestData);
     
-    // Verificar que tenemos los campos necesarios
-    const { videoId, userId, feedback } = requestData;
-    
-    if (!videoId || !userId || !feedback) {
+    // Verificar que la respuesta es un array como se espera
+    if (!Array.isArray(requestData)) {
+      console.error("La respuesta del webhook no es un array:", requestData);
       return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
+        JSON.stringify({ error: "Invalid data format, expected array" }),
         { headers, status: 400 }
       );
     }
     
-    // Crear cliente de Supabase
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    // Guardar los datos de feedback en la tabla de feedback
-    const { data: feedbackData, error: feedbackError } = await supabase
-      .from("feedback")
-      .insert({
-        video_id: videoId,
-        overall_score: feedback.overallEvaluation?.score || 0,
-        feedback_data: feedback,
-        webhook_response: requestData,
-        processing_completed_at: new Date().toISOString(),
-      });
+    // Procesar cada elemento del array
+    for (const item of requestData) {
+      const { videoId, userId } = item;
       
-    if (feedbackError) {
-      console.error("Error al guardar feedback:", feedbackError);
-      return new Response(
-        JSON.stringify({ error: "Error saving feedback", details: feedbackError }),
-        { headers, status: 500 }
-      );
-    }
-    
-    // Actualizar el estado del video a "completed"
-    const { error: videoError } = await supabase
-      .from("videos")
-      .update({
-        status: "completed",
-        feedback_received: true,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", videoId);
+      // Verificar que tenemos los campos necesarios
+      if (!videoId || !userId) {
+        console.error("Elemento sin videoId o userId:", item);
+        continue; // Skip this item and process the next one
+      }
       
-    if (videoError) {
-      console.error("Error al actualizar video:", videoError);
-      return new Response(
-        JSON.stringify({ error: "Error updating video status", details: videoError }),
-        { headers, status: 500 }
-      );
+      // Crear cliente de Supabase
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Guardar los datos de feedback en la tabla de feedback
+      const { data: feedbackData, error: feedbackError } = await supabase
+        .from("feedback")
+        .insert({
+          video_id: videoId,
+          overall_score: item.overallEvaluation?.score || 0,
+          feedback_data: item,
+          webhook_response: requestData,
+          processing_completed_at: new Date().toISOString(),
+        });
+        
+      if (feedbackError) {
+        console.error("Error al guardar feedback para video " + videoId + ":", feedbackError);
+      } else {
+        console.log("Feedback guardado correctamente para el video:", videoId);
+      }
+      
+      // Actualizar el estado del video a "completed"
+      const { error: videoError } = await supabase
+        .from("videos")
+        .update({
+          status: "completed",
+          feedback_received: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", videoId);
+        
+      if (videoError) {
+        console.error("Error al actualizar video " + videoId + ":", videoError);
+      } else {
+        console.log("Video actualizado correctamente:", videoId);
+      }
     }
-    
-    console.log("Feedback guardado correctamente para el video:", videoId);
     
     return new Response(
-      JSON.stringify({ success: true, message: "Feedback saved successfully" }),
+      JSON.stringify({ 
+        success: true, 
+        message: "Feedback procesado correctamente",
+        count: requestData.length 
+      }),
       { headers, status: 200 }
     );
     
