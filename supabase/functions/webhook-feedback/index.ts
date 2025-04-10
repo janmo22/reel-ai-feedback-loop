@@ -156,7 +156,7 @@ serve(async (req) => {
         .update({
           status: "completed",
           feedback_received: true,
-          is_favorite: false, // Set default value for is_favorite
+          is_favorite: false, // Set explicit default value for is_favorite
           updated_at: new Date().toISOString()
         })
         .eq("id", videoId);

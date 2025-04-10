@@ -100,7 +100,7 @@ export function useVideoResults() {
             video_url: videoData.video_url,
             user_id: videoData.user_id,
             thumbnail_url: videoData.thumbnail_url,
-            is_favorite: videoData.is_favorite || false,  // Add default false if is_favorite is not present
+            is_favorite: videoData.is_favorite === true, // Explicitly convert to boolean
             updated_at: videoData.updated_at
           };
           

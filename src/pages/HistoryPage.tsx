@@ -109,7 +109,7 @@ const HistoryPage = () => {
         video_url: item.video_url,
         user_id: item.user_id,
         thumbnail_url: item.thumbnail_url,
-        is_favorite: item.is_favorite || false,
+        is_favorite: item.is_favorite === true,
         updated_at: item.updated_at,
         feedback: item.feedback
       })) || [];
