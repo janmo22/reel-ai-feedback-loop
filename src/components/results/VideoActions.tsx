@@ -45,15 +45,15 @@ const VideoActions = ({ onSave, onShare, isFavorite = false }: VideoActionsProps
         variant="outline"
         size="lg"
         className={`w-full justify-center ${
-          isFavorite ? 'bg-blue-50 border-blue-200 text-blue-700' : ''
+          isFavorite ? 'bg-purple-50 border-purple-300 text-purple-700' : ''
         }`}
         onClick={handleSave}
         disabled={isProcessing || !user}
       >
         {isFavorite ? (
-          <Star className="mr-2 h-4 w-4 fill-blue-400 text-blue-500" />
+          <Star className="mr-2 h-4 w-4 fill-purple-400 text-purple-500" />
         ) : (
-          <BookmarkPlus className="mr-2 h-4 w-4" />
+          <BookmarkPlus className="mr-2 h-4 w-4 text-purple-500" />
         )}
         {isFavorite ? 'Guardado' : 'Guardar'}
       </Button>
@@ -61,7 +61,7 @@ const VideoActions = ({ onSave, onShare, isFavorite = false }: VideoActionsProps
       <Button 
         variant="outline" 
         size="lg"
-        className="w-full justify-center"
+        className="w-full justify-center hover:bg-purple-50 hover:text-purple-700"
         onClick={onShare}
         disabled={!user}
       >
