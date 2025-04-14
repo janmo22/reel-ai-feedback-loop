@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, AlertCircle, Mail } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -88,21 +88,35 @@ const AuthPage = () => {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-flow-blue/5 via-background to-flow-accent/5 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full opacity-10">
+        <div className="absolute -top-20 -left-20 w-72 h-72 bg-flow-blue rounded-full filter blur-3xl"></div>
+        <div className="absolute top-40 right-20 w-96 h-96 bg-flow-accent rounded-full filter blur-3xl"></div>
+      </div>
+      
+      <Card className="w-full max-w-md relative z-10 border-flow-blue/10 shadow-xl backdrop-blur-sm">
         <Tabs defaultValue="login" className="w-full">
-          <CardHeader>
-            <div className="text-center mb-4">
-              <h1 className="text-3xl font-bold electric-text">FLOW</h1>
+          <CardHeader className="pb-2">
+            <div className="flex flex-col items-center justify-center mb-6">
+              <img 
+                src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" 
+                alt="FLOW Logo" 
+                className="h-16 mb-2" 
+              />
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">FLOW</h1>
               <p className="text-muted-foreground">Analiza tus reels con IA</p>
             </div>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Iniciar sesión</TabsTrigger>
-              <TabsTrigger value="register">Registrarse</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-muted/50">
+              <TabsTrigger value="login" className="data-[state=active]:bg-flow-blue/10 data-[state=active]:text-flow-blue">
+                Iniciar sesión
+              </TabsTrigger>
+              <TabsTrigger value="register" className="data-[state=active]:bg-flow-blue/10 data-[state=active]:text-flow-blue">
+                Registrarse
+              </TabsTrigger>
             </TabsList>
           </CardHeader>
           
-          <CardContent>
+          <CardContent className="pt-4">
             <TabsContent value="login">
               <form onSubmit={handleLogin}>
                 <div className="space-y-4">
@@ -115,6 +129,7 @@ const AuthPage = () => {
                       required
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
+                      className="border-muted-foreground/20 focus-visible:ring-flow-blue"
                     />
                   </div>
                   <div className="space-y-2">
@@ -125,9 +140,14 @@ const AuthPage = () => {
                       required
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
+                      className="border-muted-foreground/20 focus-visible:ring-flow-blue"
                     />
                   </div>
-                  <Button className="w-full" type="submit" disabled={isLoading}>
+                  <Button 
+                    className="w-full bg-flow-blue hover:bg-flow-blue/90 text-white" 
+                    type="submit" 
+                    disabled={isLoading}
+                  >
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -152,7 +172,7 @@ const AuthPage = () => {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    className="w-full flex gap-2 items-center justify-center" 
+                    className="w-full flex gap-2 items-center justify-center border-flow-blue/20 hover:bg-flow-blue/5" 
                     onClick={handleGoogleLogin}
                     disabled={googleLoading}
                   >
@@ -188,7 +208,7 @@ const AuthPage = () => {
                     </AlertDescription>
                   </Alert>
                   <Button 
-                    className="w-full" 
+                    className="w-full bg-flow-blue hover:bg-flow-blue/90 text-white" 
                     onClick={() => setRegistrationSuccess(false)}
                   >
                     Registrar otra cuenta
@@ -206,6 +226,7 @@ const AuthPage = () => {
                           required
                           value={firstName}
                           onChange={(e) => setFirstName(e.target.value)}
+                          className="border-muted-foreground/20 focus-visible:ring-flow-blue"
                         />
                       </div>
                       <div className="space-y-2">
@@ -216,6 +237,7 @@ const AuthPage = () => {
                           required
                           value={lastName}
                           onChange={(e) => setLastName(e.target.value)}
+                          className="border-muted-foreground/20 focus-visible:ring-flow-blue"
                         />
                       </div>
                     </div>
@@ -228,6 +250,7 @@ const AuthPage = () => {
                         required
                         value={registerEmail}
                         onChange={(e) => setRegisterEmail(e.target.value)}
+                        className="border-muted-foreground/20 focus-visible:ring-flow-blue"
                       />
                     </div>
                     <div className="space-y-2">
@@ -238,6 +261,7 @@ const AuthPage = () => {
                         required
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
+                        className="border-muted-foreground/20 focus-visible:ring-flow-blue"
                       />
                     </div>
                     <div className="space-y-2">
@@ -248,9 +272,14 @@ const AuthPage = () => {
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="border-muted-foreground/20 focus-visible:ring-flow-blue"
                       />
                     </div>
-                    <Button className="w-full" type="submit" disabled={isLoading}>
+                    <Button 
+                      className="w-full bg-flow-blue hover:bg-flow-blue/90 text-white" 
+                      type="submit" 
+                      disabled={isLoading}
+                    >
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -275,7 +304,7 @@ const AuthPage = () => {
                     <Button 
                       type="button" 
                       variant="outline" 
-                      className="w-full flex gap-2 items-center justify-center" 
+                      className="w-full flex gap-2 items-center justify-center border-flow-blue/20 hover:bg-flow-blue/5" 
                       onClick={handleGoogleLogin}
                       disabled={googleLoading}
                     >
@@ -302,7 +331,7 @@ const AuthPage = () => {
           </CardContent>
           
           <CardFooter>
-            <p className="text-center text-sm text-muted-foreground w-full">
+            <p className="text-center text-xs text-muted-foreground w-full mt-2">
               Al continuar, aceptas nuestros términos de servicio y política de privacidad.
             </p>
           </CardFooter>
