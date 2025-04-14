@@ -1,9 +1,12 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2, CheckCircle2, ArrowRight, Clock, History } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Loader2, CheckCircle2, ArrowRight, Clock, History, Bell } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProcessingStepsProps {
   currentStep: "processing" | "complete";
@@ -17,6 +20,37 @@ const ProcessingSteps: React.FC<ProcessingStepsProps> = ({
   onContinue,
 }) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const videoId = searchParams.get('videoId');
+  
+  useEffect(() => {
+    // Only set up listener if we're on the processing step and we have a videoId
+    if (currentStep !== "processing" || !videoId || !user) return;
+    
+    // Set up real-time subscription to feedback table
+    const channel = supabase
+      .channel('processing-updates')
+      .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'feedback', filter: `video_id=eq.${videoId}` },
+          (payload) => {
+            console.log('New feedback detected:', payload);
+            toast({
+              title: "¡Análisis completado!",
+              description: "Tu reel ha sido analizado correctamente.",
+            });
+            // Call the onContinue function to update the UI
+            onContinue();
+          }
+      )
+      .subscribe();
+      
+    // Cleanup subscription on component unmount or step change
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentStep, videoId, toast, onContinue, user]);
 
   return (
     <Card className="w-full max-w-3xl mx-auto p-8 text-center flex flex-col items-center space-y-6 shadow-lg border-border/40">

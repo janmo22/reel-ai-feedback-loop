@@ -7,7 +7,7 @@ import { useVideoResults } from "@/hooks/use-video-results";
 import VideoActions from "@/components/results/VideoActions";
 import LoadingResults from "@/components/results/LoadingResults";
 import NoResults from "@/components/results/NoResults";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import Footer from "@/components/layout/Footer";
 import ResultsFeedback from "@/components/results/ResultsFeedback";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +27,17 @@ const ResultsPage = () => {
       navigate('/auth', { replace: true });
     }
   }, [user, navigate]);
+  
+  // Show notification when analysis is ready if coming from the processing state
+  useEffect(() => {
+    // If we're no longer loading and we have feedback and were previously in processing state
+    if (!loading && hasFeedback && isProcessing) {
+      toast({
+        title: "¡Análisis completado!",
+        description: "Tu reel ha sido analizado correctamente y está listo para revisar."
+      });
+    }
+  }, [loading, hasFeedback, isProcessing, toast]);
   
   const handleShare = () => {
     toast({
