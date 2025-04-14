@@ -57,7 +57,7 @@ const ResultsPage = () => {
         <Header />
         <main className="flex-1 py-8 px-4">
           <div className="container mx-auto max-w-5xl">
-            <NoResults error={error || "No tienes acceso a este contenido"} />
+            <NoResults error={error} />
           </div>
         </main>
         <Footer />
@@ -115,7 +115,7 @@ const ResultsPage = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-slate-500">{contentType}</span>
                   {fd?.videoStructureAndPacing?.valueDelivery?.mainFunction && (
-                    <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">
+                    <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full">
                       {fd.videoStructureAndPacing.valueDelivery.mainFunction}
                     </span>
                   )}
@@ -133,9 +133,9 @@ const ResultsPage = () => {
                       <Star 
                         key={idx} 
                         className={`h-5 w-5 ${
-                          filled ? 'text-purple-400 fill-purple-400' : 
-                          half ? 'text-purple-400 fill-purple-400/50' : 
-                          'text-purple-200'
+                          filled ? 'text-blue-400 fill-blue-400' : 
+                          half ? 'text-blue-400 fill-blue-400/50' : 
+                          'text-blue-200'
                         }`}
                       />
                     );

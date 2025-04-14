@@ -1,3 +1,4 @@
+
 import AIFeedbackCard from "@/components/AIFeedbackCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import { AIFeedbackResponse } from "@/types";
@@ -14,9 +15,15 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SuggestedCopy from "./SuggestedCopy";
 
-const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse }) => {
+interface ResultsFeedbackProps {
+  feedbackItem: AIFeedbackResponse;
+}
+
+const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
+  // Access the new data structure if available
   const fd = feedbackItem.feedback_data;
   
+  // Hook analysis
   const hookCategories = fd?.videoStructureAndPacing?.hook ? [
     {
       name: "Efectividad general",
@@ -51,6 +58,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }
   ] : [];
   
+  // Structure and value categories
   const structureCategories = [
     ...(fd?.videoStructureAndPacing?.valueDelivery ? [{
       name: "Valor principal",
@@ -72,6 +80,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }] : [])
   ];
   
+  // SEO categories
   const seoCategories = fd?.seoAndDiscoverability ? [
     {
       name: "Análisis de palabras clave",
@@ -111,6 +120,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }
   ] : [];
   
+  // Native elements categories
   const nativeCategories = fd?.platformNativeElements ? [
     {
       name: "Elementos identificados",
@@ -125,6 +135,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }
   ] : [];
   
+  // Engagement categories
   const engagementCategories = fd?.engagementOptimization ? [
     {
       name: "Interacción",
@@ -144,6 +155,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }
   ] : [];
   
+  // Strategic alignment categories
   const strategicCategories = fd?.strategicAlignment ? [
     {
       name: "Consistencia del creador",
@@ -163,6 +175,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }
   ] : [];
 
+  // Content type strategy
   const contentTypeCategories = fd?.contentTypeStrategy ? [
     {
       name: "Clasificación",
@@ -182,6 +195,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }] : [])
   ] : [];
   
+  // Suggested copy content
   const suggestedOptimizedCopy = fd?.seoAndDiscoverability?.suggestedOptimizedCopy || "";
   const suggestedOptimizedOnScreenText = fd?.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "";
   
@@ -192,47 +206,29 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
       <div className="mt-10">
         <Tabs defaultValue="hook" className="w-full">
           <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-2 h-auto bg-transparent p-0 mb-8 w-full">
-            <TabsTrigger 
-              value="hook" 
-              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
-            >
-              <Rocket className="h-4 w-4 text-blue-600" /> Hook
+            <TabsTrigger value="hook" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
+              <Rocket className="h-4 w-4" /> Hook
             </TabsTrigger>
-            <TabsTrigger 
-              value="estructura" 
-              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
-            >
-              <Layout className="h-4 w-4 text-blue-600" /> Estructura
+            <TabsTrigger value="estructura" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
+              <Layout className="h-4 w-4" /> Estructura
             </TabsTrigger>
-            <TabsTrigger 
-              value="seo" 
-              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
-            >
-              <Search className="h-4 w-4 text-blue-600" /> SEO
+            <TabsTrigger value="seo" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
+              <Search className="h-4 w-4" /> SEO
             </TabsTrigger>
-            <TabsTrigger 
-              value="engagement" 
-              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
-            >
-              <MessageSquare className="h-4 w-4 text-blue-600" /> Engagement
+            <TabsTrigger value="engagement" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
+              <MessageSquare className="h-4 w-4" /> Engagement
             </TabsTrigger>
-            <TabsTrigger 
-              value="estrategia" 
-              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
-            >
-              <BarChart className="h-4 w-4 text-blue-600" /> Estrategia
+            <TabsTrigger value="estrategia" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
+              <BarChart className="h-4 w-4" /> Estrategia
             </TabsTrigger>
-            <TabsTrigger 
-              value="elementos" 
-              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
-            >
-              <Gauge className="h-4 w-4 text-blue-600" /> Elementos
+            <TabsTrigger value="elementos" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
+              <Gauge className="h-4 w-4" /> Elementos
             </TabsTrigger>
           </TabsList>
           
-          <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 shadow-sm">
+          <div className="bg-white p-6 rounded-lg border shadow-sm">
             <TabsContent value="hook" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
                 <Rocket className="mr-3 text-blue-500" /> Análisis del Hook
               </h3>
               <p className="text-slate-600 mb-6">Un hook efectivo es crucial para captar la atención en los primeros segundos y evitar que los usuarios deslicen.</p>
@@ -241,8 +237,8 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
                   title="Evaluación del Hook"
                   overallScore={fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore || 0}
                   categories={hookCategories}
-                  icon={<Rocket className="h-5 w-5 text-purple-500" />}
-                  accentColor="bg-purple-50 border-purple-100"
+                  icon={<Rocket className="h-5 w-5 text-blue-500" />}
+                  accentColor="bg-blue-50 border-blue-100"
                 />
               ) : (
                 <p>No hay datos disponibles para el análisis del hook.</p>
@@ -250,7 +246,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
             </TabsContent>
             
             <TabsContent value="estructura" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
                 <Layout className="mr-3 text-blue-500" /> Estructura y Valor
               </h3>
               <p className="text-slate-600 mb-6">La estructura óptima mantiene al espectador interesado mientras se entrega el valor principal del contenido.</p>
@@ -268,7 +264,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
             </TabsContent>
             
             <TabsContent value="seo" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
                 <Search className="mr-3 text-blue-500" /> SEO y Descubribilidad
               </h3>
               <p className="text-slate-600 mb-6">La optimización para motores de búsqueda aumenta la visibilidad de tu contenido en la plataforma.</p>
@@ -278,7 +274,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
                   overallScore={7}
                   categories={seoCategories}
                   icon={<Search className="h-5 w-5 text-blue-500" />}
-                  accentColor="bg-purple-50 border-purple-100"
+                  accentColor="bg-blue-50 border-blue-100"
                 />
               ) : (
                 <p>No hay datos disponibles para el análisis de SEO.</p>
@@ -295,7 +291,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
             </TabsContent>
             
             <TabsContent value="engagement" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
                 <MessageSquare className="mr-3 text-blue-500" /> Potencial de Engagement
               </h3>
               <p className="text-slate-600 mb-6">El engagement determina cómo tu contenido se distribuye y cuántas interacciones recibe.</p>
@@ -313,7 +309,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
             </TabsContent>
             
             <TabsContent value="estrategia" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
                 <BarChart className="mr-3 text-blue-500" /> Alineación Estratégica
               </h3>
               <p className="text-slate-600 mb-6">La alineación estratégica asegura que tu contenido refuerza tu marca personal y conecta con tu audiencia.</p>
@@ -324,7 +320,7 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
                     overallScore={8}
                     categories={strategicCategories}
                     icon={<BarChart className="h-5 w-5 text-blue-500" />}
-                    accentColor="bg-purple-50 border-purple-100"
+                    accentColor="bg-blue-50 border-blue-100"
                   />
                 ) : (
                   <p>No hay datos disponibles para la alineación estratégica.</p>
@@ -335,15 +331,15 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
                     title="Estrategia de Tipo de Contenido"
                     overallScore={8}
                     categories={contentTypeCategories}
-                    icon={<Lightbulb className="h-5 w-5 text-purple-500" />}
-                    accentColor="bg-purple-50 border-purple-100"
+                    icon={<Lightbulb className="h-5 w-5 text-blue-500" />}
+                    accentColor="bg-blue-50 border-blue-100"
                   />
                 )}
               </div>
             </TabsContent>
             
             <TabsContent value="elementos" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
+              <h3 className="text-xl font-semibold mb-4 flex items-center">
                 <Gauge className="mr-3 text-blue-500" /> Elementos Nativos
               </h3>
               <p className="text-slate-600 mb-6">Los elementos nativos de la plataforma ayudan a que tu contenido se sienta más natural y auténtico.</p>
