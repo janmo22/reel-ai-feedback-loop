@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, Lightbulb } from "lucide-react";
@@ -49,7 +48,7 @@ const AIFeedbackCard = ({ feedback }: { feedback: AIFeedbackResponse }) => {
         
         <div className="mt-8">
           <h4 className="font-semibold text-lg text-blue-800 mb-4 flex items-center">
-            <Lightbulb className="mr-2 h-5 w-5 text-blue-500" /> Recomendaciones principales
+            <Lightbulb className="mr-2 h-5 w-5 text-purple-500" /> Recomendaciones principales
           </h4>
           <div className="space-y-3 rounded-lg bg-purple-50 p-5 border border-purple-100">
             {finalRecommendations.map((recommendation, idx) => (
