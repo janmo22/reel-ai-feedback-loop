@@ -1,4 +1,3 @@
-
 export interface Video {
   id: string;
   title: string;
@@ -119,6 +118,7 @@ export interface AIFeedbackResponse {
       suggestedOptimizedOnScreenText?: string;
       recommendations?: string;
       advancedDiscoveryFeaturesComment?: string;
+      trucoFlow?: string;
     };
     engagementOptimization?: {
       watchTimePotentialComment?: string;

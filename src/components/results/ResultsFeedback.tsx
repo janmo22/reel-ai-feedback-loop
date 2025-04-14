@@ -22,38 +22,60 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   // Access the new data structure if available
   const fd = feedbackItem.feedback_data;
   
-  // Hook analysis
-  const hookCategories = fd?.videoStructureAndPacing?.hook ? [
+  // Hook analysis - now with only overall score and no scores for subcategories
+  const hookData = fd?.videoStructureAndPacing?.hook;
+  const hookMainCategory = hookData ? [
     {
       name: "Efectividad general",
-      score: fd.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
-      feedback: fd.videoStructureAndPacing.hook.attentionGrabbingComment || "",
-      suggestions: [fd.videoStructureAndPacing.hook.recommendations || ""]
-    },
+      score: hookData.overallEffectivenessScore || 0,
+      feedback: hookData.attentionGrabbingComment || "",
+      suggestions: [hookData.recommendations || ""]
+    }
+  ] : [];
+  
+  // Hook subcategories without scores
+  const hookSubcategories = hookData ? [
     {
       name: "Hook verbal",
-      score: fd.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
-      feedback: fd.videoStructureAndPacing.hook.spokenHookAnalysis || ""
+      feedback: hookData.spokenHookAnalysis || ""
     },
     {
       name: "Hook visual",
-      score: fd.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
-      feedback: fd.videoStructureAndPacing.hook.visualHookAnalysis || ""
+      feedback: hookData.visualHookAnalysis || ""
     },
     {
       name: "Hook auditivo",
-      score: fd.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
-      feedback: fd.videoStructureAndPacing.hook.auditoryHookAnalysis || ""
+      feedback: hookData.auditoryHookAnalysis || ""
     },
     {
+      name: "Claridad y simplicidad",
+      feedback: hookData.clarityAndSimplicityComment || ""
+    },
+    {
+      name: "Comunicación de beneficio",
+      feedback: hookData.viewerBenefitCommunicationComment || ""
+    },
+    {
+      name: "Autenticidad",
+      feedback: hookData.authenticityFeelComment || ""
+    },
+    {
+      name: "Disrupción de patrón",
+      feedback: hookData.patternDisruptionComment || ""
+    }
+  ] : [];
+  
+  // Hook strengths and weaknesses as separate sections
+  const hookStrengthsWeaknesses = hookData ? [
+    {
       name: "Fortalezas",
-      score: fd.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
-      feedback: fd.videoStructureAndPacing.hook.strengths || ""
+      feedback: hookData.strengths || "",
+      isHighlighted: true
     },
     {
       name: "Debilidades",
-      score: fd.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
-      feedback: fd.videoStructureAndPacing.hook.weaknesses || "",
+      feedback: hookData.weaknesses || "",
+      isHighlighted: true
     }
   ] : [];
   
@@ -79,63 +101,44 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }] : [])
   ];
   
-  // SEO categories
+  // SEO categories - Simplified version without scores for subcategories and some removed
   const seoCategories = fd?.seoAndDiscoverability ? [
-    {
-      name: "Análisis de palabras clave",
-      score: 7,
-      feedback: fd.seoAndDiscoverability.keywordIdentificationComment || "",
-      suggestions: [fd.seoAndDiscoverability.recommendations || ""]
-    },
     {
       name: "Claridad temática",
       score: 8,
       feedback: fd.seoAndDiscoverability.thematicClarityComment || ""
     },
     {
-      name: "Análisis de copy",
-      score: 7,
-      feedback: fd.seoAndDiscoverability.copySEOAnalysis || ""
+      name: "Análisis de palabras clave",
+      feedback: fd.seoAndDiscoverability.keywordIdentificationComment || ""
     },
     {
       name: "Análisis de hashtags",
-      score: 7,
       feedback: fd.seoAndDiscoverability.hashtagsSEOAnalysis || ""
     },
     {
       name: "Potencial de búsqueda",
-      score: 7,
       feedback: fd.seoAndDiscoverability.searchBarPotentialComment || ""
     },
     {
-      name: "Texto en pantalla",
-      score: 6,
-      feedback: fd.seoAndDiscoverability.onScreenTextSEOAanalysis || ""
-    },
-    {
-      name: "Funciones avanzadas",
-      score: 6,
-      feedback: fd.seoAndDiscoverability.advancedDiscoveryFeaturesComment || 
-               fd.seoAndDiscoverability.advancedDiscoveryAndIndexingComment || ""
+      name: "Esto te va a dar más Flow",
+      feedback: fd.seoAndDiscoverability.trucoFlow || 
+        "Texto no visible que se coloca dentro del editor de la plataforma para mejorar la indexación y distribución del contenido.",
+      isHighlighted: true
     }
   ] : [];
   
-  // Native elements categories
+  // Native elements categories - with only overall score
   const nativeCategories = fd?.platformNativeElements ? [
     {
-      name: "Elementos identificados",
-      score: 7,
-      feedback: fd.platformNativeElements.identifiedElements || ""
-    },
-    {
-      name: "Efectividad de integración",
+      name: "Elementos nativos de la plataforma",
       score: 7,
       feedback: fd.platformNativeElements.integrationEffectivenessComment || "",
       suggestions: [fd.platformNativeElements.recommendations || ""]
     }
   ] : [];
   
-  // Engagement categories
+  // Engagement categories - all with scores
   const engagementCategories = fd?.engagementOptimization ? [
     {
       name: "Interacción",
@@ -175,22 +178,21 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }
   ] : [];
 
-  // Content type strategy
+  // Content type strategy - no scores
   const contentTypeCategories = fd?.contentTypeStrategy ? [
     {
       name: "Clasificación",
-      score: 8,
-      feedback: `Tipo de contenido: ${fd.contentTypeStrategy.classification || "No especificado"}`,
+      feedback: `Tipo de contenido: ${
+        fd.contentTypeStrategy.classification === "Serie" ? "Content Serie" : "Contenido Suelto"
+      }`,
       suggestions: [fd.contentTypeStrategy.recommendations || ""]
     },
     ...(fd.contentTypeStrategy.seriesClarityAndHookComment ? [{
       name: "Claridad de serie",
-      score: 7,
       feedback: fd.contentTypeStrategy.seriesClarityAndHookComment || ""
     }] : []),
     ...(fd.contentTypeStrategy.trendAdaptationCritique ? [{
       name: "Adaptación de tendencias",
-      score: 7,
       feedback: fd.contentTypeStrategy.trendAdaptationCritique || ""
     }] : [])
   ] : [];
@@ -232,16 +234,47 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                 <Rocket className="mr-3 text-blue-500" /> Análisis del Hook
               </h3>
               <p className="text-slate-600 mb-6">Un hook efectivo es crucial para captar la atención en los primeros segundos y evitar que los usuarios deslicen.</p>
-              {hookCategories.length > 0 ? (
-                <FeedbackCard
-                  title="Evaluación del Hook"
-                  overallScore={fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore || 0}
-                  categories={hookCategories}
-                  icon={<Rocket className="h-5 w-5 text-blue-500" />}
-                  accentColor="bg-blue-50 border-blue-100"
-                />
-              ) : (
-                <p>No hay datos disponibles para el análisis del hook.</p>
+              
+              {/* Main hook score */}
+              {hookMainCategory.length > 0 && (
+                <div className="mb-8">
+                  <FeedbackCard
+                    title="Evaluación del Hook"
+                    overallScore={fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore || 0}
+                    categories={hookMainCategory}
+                    icon={<Rocket className="h-5 w-5 text-blue-500" />}
+                    accentColor="bg-blue-50 border-blue-100"
+                  />
+                </div>
+              )}
+              
+              {/* Hook subcategories without scores */}
+              {hookSubcategories.length > 0 && (
+                <div className="mb-8">
+                  <FeedbackCard
+                    title="Detalles del Hook"
+                    overallScore={fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore || 0}
+                    categories={hookSubcategories}
+                    showScores={false}
+                    icon={<Rocket className="h-5 w-5 text-blue-500" />}
+                    accentColor="bg-blue-50 border-blue-100"
+                  />
+                </div>
+              )}
+              
+              {/* Hook strengths and weaknesses */}
+              {hookStrengthsWeaknesses.length > 0 && (
+                <div>
+                  <FeedbackCard
+                    title="Fortalezas y Debilidades"
+                    overallScore={fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore || 0}
+                    categories={hookStrengthsWeaknesses}
+                    showScores={false}
+                    highlightCategories={true}
+                    icon={<Rocket className="h-5 w-5 text-blue-500" />}
+                    accentColor="bg-blue-50 border-blue-100"
+                  />
+                </div>
               )}
             </TabsContent>
             
@@ -273,6 +306,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   title="SEO y Descubribilidad"
                   overallScore={7}
                   categories={seoCategories}
+                  showScores={false}
+                  highlightCategories={true}
                   icon={<Search className="h-5 w-5 text-blue-500" />}
                   accentColor="bg-blue-50 border-blue-100"
                 />
@@ -331,6 +366,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                     title="Estrategia de Tipo de Contenido"
                     overallScore={8}
                     categories={contentTypeCategories}
+                    showScores={false}
                     icon={<Lightbulb className="h-5 w-5 text-blue-500" />}
                     accentColor="bg-blue-50 border-blue-100"
                   />

@@ -10,11 +10,14 @@ interface FeedbackCardProps {
   overallScore: number;
   categories: {
     name: string;
-    score: number;
+    score?: number;
     feedback: string;
     suggestions?: string[];
+    isHighlighted?: boolean;
   }[];
   isDetailed?: boolean;
+  showScores?: boolean;
+  highlightCategories?: boolean;
   icon?: React.ReactNode;
   accentColor?: string;
 }
@@ -23,7 +26,9 @@ const FeedbackCard = ({
   title, 
   overallScore, 
   categories, 
-  isDetailed = true, 
+  isDetailed = true,
+  showScores = true,
+  highlightCategories = false,
   icon, 
   accentColor = "bg-slate-50 border-slate-100" 
 }: FeedbackCardProps) => {
@@ -64,12 +69,21 @@ const FeedbackCard = ({
         {expanded && (
           <div className="space-y-5 mt-4 animate-in fade-in-50 duration-300">
             {categories.map((category, index) => (
-              <div key={index} className="border-b last:border-b-0 pb-5 last:pb-0 mb-5 last:mb-0">
+              <div 
+                key={index} 
+                className={`border-b last:border-b-0 pb-5 last:pb-0 mb-5 last:mb-0 ${
+                  category.isHighlighted || (highlightCategories && category.name === "Esto te va a dar más Flow") 
+                    ? "bg-blue-50 p-4 rounded-md border border-blue-100" 
+                    : ""
+                }`}
+              >
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-medium text-slate-800">{category.name}</h4>
-                  <Badge variant="outline" className={`border-${getScoreColor(category.score).replace('bg-', '')}-200 text-slate-700`}>
-                    {category.score}/10
-                  </Badge>
+                  {showScores && category.score !== undefined && (
+                    <Badge variant="outline" className={`border-${getScoreColor(category.score).replace('bg-', '')}-200 text-slate-700`}>
+                      {category.score}/10
+                    </Badge>
+                  )}
                 </div>
                 
                 <p className="text-sm text-slate-700 mb-4">{category.feedback}</p>

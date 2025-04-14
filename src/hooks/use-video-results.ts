@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, AIFeedbackResponse } from '@/types';
@@ -33,16 +32,14 @@ export const useVideoResults = (videoId?: string) => {
     setError(null);
     
     try {
-      // Get the video data and ensure it belongs to the current user
       const { data: videoData, error: videoError } = await supabase
         .from('videos')
         .select('*')
         .eq('id', queryVideoId)
-        .eq('user_id', user.id) // Ensure the video belongs to the current user
+        .eq('user_id', user.id)
         .single();
       
       if (videoError) {
-        // If error is 'No rows found', it means the video doesn't exist or doesn't belong to this user
         if (videoError.code === 'PGRST116') {
           setUnauthorized(true);
           throw new Error('No tienes permiso para acceder a este video o no existe');
@@ -55,7 +52,6 @@ export const useVideoResults = (videoId?: string) => {
         throw new Error('Video no encontrado');
       }
       
-      // Get feedback data from the feedback table
       const { data: feedbackData, error: feedbackError } = await supabase
         .from('feedback')
         .select('*')
@@ -64,8 +60,6 @@ export const useVideoResults = (videoId?: string) => {
       
       if (feedbackError) throw new Error(feedbackError.message);
       
-      // Create the final video object with proper typings
-      // Handle is_favorite explicitly since it might not be in the database schema
       const isFavorite = 'is_favorite' in videoData ? !!videoData.is_favorite : false;
       
       const finalVideo: Video = {
@@ -79,35 +73,29 @@ export const useVideoResults = (videoId?: string) => {
         thumbnail_url: videoData.thumbnail_url || '',
         is_favorite: isFavorite,
         updated_at: videoData.updated_at || videoData.created_at,
-        feedback: [] // Will be populated with actual feedback data
+        feedback: []
       };
       
       setVideo(finalVideo);
 
-      // Process feedback data if available
       if (feedbackData && feedbackData.length > 0) {
-        // Array to store processed feedback responses
         const processedFeedback: AIFeedbackResponse[] = [];
         
         for (const item of feedbackData) {
           try {
-            // Safely cast the feedback_data to an object
             const feedbackJson = item.feedback_data as Record<string, any> || {};
             const finalEval = feedbackJson.finalEvaluation || {};
             
-            // Create an AIFeedbackResponse using the actual data from the database
             const aiResponse: AIFeedbackResponse = {
               id: item.id,
               created_at: item.created_at,
               feedback_data: feedbackJson,
               
-              // Set compatibility fields for existing components
               contentType: feedbackJson.contentTypeStrategy?.classification || "Contenido educativo",
               generalStudy: feedbackJson.executiveSummary || "Análisis del contenido del video",
               contentTitle: videoData.title,
               contentSubtitle: "Análisis de rendimiento",
               
-              // Calculate overall evaluation scores and suggestions
               overallEvaluation: {
                 score: finalEval.overallScore || item.overall_score || 0,
                 suggestions: Array.isArray(finalEval.finalRecommendations) 
@@ -115,7 +103,6 @@ export const useVideoResults = (videoId?: string) => {
                   : ["Mejora la introducción", "Refuerza el mensaje principal", "Añade una llamada a la acción clara"]
               },
               
-              // Map structure data
               structure: {
                 hook: feedbackJson.videoStructureAndPacing?.hook ? {
                   general: feedbackJson.videoStructureAndPacing.hook.attentionGrabbingComment || "",
@@ -139,18 +126,16 @@ export const useVideoResults = (videoId?: string) => {
                 cta: feedbackJson.videoStructureAndPacing?.ctaAndEnding?.comment || ""
               },
               
-              // Map SEO data
               seo: {
                 keywordAnalysis: feedbackJson.seoAndDiscoverability?.keywordIdentificationComment || "",
                 clarity: feedbackJson.seoAndDiscoverability?.thematicClarityComment || "",
                 suggestedText: feedbackJson.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "",
-                suggestedCopy: feedbackJson.seoAndDiscoverability?.suggestedOptimizedCopy || ""
+                suggestedCopy: feedbackJson.seoAndDiscoverability?.suggestedOptimizedCopy || "",
+                trucoFlow: feedbackJson.seoAndDiscoverability?.trucoFlow || ""
               },
               
-              // Map native codes data
               nativeCodes: feedbackJson.platformNativeElements?.integrationEffectivenessComment || "",
               
-              // Map engagement potential data
               engagementPotential: {
                 interaction: feedbackJson.engagementOptimization?.interactionHierarchyComment || "",
                 watchTime: feedbackJson.engagementOptimization?.watchTimePotentialComment || ""
@@ -160,7 +145,6 @@ export const useVideoResults = (videoId?: string) => {
             processedFeedback.push(aiResponse);
           } catch (parseError) {
             console.error('Error parsing feedback data:', parseError);
-            // Continue to next feedback item if there's an error
           }
         }
         
@@ -182,7 +166,6 @@ export const useVideoResults = (videoId?: string) => {
     try {
       const newFavoriteStatus = !video.is_favorite;
       
-      // Update is_favorite in Supabase
       const { error } = await supabase
         .from('videos')
         .update({ 
@@ -190,11 +173,10 @@ export const useVideoResults = (videoId?: string) => {
           updated_at: new Date().toISOString()
         })
         .eq('id', video.id)
-        .eq('user_id', user.id); // Ensure only updating user's own videos
+        .eq('user_id', user.id);
         
       if (error) throw error;
       
-      // Update local state
       setVideo({
         ...video,
         is_favorite: newFavoriteStatus
@@ -209,7 +191,6 @@ export const useVideoResults = (videoId?: string) => {
     fetchVideo();
   }, [fetchVideo]);
 
-  // Redirect users if they're unauthorized
   useEffect(() => {
     if (unauthorized) {
       navigate('/history', { 
