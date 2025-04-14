@@ -1,3 +1,4 @@
+
 export interface Video {
   id: string;
   title: string;
@@ -193,6 +194,7 @@ export interface AIFeedbackResponse {
     clarity: string;
     suggestedText?: string;
     suggestedCopy?: string;
+    trucoFlow?: string;
   };
   nativeCodes: string;
   engagementPotential: {
