@@ -89,23 +89,23 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }] : []),
     ...(fd?.videoStructureAndPacing?.buildUpAndPacingComment ? [{
       name: "Desarrollo y ritmo",
-      score: 7,
+      score: 7, // Sin puntuación específica según los nuevos campos
       feedback: fd.videoStructureAndPacing.buildUpAndPacingComment || "",
       suggestions: [fd.videoStructureAndPacing.buildUpAndPacingRecommendations || ""]
     }] : []),
     ...(fd?.videoStructureAndPacing?.ctaAndEnding ? [{
       name: "Call to Action (CTA)",
-      score: 7,
+      score: 7, // Sin puntuación específica según los nuevos campos
       feedback: fd.videoStructureAndPacing.ctaAndEnding.comment || "",
       suggestions: [fd.videoStructureAndPacing.ctaAndEnding.recommendations || ""]
     }] : [])
   ];
   
-  // SEO categories - Simplified version without scores for subcategories and some removed
+  // SEO categories - Con los nuevos campos especificados
   const seoCategories = fd?.seoAndDiscoverability ? [
     {
       name: "Claridad temática",
-      score: 8,
+      score: fd.seoAndDiscoverability.thematicClarityScore || 8,
       feedback: fd.seoAndDiscoverability.thematicClarityComment || ""
     },
     {
@@ -118,21 +118,22 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     },
     {
       name: "Potencial de búsqueda",
+      score: fd.seoAndDiscoverability.searchBarPotentialScore || 7,
       feedback: fd.seoAndDiscoverability.searchBarPotentialComment || ""
     },
     {
       name: "Esto te va a dar más Flow",
-      feedback: fd.seoAndDiscoverability.trucoFlow || 
+      feedback: fd.seoAndDiscoverability.trucoFlowComment || 
         "Texto no visible que se coloca dentro del editor de la plataforma para mejorar la indexación y distribución del contenido.",
       isHighlighted: true
     }
   ] : [];
   
-  // Native elements categories - with only overall score
+  // Native elements categories - with overall score
   const nativeCategories = fd?.platformNativeElements ? [
     {
       name: "Elementos nativos de la plataforma",
-      score: 7,
+      score: fd.platformNativeElements.overallEffectivenessScore || 7,
       feedback: fd.platformNativeElements.integrationEffectivenessComment || "",
       suggestions: [fd.platformNativeElements.recommendations || ""]
     }
@@ -142,18 +143,18 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const engagementCategories = fd?.engagementOptimization ? [
     {
       name: "Interacción",
-      score: 7,
+      score: fd.engagementOptimization.interactionHierarchyScore || 7,
       feedback: fd.engagementOptimization.interactionHierarchyComment || "",
       suggestions: [fd.engagementOptimization.recommendations || ""]
     },
     {
       name: "Tiempo de visualización",
-      score: 7,
+      score: fd.engagementOptimization.watchTimePotentialScore || 7,
       feedback: fd.engagementOptimization.watchTimePotentialComment || ""
     },
     {
       name: "Factores de viralidad",
-      score: 7,
+      score: fd.engagementOptimization.viralityFactorsScore || 7,
       feedback: fd.engagementOptimization.viralityFactorsComment || ""
     }
   ] : [];
@@ -304,7 +305,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
               {seoCategories.length > 0 ? (
                 <FeedbackCard
                   title="SEO y Descubribilidad"
-                  overallScore={7}
+                  overallScore={fd?.seoAndDiscoverability?.thematicClarityScore || 7}
                   categories={seoCategories}
                   showScores={false}
                   highlightCategories={true}
@@ -333,7 +334,9 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
               {engagementCategories.length > 0 ? (
                 <FeedbackCard
                   title="Potencial de Engagement"
-                  overallScore={7}
+                  overallScore={(fd?.engagementOptimization?.watchTimePotentialScore || 0 + 
+                                fd?.engagementOptimization?.interactionHierarchyScore || 0 + 
+                                fd?.engagementOptimization?.viralityFactorsScore || 0) / 3 || 7}
                   categories={engagementCategories}
                   icon={<MessageSquare className="h-5 w-5 text-blue-500" />}
                   accentColor="bg-blue-50 border-blue-100"
@@ -382,7 +385,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
               {nativeCategories.length > 0 ? (
                 <FeedbackCard
                   title="Elementos Nativos de la Plataforma"
-                  overallScore={7}
+                  overallScore={fd?.platformNativeElements?.overallEffectivenessScore || 7}
                   categories={nativeCategories}
                   icon={<Gauge className="h-5 w-5 text-blue-500" />}
                   accentColor="bg-blue-50 border-blue-100"

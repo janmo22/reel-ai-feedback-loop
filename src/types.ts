@@ -78,7 +78,7 @@ export interface AIFeedbackResponse {
   // Legacy properties for backward compatibility
   feedback?: string;
   score?: number;
-  suggestions?: string;
+  suggestions?: string[];
   tags?: string[];
   generalStudy?: string;
   contentType?: string;
@@ -90,6 +90,7 @@ export interface AIFeedbackResponse {
     userId?: string;
     videoId?: string;
     executiveSummary?: string;
+    overallScore?: number;
     finalEvaluation?: {
       overallScore: number;
       finalRecommendations: string[];
@@ -108,26 +109,27 @@ export interface AIFeedbackResponse {
     };
     seoAndDiscoverability?: {
       keywordIdentificationComment?: string;
+      thematicClarityScore?: number;
       thematicClarityComment?: string;
-      onScreenTextSEOAanalysis?: string;
-      copySEOAnalysis?: string;
       hashtagsSEOAnalysis?: string;
-      coverThumbnailPotentialComment?: string;
-      advancedDiscoveryAndIndexingComment?: string;
+      searchBarPotentialScore?: number;
       searchBarPotentialComment?: string;
+      trucoFlowComment?: string;
       suggestedOptimizedCopy?: string;
       suggestedOptimizedOnScreenText?: string;
       recommendations?: string;
-      advancedDiscoveryFeaturesComment?: string;
-      trucoFlow?: string;
     };
     engagementOptimization?: {
+      watchTimePotentialScore?: number;
       watchTimePotentialComment?: string;
+      interactionHierarchyScore?: number;
       interactionHierarchyComment?: string;
+      viralityFactorsScore?: number;
       viralityFactorsComment?: string;
       recommendations?: string;
     };
     platformNativeElements?: {
+      overallEffectivenessScore?: number;
       identifiedElements?: string;
       integrationEffectivenessComment?: string;
       recommendations?: string;

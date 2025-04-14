@@ -132,7 +132,7 @@ export const useVideoResults = (videoId?: string) => {
                 clarity: feedbackJson.seoAndDiscoverability?.thematicClarityComment || "",
                 suggestedText: feedbackJson.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "",
                 suggestedCopy: feedbackJson.seoAndDiscoverability?.suggestedOptimizedCopy || "",
-                trucoFlow: feedbackJson.seoAndDiscoverability?.trucoFlow || ""
+                trucoFlow: feedbackJson.seoAndDiscoverability?.trucoFlowComment || "Texto no visible que se coloca dentro del editor de la plataforma para mejorar la indexación y distribución del contenido."
               },
               
               nativeCodes: feedbackJson.platformNativeElements?.integrationEffectivenessComment || "",
