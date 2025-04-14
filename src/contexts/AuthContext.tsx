@@ -62,18 +62,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     try {
+      // Get the current URL's origin for the redirect
+      const origin = window.location.origin;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/dashboard'
+          redirectTo: `${origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
       
       if (error) throw error;
     } catch (error: any) {
+      console.error("Google sign-in error:", error);
       toast({
         title: "Error al iniciar sesión con Google",
-        description: error.message,
+        description: error.message || "Hubo un problema con la autenticación de Google. Por favor, inténtalo de nuevo.",
         variant: "destructive"
       });
     }

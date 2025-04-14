@@ -43,9 +43,10 @@ const AuthPage = () => {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-    } finally {
-      // El loading se detendrá cuando se redireccione
-      setTimeout(() => setGoogleLoading(false), 3000);
+      // We don't navigate here as the OAuth flow will handle redirection
+    } catch (error) {
+      console.error("Error during Google sign-in:", error);
+      setGoogleLoading(false);
     }
   };
   
