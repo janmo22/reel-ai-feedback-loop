@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +25,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up the auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, currentSession) => {
         setSession(currentSession);
@@ -34,7 +32,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Then check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
@@ -62,10 +59,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     try {
-      // Get the current URL's origin for the redirect
       const origin = window.location.origin;
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log("Attempting Google OAuth with:", {
+        origin,
+        redirectTo: `${origin}/dashboard`
+      });
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${origin}/dashboard`,
@@ -75,15 +76,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       });
+
+      console.log("Google OAuth response:", { data, error });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Google OAuth Error Details:", {
+          name: error.name,
+          message: error.message,
+          status: error.status
+        });
+        throw error;
+      }
     } catch (error: any) {
-      console.error("Google sign-in error:", error);
+      console.error("Complete Google sign-in error:", error);
       toast({
         title: "Error al iniciar sesión con Google",
-        description: error.message || "Hubo un problema con la autenticación de Google. Por favor, inténtalo de nuevo.",
+        description: error.message || "Hubo un problema con la autenticación de Google. Por favor, revisa la configuración de OAuth.",
         variant: "destructive"
       });
+      throw error;
     }
   };
 
@@ -107,8 +118,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Se ha enviado un correo de confirmación a tu email.",
       });
 
-      // In a development environment, we might want to sign in the user automatically
-      // In production, the user would confirm their email first
     } catch (error: any) {
       toast({
         title: "Error al crear cuenta",
