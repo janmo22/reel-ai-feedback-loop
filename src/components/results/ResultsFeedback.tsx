@@ -15,10 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SuggestedCopy from "./SuggestedCopy";
 
 const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse }) => {
-  // Access the new data structure if available
   const fd = feedbackItem.feedback_data;
   
-  // Hook analysis
   const hookCategories = fd?.videoStructureAndPacing?.hook ? [
     {
       name: "Efectividad general",
@@ -53,7 +51,6 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }
   ] : [];
   
-  // Structure and value categories
   const structureCategories = [
     ...(fd?.videoStructureAndPacing?.valueDelivery ? [{
       name: "Valor principal",
@@ -75,7 +72,6 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }] : [])
   ];
   
-  // SEO categories
   const seoCategories = fd?.seoAndDiscoverability ? [
     {
       name: "Análisis de palabras clave",
@@ -115,7 +111,6 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }
   ] : [];
   
-  // Native elements categories
   const nativeCategories = fd?.platformNativeElements ? [
     {
       name: "Elementos identificados",
@@ -130,7 +125,6 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }
   ] : [];
   
-  // Engagement categories
   const engagementCategories = fd?.engagementOptimization ? [
     {
       name: "Interacción",
@@ -150,7 +144,6 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }
   ] : [];
   
-  // Strategic alignment categories
   const strategicCategories = fd?.strategicAlignment ? [
     {
       name: "Consistencia del creador",
@@ -170,7 +163,6 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }
   ] : [];
 
-  // Content type strategy
   const contentTypeCategories = fd?.contentTypeStrategy ? [
     {
       name: "Clasificación",
@@ -190,7 +182,6 @@ const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse })
     }] : [])
   ] : [];
   
-  // Suggested copy content
   const suggestedOptimizedCopy = fd?.seoAndDiscoverability?.suggestedOptimizedCopy || "";
   const suggestedOptimizedOnScreenText = fd?.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "";
   
