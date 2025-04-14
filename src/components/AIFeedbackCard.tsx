@@ -1,17 +1,12 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, Lightbulb } from "lucide-react";
 import { AIFeedbackResponse } from "@/types";
 
-interface AIFeedbackProps {
-  feedback: AIFeedbackResponse;
-}
-
-const AIFeedbackCard = ({ feedback }: AIFeedbackProps) => {
+const AIFeedbackCard = ({ feedback }: { feedback: AIFeedbackResponse }) => {
   const getScoreColor = (score: number) => {
-    if (score >= 8) return "bg-green-500";
-    if (score >= 6) return "bg-purple-500";
+    if (score >= 8) return "bg-blue-500";
+    if (score >= 6) return "bg-blue-400";
     return "bg-red-500";
   };
 
@@ -21,13 +16,13 @@ const AIFeedbackCard = ({ feedback }: AIFeedbackProps) => {
   const finalRecommendations = feedback.feedback_data?.finalEvaluation?.finalRecommendations || feedback.overallEvaluation?.suggestions || [];
 
   return (
-    <Card className="border-purple-200 shadow-md">
-      <CardHeader className="pb-4 bg-gradient-to-r from-purple-50 to-slate-50">
+    <Card className="border-blue-200 shadow-md">
+      <CardHeader className="pb-4 bg-gradient-to-r from-blue-50 to-blue-100">
         <div className="flex justify-between items-start">
           <div>
-            <CardTitle className="text-2xl font-bold text-slate-800">Análisis General</CardTitle>
+            <CardTitle className="text-2xl font-bold text-blue-800">Análisis General</CardTitle>
             <div className="flex items-center mt-2">
-              <Badge variant="outline" className="border-purple-200 text-purple-700 mr-2 px-2 py-1">{contentType}</Badge>
+              <Badge variant="outline" className="border-blue-200 text-blue-700 mr-2 px-2 py-1">{contentType}</Badge>
               {feedback.feedback_data?.videoStructureAndPacing?.valueDelivery?.mainFunction && (
                 <Badge variant="outline" className="border-blue-200 text-blue-700 mr-2 px-2 py-1">
                   {feedback.feedback_data.videoStructureAndPacing.valueDelivery.mainFunction}
@@ -45,17 +40,15 @@ const AIFeedbackCard = ({ feedback }: AIFeedbackProps) => {
       
       <CardContent className="pt-5">
         <div className="mb-6">
-          <h4 className="font-semibold text-lg text-slate-800 mb-3 flex items-center">
-            <Star className="mr-2 h-5 w-5 text-purple-500" />
-            Resumen ejecutivo
+          <h4 className="font-semibold text-lg text-blue-800 mb-3 flex items-center">
+            <Star className="mr-2 h-5 w-5 text-blue-500" /> Resumen ejecutivo
           </h4>
-          <p className="text-base text-slate-700 bg-slate-50 p-4 rounded-lg border border-slate-100">{executiveSummary}</p>
+          <p className="text-base text-blue-700 bg-blue-50 p-4 rounded-lg border border-blue-100">{executiveSummary}</p>
         </div>
         
         <div className="mt-8">
-          <h4 className="font-semibold text-lg text-slate-800 mb-4 flex items-center">
-            <Lightbulb className="mr-2 h-5 w-5 text-purple-500" />
-            Recomendaciones principales
+          <h4 className="font-semibold text-lg text-blue-800 mb-4 flex items-center">
+            <Lightbulb className="mr-2 h-5 w-5 text-purple-500" /> Recomendaciones principales
           </h4>
           <div className="space-y-3 rounded-lg bg-purple-50 p-5 border border-purple-100">
             {finalRecommendations.map((recommendation, idx) => (

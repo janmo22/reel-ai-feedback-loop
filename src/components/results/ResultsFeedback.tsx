@@ -1,4 +1,3 @@
-
 import AIFeedbackCard from "@/components/AIFeedbackCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import { AIFeedbackResponse } from "@/types";
@@ -15,11 +14,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SuggestedCopy from "./SuggestedCopy";
 
-interface ResultsFeedbackProps {
-  feedbackItem: AIFeedbackResponse;
-}
-
-const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
+const ResultsFeedback = ({ feedbackItem }: { feedbackItem: AIFeedbackResponse }) => {
   // Access the new data structure if available
   const fd = feedbackItem.feedback_data;
   
@@ -206,30 +201,48 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
       <div className="mt-10">
         <Tabs defaultValue="hook" className="w-full">
           <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-2 h-auto bg-transparent p-0 mb-8 w-full">
-            <TabsTrigger value="hook" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-purple-50 data-[state=active]:border-purple-200">
-              <Rocket className="h-4 w-4 text-purple-600" /> Hook
+            <TabsTrigger 
+              value="hook" 
+              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
+            >
+              <Rocket className="h-4 w-4 text-blue-600" /> Hook
             </TabsTrigger>
-            <TabsTrigger value="estructura" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
+            <TabsTrigger 
+              value="estructura" 
+              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
+            >
               <Layout className="h-4 w-4 text-blue-600" /> Estructura
             </TabsTrigger>
-            <TabsTrigger value="seo" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-purple-50 data-[state=active]:border-purple-200">
-              <Search className="h-4 w-4 text-purple-600" /> SEO
+            <TabsTrigger 
+              value="seo" 
+              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
+            >
+              <Search className="h-4 w-4 text-blue-600" /> SEO
             </TabsTrigger>
-            <TabsTrigger value="engagement" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
+            <TabsTrigger 
+              value="engagement" 
+              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
+            >
               <MessageSquare className="h-4 w-4 text-blue-600" /> Engagement
             </TabsTrigger>
-            <TabsTrigger value="estrategia" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-purple-50 data-[state=active]:border-purple-200">
-              <BarChart className="h-4 w-4 text-purple-600" /> Estrategia
+            <TabsTrigger 
+              value="estrategia" 
+              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
+            >
+              <BarChart className="h-4 w-4 text-blue-600" /> Estrategia
             </TabsTrigger>
-            <TabsTrigger value="elementos" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
+            <TabsTrigger 
+              value="elementos" 
+              className="flex gap-1 items-center border rounded-md bg-blue-50 border-blue-200 data-[state=active]:bg-blue-100 data-[state=active]:border-blue-300"
+            >
               <Gauge className="h-4 w-4 text-blue-600" /> Elementos
             </TabsTrigger>
           </TabsList>
           
-          <div className="bg-white p-6 rounded-lg border shadow-sm">
+          <div className="bg-blue-50 p-6 rounded-lg border border-blue-200 shadow-sm">
             <TabsContent value="hook" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <Rocket className="mr-3 text-purple-500" /> Análisis del Hook
+              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
+                <Rocket className="mr-3 text-blue-500" /> Análisis del Hook
               </h3>
               <p className="text-slate-600 mb-6">Un hook efectivo es crucial para captar la atención en los primeros segundos y evitar que los usuarios deslicen.</p>
               {hookCategories.length > 0 ? (
@@ -246,7 +259,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
             </TabsContent>
             
             <TabsContent value="estructura" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
+              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
                 <Layout className="mr-3 text-blue-500" /> Estructura y Valor
               </h3>
               <p className="text-slate-600 mb-6">La estructura óptima mantiene al espectador interesado mientras se entrega el valor principal del contenido.</p>
@@ -264,8 +277,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
             </TabsContent>
             
             <TabsContent value="seo" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <Search className="mr-3 text-purple-500" /> SEO y Descubribilidad
+              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
+                <Search className="mr-3 text-blue-500" /> SEO y Descubribilidad
               </h3>
               <p className="text-slate-600 mb-6">La optimización para motores de búsqueda aumenta la visibilidad de tu contenido en la plataforma.</p>
               {seoCategories.length > 0 ? (
@@ -273,7 +286,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   title="SEO y Descubribilidad"
                   overallScore={7}
                   categories={seoCategories}
-                  icon={<Search className="h-5 w-5 text-purple-500" />}
+                  icon={<Search className="h-5 w-5 text-blue-500" />}
                   accentColor="bg-purple-50 border-purple-100"
                 />
               ) : (
@@ -291,7 +304,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
             </TabsContent>
             
             <TabsContent value="engagement" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
+              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
                 <MessageSquare className="mr-3 text-blue-500" /> Potencial de Engagement
               </h3>
               <p className="text-slate-600 mb-6">El engagement determina cómo tu contenido se distribuye y cuántas interacciones recibe.</p>
@@ -309,8 +322,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
             </TabsContent>
             
             <TabsContent value="estrategia" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <BarChart className="mr-3 text-purple-500" /> Alineación Estratégica
+              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
+                <BarChart className="mr-3 text-blue-500" /> Alineación Estratégica
               </h3>
               <p className="text-slate-600 mb-6">La alineación estratégica asegura que tu contenido refuerza tu marca personal y conecta con tu audiencia.</p>
               <div className="space-y-8">
@@ -319,7 +332,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                     title="Alineación Estratégica"
                     overallScore={8}
                     categories={strategicCategories}
-                    icon={<BarChart className="h-5 w-5 text-purple-500" />}
+                    icon={<BarChart className="h-5 w-5 text-blue-500" />}
                     accentColor="bg-purple-50 border-purple-100"
                   />
                 ) : (
@@ -339,7 +352,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
             </TabsContent>
             
             <TabsContent value="elementos" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
+              <h3 className="text-xl font-semibold mb-4 flex items-center text-blue-800">
                 <Gauge className="mr-3 text-blue-500" /> Elementos Nativos
               </h3>
               <p className="text-slate-600 mb-6">Los elementos nativos de la plataforma ayudan a que tu contenido se sienta más natural y auténtico.</p>
