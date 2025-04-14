@@ -15,10 +15,12 @@ const AIFeedbackCard = ({ feedback }: AIFeedbackProps) => {
     return "bg-red-500";
   };
 
+  // Access feedback data safely using optional chaining
   const executiveSummary = feedback.feedback_data?.executiveSummary || feedback.generalStudy;
   const contentType = feedback.feedback_data?.contentTypeStrategy?.classification || feedback.contentType || "Análisis de contenido";
-  const score = feedback.overallEvaluation?.score || 0;
+  const score = feedback.feedback_data?.finalEvaluation?.overallScore || feedback.overallEvaluation?.score || 0;
   const finalRecommendations = feedback.feedback_data?.finalEvaluation?.finalRecommendations || feedback.overallEvaluation?.suggestions || [];
+  const mainFunction = feedback.feedback_data?.videoStructureAndPacing?.valueDelivery?.mainFunction;
 
   return (
     <Card className="border-blue-200 shadow-md">
@@ -28,9 +30,9 @@ const AIFeedbackCard = ({ feedback }: AIFeedbackProps) => {
             <CardTitle className="text-2xl font-bold text-slate-800">Análisis General</CardTitle>
             <div className="flex items-center mt-2">
               <Badge variant="outline" className="border-slate-200 text-slate-700 mr-2 px-2 py-1">{contentType}</Badge>
-              {feedback.feedback_data?.videoStructureAndPacing?.valueDelivery?.mainFunction && (
+              {mainFunction && (
                 <Badge variant="outline" className="border-slate-200 text-slate-700 mr-2 px-2 py-1">
-                  {feedback.feedback_data.videoStructureAndPacing.valueDelivery.mainFunction}
+                  {mainFunction}
                 </Badge>
               )}
             </div>

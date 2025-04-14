@@ -9,7 +9,6 @@ import {
   MessageSquare,
   BarChart,
   Gauge,
-  Copy,
   Lightbulb
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -116,7 +115,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     {
       name: "Funciones avanzadas",
       score: 6,
-      feedback: fd.seoAndDiscoverability.advancedDiscoveryFeaturesComment || ""
+      feedback: fd.seoAndDiscoverability.advancedDiscoveryFeaturesComment || 
+               fd.seoAndDiscoverability.advancedDiscoveryAndIndexingComment || ""
     }
   ] : [];
   

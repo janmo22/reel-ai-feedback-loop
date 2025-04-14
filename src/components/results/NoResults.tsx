@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { FileVideo } from "lucide-react";
 
-const NoResults = () => {
+interface NoResultsProps {
+  error?: string | null;
+}
+
+const NoResults = ({ error }: NoResultsProps) => {
   const navigate = useNavigate();
   
   return (
@@ -13,8 +17,7 @@ const NoResults = () => {
       </div>
       <h2 className="text-2xl font-semibold mb-4">No se encontraron resultados</h2>
       <p className="text-muted-foreground mb-6 max-w-md">
-        No pudimos encontrar los resultados para este video. El análisis podría estar en proceso o haber ocurrido 
-        un problema durante el procesamiento.
+        {error || "No pudimos encontrar los resultados para este video. El análisis podría estar en proceso o haber ocurrido un problema durante el procesamiento."}
       </p>
       <div className="space-x-4">
         <Button variant="default" onClick={() => navigate('/upload')}>

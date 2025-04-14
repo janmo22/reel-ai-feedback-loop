@@ -95,68 +95,69 @@ export interface AIFeedbackResponse {
       finalRecommendations: string[];
     };
     strategicAlignment?: {
-      recommendations: string;
-      creatorConsistencyComment: string;
-      targetAudienceClarityComment: string;
-      valuePropositionClarityComment: string;
+      targetAudienceClarityComment?: string;
+      valuePropositionClarityComment?: string;
+      creatorConsistencyComment?: string;
+      recommendations?: string;
     };
     contentTypeStrategy?: {
-      classification: string;
-      recommendations: string;
+      classification?: string;
       trendAdaptationCritique?: string;
       seriesClarityAndHookComment?: string;
+      recommendations?: string;
     };
     seoAndDiscoverability?: {
-      copySEOAnalysis: string;
-      recommendations: string;
-      hashtagsSEOAnalysis: string;
-      suggestedOptimizedCopy: string;
-      thematicClarityComment: string;
-      onScreenTextSEOAanalysis: string;
-      searchBarPotentialComment: string;
-      keywordIdentificationComment: string;
-      coverThumbnailPotentialComment: string;
-      suggestedOptimizedOnScreenText: string;
-      advancedDiscoveryFeaturesComment: string;
+      keywordIdentificationComment?: string;
+      thematicClarityComment?: string;
+      onScreenTextSEOAanalysis?: string;
+      copySEOAnalysis?: string;
+      hashtagsSEOAnalysis?: string;
+      coverThumbnailPotentialComment?: string;
+      advancedDiscoveryAndIndexingComment?: string;
+      searchBarPotentialComment?: string;
+      suggestedOptimizedCopy?: string;
+      suggestedOptimizedOnScreenText?: string;
+      recommendations?: string;
+      advancedDiscoveryFeaturesComment?: string;
     };
     engagementOptimization?: {
-      recommendations: string;
-      viralityFactorsComment: string;
-      watchTimePotentialComment: string;
-      interactionHierarchyComment: string;
+      watchTimePotentialComment?: string;
+      interactionHierarchyComment?: string;
+      viralityFactorsComment?: string;
+      recommendations?: string;
     };
     platformNativeElements?: {
-      recommendations: string;
-      identifiedElements: string;
-      integrationEffectivenessComment: string;
+      identifiedElements?: string;
+      integrationEffectivenessComment?: string;
+      recommendations?: string;
     };
     videoStructureAndPacing?: {
       hook?: {
-        strengths: string;
-        weaknesses: string;
-        recommendations: string;
-        spokenHookAnalysis: string;
-        visualHookAnalysis: string;
-        auditoryHookAnalysis: string;
-        authenticityFeelComment: string;
-        attentionGrabbingComment: string;
-        patternDisruptionComment: string;
-        overallEffectivenessScore: number;
-        clarityAndSimplicityComment: string;
-        viewerBenefitCommunicationComment: string;
-      };
-      ctaAndEnding?: {
-        comment: string;
-        recommendations: string;
-      };
-      valueDelivery?: {
-        comment: string;
-        mainFunction: string;
-        qualityScore: number;
-        recommendations: string;
+        overallEffectivenessScore?: number;
+        attentionGrabbingComment?: string;
+        clarityAndSimplicityComment?: string;
+        viewerBenefitCommunicationComment?: string;
+        visualHookAnalysis?: string;
+        auditoryHookAnalysis?: string;
+        spokenHookAnalysis?: string;
+        authenticityFeelComment?: string;
+        patternDisruptionComment?: string;
+        strengths?: string;
+        weaknesses?: string;
+        recommendations?: string;
       };
       buildUpAndPacingComment?: string;
       buildUpAndPacingRecommendations?: string;
+      valueDelivery?: {
+        qualityScore?: number;
+        mainFunction?: string;
+        comment?: string;
+        recommendations?: string;
+      };
+      ctaAndEnding?: {
+        comment?: string;
+        recommendations?: string;
+      };
     };
   };
   

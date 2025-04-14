@@ -109,7 +109,7 @@ export const useVideoResults = (videoId?: string) => {
               
               // Calculate overall evaluation scores and suggestions
               overallEvaluation: {
-                score: item.overall_score || finalEval.overallScore || 0,
+                score: finalEval.overallScore || item.overall_score || 0,
                 suggestions: Array.isArray(finalEval.finalRecommendations) 
                   ? finalEval.finalRecommendations 
                   : ["Mejora la introducción", "Refuerza el mensaje principal", "Añade una llamada a la acción clara"]
