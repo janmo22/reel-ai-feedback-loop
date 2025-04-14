@@ -43,11 +43,19 @@ const AuthPage = () => {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      // We don't navigate here as the OAuth flow will handle redirection
+      // La redirección la manejará el flujo OAuth
     } catch (error) {
       console.error("Error during Google sign-in:", error);
+      // El estado googleLoading se desactiva aquí si hay error
       setGoogleLoading(false);
+      
+      toast({
+        title: "Error de autenticación con Google",
+        description: "Por favor, verifica que hayas habilitado el inicio de sesión con Google en la consola de Supabase.",
+        variant: "destructive"
+      });
     }
+    // No desactivamos googleLoading aquí si todo va bien, ya que la página se redirigirá
   };
   
   const handleRegister = async (e: React.FormEvent) => {

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     try {
+      // Obtener origen actual (URL completa de la aplicación)
       const origin = window.location.origin;
       
       console.log("Attempting Google OAuth with:", {
@@ -66,10 +68,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         redirectTo: `${origin}/dashboard`
       });
 
+      // Configuración específica para prevenir problemas de redirectUrl
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${origin}/dashboard`,
+          // Asegurarse de que no haya conflictos con caché de autenticaciones previas
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -87,6 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         throw error;
       }
+
+      // No es necesario navegar aquí, ya que OAuth manejará la redirección
     } catch (error: any) {
       console.error("Complete Google sign-in error:", error);
       toast({
