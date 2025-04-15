@@ -12,8 +12,10 @@ import UploadPage from "./pages/UploadPage";
 import HistoryPage from "./pages/HistoryPage";
 import ResultsPage from "./pages/ResultsPage";
 import SettingsPage from "./pages/SettingsPage";
+import StrategyPage from "./pages/StrategyPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 const queryClient = new QueryClient();
 
@@ -39,7 +41,9 @@ const AuthWrapper = ({ children }: { children: React.ReactNode }) => {
   return (
     <BrowserRouter>
       <AuthProvider>
-        {children}
+        <SidebarProvider>
+          {children}
+        </SidebarProvider>
       </AuthProvider>
     </BrowserRouter>
   );
@@ -59,6 +63,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Index />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/strategy" 
+            element={
+              <ProtectedRoute>
+                <StrategyPage />
               </ProtectedRoute>
             } 
           />

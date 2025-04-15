@@ -43,25 +43,61 @@ export type Database = {
       }
       user_mission: {
         Row: {
+          audience_content_consumption: string | null
+          audience_interests: string | null
+          audience_pain_points: string | null
+          audience_perception: string | null
+          content_character: string | null
+          content_personality: string | null
+          content_tone: string | null
           created_at: string | null
+          differentiating_factor: string | null
           id: string
           mission: string | null
+          niche: string | null
+          positioning_type: string | null
+          solution_approach: string | null
+          target_audience: string | null
           updated_at: string | null
           user_id: string
           value_proposition: string | null
         }
         Insert: {
+          audience_content_consumption?: string | null
+          audience_interests?: string | null
+          audience_pain_points?: string | null
+          audience_perception?: string | null
+          content_character?: string | null
+          content_personality?: string | null
+          content_tone?: string | null
           created_at?: string | null
+          differentiating_factor?: string | null
           id?: string
           mission?: string | null
+          niche?: string | null
+          positioning_type?: string | null
+          solution_approach?: string | null
+          target_audience?: string | null
           updated_at?: string | null
           user_id: string
           value_proposition?: string | null
         }
         Update: {
+          audience_content_consumption?: string | null
+          audience_interests?: string | null
+          audience_pain_points?: string | null
+          audience_perception?: string | null
+          content_character?: string | null
+          content_personality?: string | null
+          content_tone?: string | null
           created_at?: string | null
+          differentiating_factor?: string | null
           id?: string
           mission?: string | null
+          niche?: string | null
+          positioning_type?: string | null
+          solution_approach?: string | null
+          target_audience?: string | null
           updated_at?: string | null
           user_id?: string
           value_proposition?: string | null
