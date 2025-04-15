@@ -1,7 +1,7 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Target, History, Settings, Upload, LogOut } from "lucide-react";
+import { LayoutDashboard, Target, History, Settings, Upload, LogOut, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Sidebar,
@@ -14,6 +14,9 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,6 +24,9 @@ import { Button } from "@/components/ui/button";
 const DashboardSidebar = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const [strategyOpen, setStrategyOpen] = useState(
+    location.pathname === "/strategy" || location.pathname.startsWith("/strategy/")
+  );
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -42,8 +48,21 @@ const DashboardSidebar = () => {
     {
       icon: Target,
       label: "Estrategia",
-      path: "/strategy",
-      description: "Define tu contenido"
+      path: "#",
+      description: "Define tu contenido",
+      hasSubmenu: true,
+      submenu: [
+        {
+          label: "Propuesta de valor",
+          path: "/strategy?tab=value",
+          description: "Define tu valor diferencial"
+        },
+        {
+          label: "Las 4Ps",
+          path: "/strategy?tab=4ps",
+          description: "Posicionamiento y personalidad"
+        }
+      ]
     },
     {
       icon: Upload,
@@ -95,17 +114,53 @@ const DashboardSidebar = () => {
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.path)}
-                    tooltip={item.description}
-                  >
-                    <Link to={item.path} className="flex items-center gap-3">
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                <SidebarMenuItem key={item.label}>
+                  {!item.hasSubmenu ? (
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.path)}
+                      tooltip={item.description}
+                    >
+                      <Link to={item.path} className="flex items-center gap-3">
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  ) : (
+                    <>
+                      <SidebarMenuButton
+                        isActive={location.pathname === "/strategy"}
+                        tooltip={item.description}
+                        onClick={() => setStrategyOpen(!strategyOpen)}
+                        className="flex items-center justify-between w-full"
+                      >
+                        <div className="flex items-center gap-3">
+                          <item.icon className="h-5 w-5" />
+                          <span>{item.label}</span>
+                        </div>
+                        {strategyOpen ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </SidebarMenuButton>
+                      
+                      {strategyOpen && item.submenu && (
+                        <SidebarMenuSub>
+                          {item.submenu.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.label}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={location.pathname + location.search === subItem.path}
+                              >
+                                <Link to={subItem.path}>{subItem.label}</Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      )}
+                    </>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

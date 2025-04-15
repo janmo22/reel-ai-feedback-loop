@@ -6,7 +6,7 @@ import DashboardAnalytics from "./DashboardAnalytics";
 
 const DashboardTabs: React.FC = () => {
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-8">
+    <div className="mb-8">
       <Tabs defaultValue="actions" className="w-full mb-6">
         <TabsList className="mb-8 bg-transparent w-full justify-start rounded-none gap-8 h-auto pb-2 border-b border-border/20">
           <TabsTrigger 

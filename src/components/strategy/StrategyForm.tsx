@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +12,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Check, Loader2, Target, Users, Lightbulb, Star } from "lucide-react";
 
 type StrategyFormValues = {
@@ -35,8 +35,22 @@ const StrategyForm = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("value");
+  const location = useLocation();
+  const navigate = useNavigate();
   const [saveSuccess, setSaveSuccess] = useState(false);
+  
+  // Parse tab from URL query parameter
+  const queryParams = new URLSearchParams(location.search);
+  const tabFromUrl = queryParams.get('tab') || 'value';
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  
+  // Update URL when tab changes
+  const updateTabInUrl = (newTab: string) => {
+    setActiveTab(newTab);
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('tab', newTab);
+    navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+  };
   
   const form = useForm<StrategyFormValues>({
     defaultValues: {
@@ -139,7 +153,7 @@ const StrategyForm = () => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={updateTabInUrl} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 p-1">
             <TabsTrigger 
               value="value" 
@@ -355,211 +369,206 @@ const StrategyForm = () => {
           </TabsContent>
           
           <TabsContent value="4ps" className="pt-2 animate-fade-in">
-            <div className="grid gap-8 md:grid-cols-2">
-              {/* Grupo 2: Tus 4Ps - Primera parte */}
-              <div className="space-y-8">
-                <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
-                    <div className="flex items-center gap-2 text-flow-blue">
-                      <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">1</span>
-                      <CardTitle>Personaje</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <FormField
-                      control={form.control}
-                      name="content_character"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">¿Quién aparece en tus contenidos?</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Puedes ser tú, tus manos, tu voz, tu avatar, etc."
-                              className="resize-none min-h-[80px] focus-visible:ring-flow-blue/30"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-                
-                <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
-                    <div className="flex items-center gap-2 text-flow-blue">
-                      <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">2</span>
-                      <CardTitle>Personalidad</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <FormField
-                      control={form.control}
-                      name="content_personality"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">¿Qué ofrece realmente tu contenido al espectador?</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Valor que se lleva la audiencia: entretenimiento, formación, reflexión, inspiración..."
-                              className="resize-none min-h-[80px] focus-visible:ring-flow-blue/30"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
+            <div className="grid gap-8">
+              {/* Grupo 2: Tus 4Ps - Una debajo de otra */}
+              <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
+                  <div className="flex items-center gap-2 text-flow-blue">
+                    <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">1</span>
+                    <CardTitle>Personaje</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <FormField
+                    control={form.control}
+                    name="content_character"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">¿Quién aparece en tus contenidos?</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Puedes ser tú, tus manos, tu voz, tu avatar, etc."
+                            className="resize-none min-h-[80px] focus-visible:ring-flow-blue/30"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
               
-              {/* Grupo 2: Tus 4Ps - Segunda parte */}
-              <div className="space-y-8">
-                <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
-                    <div className="flex items-center gap-2 text-flow-blue">
-                      <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">3</span>
-                      <CardTitle>Producto</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <FormField
-                      control={form.control}
-                      name="content_tone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">¿Qué tono, actitud o carácter define tus contenidos?</FormLabel>
-                          <div className="space-y-4 mt-3">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                                <input
-                                  type="radio"
-                                  id="serio"
-                                  value="serio"
-                                  className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                  checked={field.value === "serio"}
-                                  onChange={() => field.onChange("serio")}
-                                />
-                                <label htmlFor="serio" className="cursor-pointer text-gray-700 text-sm">Serio</label>
-                              </div>
-                              <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                                <input
-                                  type="radio"
-                                  id="espontaneo"
-                                  value="espontaneo"
-                                  className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                  checked={field.value === "espontaneo"}
-                                  onChange={() => field.onChange("espontaneo")}
-                                />
-                                <label htmlFor="espontaneo" className="cursor-pointer text-gray-700 text-sm">Espontáneo</label>
-                              </div>
+              <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
+                  <div className="flex items-center gap-2 text-flow-blue">
+                    <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">2</span>
+                    <CardTitle>Personalidad</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <FormField
+                    control={form.control}
+                    name="content_personality"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">¿Qué tono, actitud o carácter define tus contenidos?</FormLabel>
+                        <div className="space-y-4 mt-3">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
+                              <input
+                                type="radio"
+                                id="serio"
+                                value="serio"
+                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
+                                checked={field.value === "serio"}
+                                onChange={() => field.onChange("serio")}
+                              />
+                              <label htmlFor="serio" className="cursor-pointer text-gray-700 text-sm">Serio</label>
                             </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                                <input
-                                  type="radio"
-                                  id="relajado"
-                                  value="relajado"
-                                  className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                  checked={field.value === "relajado"}
-                                  onChange={() => field.onChange("relajado")}
-                                />
-                                <label htmlFor="relajado" className="cursor-pointer text-gray-700 text-sm">Relajado</label>
-                              </div>
-                              <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                                <input
-                                  type="radio"
-                                  id="energico"
-                                  value="energico"
-                                  className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                  checked={field.value === "energico"}
-                                  onChange={() => field.onChange("energico")}
-                                />
-                                <label htmlFor="energico" className="cursor-pointer text-gray-700 text-sm">Enérgico</label>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                                <input
-                                  type="radio"
-                                  id="casual"
-                                  value="casual"
-                                  className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                  checked={field.value === "casual"}
-                                  onChange={() => field.onChange("casual")}
-                                />
-                                <label htmlFor="casual" className="cursor-pointer text-gray-700 text-sm">Casual</label>
-                              </div>
-                              <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                                <input
-                                  type="radio"
-                                  id="profesional"
-                                  value="profesional"
-                                  className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                  checked={field.value === "profesional"}
-                                  onChange={() => field.onChange("profesional")}
-                                />
-                                <label htmlFor="profesional" className="cursor-pointer text-gray-700 text-sm">Profesional</label>
-                              </div>
+                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
+                              <input
+                                type="radio"
+                                id="espontaneo"
+                                value="espontaneo"
+                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
+                                checked={field.value === "espontaneo"}
+                                onChange={() => field.onChange("espontaneo")}
+                              />
+                              <label htmlFor="espontaneo" className="cursor-pointer text-gray-700 text-sm">Espontáneo</label>
                             </div>
                           </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-                
-                <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
-                  <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
-                    <div className="flex items-center gap-2 text-flow-blue">
-                      <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">4</span>
-                      <CardTitle>Posicionamiento</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="niche"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">¿En qué nicho te posicionas?</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Tu nicho específico" 
-                              {...field} 
-                              className="focus-visible:ring-flow-blue/30"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="audience_perception"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">¿Cómo quieres que te perciba tu audiencia?</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Describe la percepción que quieres generar"
-                              className="resize-none min-h-[80px] focus-visible:ring-flow-blue/30"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
+                              <input
+                                type="radio"
+                                id="relajado"
+                                value="relajado"
+                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
+                                checked={field.value === "relajado"}
+                                onChange={() => field.onChange("relajado")}
+                              />
+                              <label htmlFor="relajado" className="cursor-pointer text-gray-700 text-sm">Relajado</label>
+                            </div>
+                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
+                              <input
+                                type="radio"
+                                id="energico"
+                                value="energico"
+                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
+                                checked={field.value === "energico"}
+                                onChange={() => field.onChange("energico")}
+                              />
+                              <label htmlFor="energico" className="cursor-pointer text-gray-700 text-sm">Enérgico</label>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
+                              <input
+                                type="radio"
+                                id="casual"
+                                value="casual"
+                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
+                                checked={field.value === "casual"}
+                                onChange={() => field.onChange("casual")}
+                              />
+                              <label htmlFor="casual" className="cursor-pointer text-gray-700 text-sm">Casual</label>
+                            </div>
+                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
+                              <input
+                                type="radio"
+                                id="profesional"
+                                value="profesional"
+                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
+                                checked={field.value === "profesional"}
+                                onChange={() => field.onChange("profesional")}
+                              />
+                              <label htmlFor="profesional" className="cursor-pointer text-gray-700 text-sm">Profesional</label>
+                            </div>
+                          </div>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+              
+              <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
+                  <div className="flex items-center gap-2 text-flow-blue">
+                    <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">3</span>
+                    <CardTitle>Producto</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <FormField
+                    control={form.control}
+                    name="content_tone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">¿Qué ofrece realmente tu contenido al espectador?</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Valor que se lleva la audiencia: entretenimiento, formación, reflexión, inspiración..."
+                            className="resize-none min-h-[80px] focus-visible:ring-flow-blue/30"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+              
+              <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
+                  <div className="flex items-center gap-2 text-flow-blue">
+                    <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">4</span>
+                    <CardTitle>Posicionamiento</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="niche"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">¿En qué nicho te posicionas?</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Tu nicho específico" 
+                            {...field} 
+                            className="focus-visible:ring-flow-blue/30"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="audience_perception"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">¿Cómo quieres que te perciba tu audiencia?</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Describe la percepción que quieres generar"
+                            className="resize-none min-h-[80px] focus-visible:ring-flow-blue/30"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>

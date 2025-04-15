@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ChevronDown } from "lucide-react";
 
 const Header = () => {
@@ -13,7 +12,6 @@ const Header = () => {
   
   const isLandingPage = location.pathname === '/';
   const isAuthPage = location.pathname === '/auth';
-  const isDashboardPage = location.pathname === '/dashboard';
   
   // Función para obtener iniciales del usuario
   const getInitials = () => {
@@ -22,16 +20,10 @@ const Header = () => {
     return email.substring(0, 2).toUpperCase();
   };
   
-  // Si estamos en el dashboard y el usuario está logueado,
-  // no mostramos el header completo, ya que usaremos la barra lateral
-  if (user && isDashboardPage) {
-    return null;
-  }
-  
   // Para pages protegidos que no son dashboard, mostramos header completo con navegación
-  if (user && !isLandingPage && !isAuthPage) {
+  if (user) {
     return (
-      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+      <header className="border-b bg-background/95 backdrop-blur-md sticky top-0 z-40">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link to="/dashboard" className="flex items-center gap-2">
@@ -103,7 +95,7 @@ const Header = () => {
   
   // Para landing page y auth page, mostramos el header original
   return (
-    <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+    <header className="border-b bg-background/95 backdrop-blur-md sticky top-0 z-40">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2">
