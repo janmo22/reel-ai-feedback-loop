@@ -94,11 +94,27 @@
   }
 
   body {
-    @apply bg-background text-foreground font-satoshi;
+    @apply bg-background text-foreground font-satoshi text-[15px];
   }
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-tt-travels font-bold tracking-tighter;
+  }
+
+  p {
+    @apply leading-relaxed;
+  }
+  
+  label {
+    @apply font-medium;
+  }
+  
+  button, .btn {
+    @apply font-medium tracking-wide;
+  }
+  
+  input, textarea, select {
+    @apply font-satoshi;
   }
   
   .drop-zone {

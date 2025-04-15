@@ -18,9 +18,9 @@ const SettingsPage: React.FC = () => {
       {user ? (
         <div className="flex flex-1">
           <DashboardSidebar />
-          <SidebarInset className="bg-gray-50 overflow-auto">
-            <div className="container mx-auto py-8 px-4 max-w-5xl">
-              <div className="bg-white rounded-2xl shadow-md p-8 mb-8">
+          <SidebarInset className="bg-gray-50 overflow-auto flex-1">
+            <div className="container mx-auto px-4 py-6 max-w-7xl">
+              <div className="bg-white rounded-2xl shadow-md p-6 mb-8">
                 <div className="mb-8">
                   <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 flex items-center gap-3">
                     <Settings className="h-8 w-8 text-flow-blue" />
@@ -30,9 +30,9 @@ const SettingsPage: React.FC = () => {
                 
                 <Tabs defaultValue="profile" className="w-full">
                   <TabsList className="mb-6">
-                    <TabsTrigger value="profile">Perfil</TabsTrigger>
-                    <TabsTrigger value="account">Cuenta</TabsTrigger>
-                    <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
+                    <TabsTrigger value="profile" className="font-tt-travels">Perfil</TabsTrigger>
+                    <TabsTrigger value="account" className="font-tt-travels">Cuenta</TabsTrigger>
+                    <TabsTrigger value="notifications" className="font-tt-travels">Notificaciones</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="profile">
@@ -43,7 +43,7 @@ const SettingsPage: React.FC = () => {
                   
                   <TabsContent value="account">
                     <Card className="p-6">
-                      <h2 className="text-lg font-medium mb-4">Ajustes de cuenta</h2>
+                      <h2 className="text-lg font-medium mb-4 font-tt-travels">Ajustes de cuenta</h2>
                       <p className="text-muted-foreground mb-4">
                         Gestiona la configuración de tu cuenta y opciones de seguridad.
                       </p>
@@ -53,7 +53,7 @@ const SettingsPage: React.FC = () => {
                   
                   <TabsContent value="notifications">
                     <Card className="p-6">
-                      <h2 className="text-lg font-medium mb-4">Preferencias de notificaciones</h2>
+                      <h2 className="text-lg font-medium mb-4 font-tt-travels">Preferencias de notificaciones</h2>
                       <p className="text-muted-foreground mb-4">
                         Configura cómo y cuándo recibes notificaciones.
                       </p>
@@ -68,14 +68,14 @@ const SettingsPage: React.FC = () => {
       ) : (
         <>
           <Header />
-          <main className="flex-1 container mx-auto py-8 px-4 max-w-5xl">
-            <h1 className="text-2xl font-bold mb-6">Ajustes de la cuenta</h1>
+          <main className="flex-1 container mx-auto px-4 py-6 max-w-7xl">
+            <h1 className="text-2xl font-bold mb-6 font-tt-travels">Ajustes de la cuenta</h1>
             
             <Tabs defaultValue="profile" className="w-full">
               <TabsList className="mb-6">
-                <TabsTrigger value="profile">Perfil</TabsTrigger>
-                <TabsTrigger value="account">Cuenta</TabsTrigger>
-                <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
+                <TabsTrigger value="profile" className="font-tt-travels">Perfil</TabsTrigger>
+                <TabsTrigger value="account" className="font-tt-travels">Cuenta</TabsTrigger>
+                <TabsTrigger value="notifications" className="font-tt-travels">Notificaciones</TabsTrigger>
               </TabsList>
               
               <TabsContent value="profile">
@@ -86,7 +86,7 @@ const SettingsPage: React.FC = () => {
               
               <TabsContent value="account">
                 <Card className="p-6">
-                  <h2 className="text-lg font-medium mb-4">Ajustes de cuenta</h2>
+                  <h2 className="text-lg font-medium mb-4 font-tt-travels">Ajustes de cuenta</h2>
                   <p className="text-muted-foreground mb-4">
                     Gestiona la configuración de tu cuenta y opciones de seguridad.
                   </p>
@@ -96,7 +96,7 @@ const SettingsPage: React.FC = () => {
               
               <TabsContent value="notifications">
                 <Card className="p-6">
-                  <h2 className="text-lg font-medium mb-4">Preferencias de notificaciones</h2>
+                  <h2 className="text-lg font-medium mb-4 font-tt-travels">Preferencias de notificaciones</h2>
                   <p className="text-muted-foreground mb-4">
                     Configura cómo y cuándo recibes notificaciones.
                   </p>

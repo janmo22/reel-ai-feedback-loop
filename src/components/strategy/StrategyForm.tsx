@@ -13,6 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Loader2, Target, Users, Lightbulb, Star } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { cn } from "@/lib/utils";
 
 type StrategyFormValues = {
   target_audience: string;
@@ -157,14 +159,14 @@ const StrategyForm = () => {
           <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 p-1">
             <TabsTrigger 
               value="value" 
-              className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex gap-2 items-center"
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex gap-2 items-center font-tt-travels"
             >
               <Target className="h-4 w-4" />
               Propuesta de Valor
             </TabsTrigger>
             <TabsTrigger 
               value="4ps" 
-              className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex gap-2 items-center"
+              className="data-[state=active]:bg-white data-[state=active]:shadow-sm flex gap-2 items-center font-tt-travels"
             >
               <Star className="h-4 w-4" />
               Las 4Ps
@@ -178,7 +180,7 @@ const StrategyForm = () => {
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue mb-1">
                     <Users className="h-5 w-5" />
-                    <CardTitle>A quién te diriges</CardTitle>
+                    <CardTitle className="font-tt-travels">A quién te diriges</CardTitle>
                   </div>
                   <CardDescription>Define quién es tu audiencia objetivo</CardDescription>
                 </CardHeader>
@@ -264,7 +266,7 @@ const StrategyForm = () => {
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue mb-1">
                     <Lightbulb className="h-5 w-5" />
-                    <CardTitle>Tu propuesta</CardTitle>
+                    <CardTitle className="font-tt-travels">Tu propuesta</CardTitle>
                   </div>
                   <CardDescription>Define cómo vas a ayudar a tu audiencia</CardDescription>
                 </CardHeader>
@@ -369,13 +371,13 @@ const StrategyForm = () => {
           </TabsContent>
           
           <TabsContent value="4ps" className="pt-2 animate-fade-in">
-            <div className="grid gap-8">
-              {/* Grupo 2: Tus 4Ps - Una debajo de otra */}
+            <div className="space-y-8">
+              {/* Personaje */}
               <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue">
-                    <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">1</span>
-                    <CardTitle>Personaje</CardTitle>
+                    <span className="h-7 w-7 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">1</span>
+                    <CardTitle className="font-tt-travels">Personaje</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -399,11 +401,12 @@ const StrategyForm = () => {
                 </CardContent>
               </Card>
               
+              {/* Personalidad - Convertido a RadioGroup */}
               <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue">
-                    <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">2</span>
-                    <CardTitle>Personalidad</CardTitle>
+                    <span className="h-7 w-7 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">2</span>
+                    <CardTitle className="font-tt-travels">Personalidad</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -412,82 +415,111 @@ const StrategyForm = () => {
                     name="content_personality"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">¿Qué tono, actitud o carácter define tus contenidos?</FormLabel>
-                        <div className="space-y-4 mt-3">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                              <input
-                                type="radio"
-                                id="serio"
-                                value="serio"
-                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                checked={field.value === "serio"}
-                                onChange={() => field.onChange("serio")}
-                              />
-                              <label htmlFor="serio" className="cursor-pointer text-gray-700 text-sm">Serio</label>
-                            </div>
-                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                              <input
-                                type="radio"
-                                id="espontaneo"
-                                value="espontaneo"
-                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                checked={field.value === "espontaneo"}
-                                onChange={() => field.onChange("espontaneo")}
-                              />
-                              <label htmlFor="espontaneo" className="cursor-pointer text-gray-700 text-sm">Espontáneo</label>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                              <input
-                                type="radio"
-                                id="relajado"
-                                value="relajado"
-                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                checked={field.value === "relajado"}
-                                onChange={() => field.onChange("relajado")}
-                              />
-                              <label htmlFor="relajado" className="cursor-pointer text-gray-700 text-sm">Relajado</label>
-                            </div>
-                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                              <input
-                                type="radio"
-                                id="energico"
-                                value="energico"
-                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                checked={field.value === "energico"}
-                                onChange={() => field.onChange("energico")}
-                              />
-                              <label htmlFor="energico" className="cursor-pointer text-gray-700 text-sm">Enérgico</label>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                              <input
-                                type="radio"
-                                id="casual"
-                                value="casual"
-                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                checked={field.value === "casual"}
-                                onChange={() => field.onChange("casual")}
-                              />
-                              <label htmlFor="casual" className="cursor-pointer text-gray-700 text-sm">Casual</label>
-                            </div>
-                            <div className="flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:border-flow-blue transition-colors cursor-pointer">
-                              <input
-                                type="radio"
-                                id="profesional"
-                                value="profesional"
-                                className="form-radio text-flow-blue focus:ring-flow-blue/30 h-4 w-4"
-                                checked={field.value === "profesional"}
-                                onChange={() => field.onChange("profesional")}
-                              />
-                              <label htmlFor="profesional" className="cursor-pointer text-gray-700 text-sm">Profesional</label>
-                            </div>
-                          </div>
+                        <FormLabel className="text-sm font-medium mb-4 block">
+                          ¿Qué tono, actitud o carácter define tus contenidos?
+                        </FormLabel>
+                        <div className="space-y-5">
+                          <RadioGroup
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            className="grid grid-cols-2 gap-4"
+                          >
+                            <FormItem>
+                              <FormControl>
+                                <div className={cn(
+                                  "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer",
+                                  field.value === "serio" 
+                                    ? "border-flow-blue bg-flow-blue/5" 
+                                    : "border-gray-200 hover:border-flow-blue/50 hover:bg-gray-50"
+                                )}>
+                                  <RadioGroupItem value="serio" id="serio" className="text-flow-blue" />
+                                  <FormLabel htmlFor="serio" className="cursor-pointer text-gray-700 font-medium mb-0">
+                                    Serio
+                                  </FormLabel>
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                            
+                            <FormItem>
+                              <FormControl>
+                                <div className={cn(
+                                  "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer",
+                                  field.value === "espontaneo" 
+                                    ? "border-flow-blue bg-flow-blue/5" 
+                                    : "border-gray-200 hover:border-flow-blue/50 hover:bg-gray-50"
+                                )}>
+                                  <RadioGroupItem value="espontaneo" id="espontaneo" className="text-flow-blue" />
+                                  <FormLabel htmlFor="espontaneo" className="cursor-pointer text-gray-700 font-medium mb-0">
+                                    Espontáneo
+                                  </FormLabel>
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                            
+                            <FormItem>
+                              <FormControl>
+                                <div className={cn(
+                                  "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer",
+                                  field.value === "relajado" 
+                                    ? "border-flow-blue bg-flow-blue/5" 
+                                    : "border-gray-200 hover:border-flow-blue/50 hover:bg-gray-50"
+                                )}>
+                                  <RadioGroupItem value="relajado" id="relajado" className="text-flow-blue" />
+                                  <FormLabel htmlFor="relajado" className="cursor-pointer text-gray-700 font-medium mb-0">
+                                    Relajado
+                                  </FormLabel>
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                            
+                            <FormItem>
+                              <FormControl>
+                                <div className={cn(
+                                  "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer",
+                                  field.value === "energico" 
+                                    ? "border-flow-blue bg-flow-blue/5" 
+                                    : "border-gray-200 hover:border-flow-blue/50 hover:bg-gray-50"
+                                )}>
+                                  <RadioGroupItem value="energico" id="energico" className="text-flow-blue" />
+                                  <FormLabel htmlFor="energico" className="cursor-pointer text-gray-700 font-medium mb-0">
+                                    Enérgico
+                                  </FormLabel>
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                            
+                            <FormItem>
+                              <FormControl>
+                                <div className={cn(
+                                  "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer",
+                                  field.value === "casual" 
+                                    ? "border-flow-blue bg-flow-blue/5" 
+                                    : "border-gray-200 hover:border-flow-blue/50 hover:bg-gray-50"
+                                )}>
+                                  <RadioGroupItem value="casual" id="casual" className="text-flow-blue" />
+                                  <FormLabel htmlFor="casual" className="cursor-pointer text-gray-700 font-medium mb-0">
+                                    Casual
+                                  </FormLabel>
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                            
+                            <FormItem>
+                              <FormControl>
+                                <div className={cn(
+                                  "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer",
+                                  field.value === "profesional" 
+                                    ? "border-flow-blue bg-flow-blue/5" 
+                                    : "border-gray-200 hover:border-flow-blue/50 hover:bg-gray-50"
+                                )}>
+                                  <RadioGroupItem value="profesional" id="profesional" className="text-flow-blue" />
+                                  <FormLabel htmlFor="profesional" className="cursor-pointer text-gray-700 font-medium mb-0">
+                                    Profesional
+                                  </FormLabel>
+                                </div>
+                              </FormControl>
+                            </FormItem>
+                          </RadioGroup>
                         </div>
                         <FormMessage />
                       </FormItem>
@@ -496,11 +528,12 @@ const StrategyForm = () => {
                 </CardContent>
               </Card>
               
+              {/* Producto */}
               <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue">
-                    <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">3</span>
-                    <CardTitle>Producto</CardTitle>
+                    <span className="h-7 w-7 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">3</span>
+                    <CardTitle className="font-tt-travels">Producto</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -524,11 +557,12 @@ const StrategyForm = () => {
                 </CardContent>
               </Card>
               
+              {/* Posicionamiento */}
               <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue">
-                    <span className="h-6 w-6 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">4</span>
-                    <CardTitle>Posicionamiento</CardTitle>
+                    <span className="h-7 w-7 rounded-full bg-flow-blue text-white flex items-center justify-center font-medium text-sm">4</span>
+                    <CardTitle className="font-tt-travels">Posicionamiento</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6 space-y-6">
@@ -578,7 +612,7 @@ const StrategyForm = () => {
             type="submit" 
             disabled={isLoading} 
             size="lg" 
-            className={`bg-flow-blue hover:bg-flow-accent transition-all ${saveSuccess ? 'bg-green-600 hover:bg-green-700' : ''}`}
+            className={`bg-flow-blue hover:bg-flow-accent transition-all font-medium ${saveSuccess ? 'bg-green-600 hover:bg-green-700' : ''}`}
           >
             {isLoading ? (
               <>

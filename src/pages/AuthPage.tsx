@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,18 +11,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, AlertCircle, Mail } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
-  const {
-    signIn,
-    signUp,
-    signInWithGoogle
-  } = useAuth();
-  const {
-    toast
-  } = useToast();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -30,6 +26,7 @@ const AuthPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -39,6 +36,7 @@ const AuthPage = () => {
       setIsLoading(false);
     }
   };
+
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
@@ -56,6 +54,7 @@ const AuthPage = () => {
     }
     // No desactivamos googleLoading aquí si todo va bien, ya que la página se redirigirá
   };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -82,8 +81,10 @@ const AuthPage = () => {
       setIsLoading(false);
     }
   };
-  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-flow-blue/5 via-background to-flow-accent/5 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full opacity-10">
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-flow-blue/5 via-background to-flow-accent/5 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
         <div className="absolute -top-20 -left-20 w-72 h-72 bg-flow-blue rounded-full filter blur-3xl"></div>
         <div className="absolute top-40 right-20 w-96 h-96 bg-flow-accent rounded-full filter blur-3xl"></div>
       </div>
@@ -93,39 +94,59 @@ const AuthPage = () => {
           <CardHeader className="pb-2">
             <div className="flex flex-col items-center justify-center mb-6">
               <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="FLOW Logo" className="h-16 mb-2" />
-              
-              <p className="text-muted-foreground">Analiza tus reels con IA</p>
+              <p className="text-muted-foreground font-tt-travels">Analiza tus reels con IA</p>
             </div>
             <TabsList className="grid w-full grid-cols-2 bg-muted/50">
-              <TabsTrigger value="login" className="data-[state=active]:bg-flow-blue/10 data-[state=active]:text-flow-blue">
+              <TabsTrigger value="login" className="data-[state=active]:bg-flow-blue/10 data-[state=active]:text-flow-blue font-tt-travels">
                 Iniciar sesión
               </TabsTrigger>
-              <TabsTrigger value="register" className="data-[state=active]:bg-flow-blue/10 data-[state=active]:text-flow-blue">
+              <TabsTrigger value="register" className="data-[state=active]:bg-flow-blue/10 data-[state=active]:text-flow-blue font-tt-travels">
                 Registrarse
               </TabsTrigger>
             </TabsList>
           </CardHeader>
           
-          <CardContent className="pt-4">
+          <CardContent className="pt-6">
             <TabsContent value="login">
               <form onSubmit={handleLogin}>
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="ejemplo@email.com" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className="border-muted-foreground/20 focus-visible:ring-flow-blue" />
+                    <Label htmlFor="email" className="font-medium">Email</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="ejemplo@email.com" 
+                      required 
+                      value={loginEmail} 
+                      onChange={e => setLoginEmail(e.target.value)} 
+                      className="border-muted-foreground/20 focus-visible:ring-flow-blue h-11" 
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Contraseña</Label>
-                    <Input id="password" type="password" required value={loginPassword} onChange={e => setLoginPassword(e.target.value)} className="border-muted-foreground/20 focus-visible:ring-flow-blue" />
+                    <Label htmlFor="password" className="font-medium">Contraseña</Label>
+                    <Input 
+                      id="password" 
+                      type="password" 
+                      required 
+                      value={loginPassword} 
+                      onChange={e => setLoginPassword(e.target.value)} 
+                      className="border-muted-foreground/20 focus-visible:ring-flow-blue h-11" 
+                    />
                   </div>
-                  <Button className="w-full bg-flow-blue hover:bg-flow-blue/90 text-white" type="submit" disabled={isLoading}>
-                    {isLoading ? <>
+                  <Button 
+                    className="w-full bg-flow-blue hover:bg-flow-blue/90 text-white font-medium h-11" 
+                    type="submit" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Cargando...
-                      </> : "Iniciar sesión"}
+                      </>
+                    ) : "Iniciar sesión"}
                   </Button>
                   
-                  <div className="relative my-4">
+                  <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center">
                       <Separator className="w-full" />
                     </div>
@@ -136,8 +157,17 @@ const AuthPage = () => {
                     </div>
                   </div>
                   
-                  <Button type="button" variant="outline" className="w-full flex gap-2 items-center justify-center border-flow-blue/20 hover:bg-flow-blue/5" onClick={handleGoogleLogin} disabled={googleLoading}>
-                    {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full flex gap-2 items-center justify-center border-flow-blue/20 hover:bg-flow-blue/5 h-11 font-medium" 
+                    onClick={handleGoogleLogin} 
+                    disabled={googleLoading}
+                  >
+                    {googleLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 186.69 190.5">
                           <g transform="translate(1184.583 765.171)">
                             <path d="M-1089.333-687.239v36.888h51.262c-2.251 11.863-9.006 21.908-19.137 28.662l30.913 23.986c18.011-16.625 28.402-41.044 28.402-70.052 0-6.754-.606-13.249-1.732-19.483z" fill="#4285f4" />
@@ -147,14 +177,16 @@ const AuthPage = () => {
                           </g>
                         </svg>
                         Iniciar con Google
-                      </>}
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>
             </TabsContent>
             
             <TabsContent value="register">
-              {registrationSuccess ? <div className="space-y-4">
+              {registrationSuccess ? (
+                <div className="space-y-4">
                   <Alert className="bg-green-50 border-green-200">
                     <Mail className="h-5 w-5 text-green-600" />
                     <AlertTitle className="text-green-800">Registro exitoso</AlertTitle>
@@ -166,38 +198,82 @@ const AuthPage = () => {
                   <Button className="w-full bg-flow-blue hover:bg-flow-blue/90 text-white" onClick={() => setRegistrationSuccess(false)}>
                     Registrar otra cuenta
                   </Button>
-                </div> : <form onSubmit={handleRegister}>
-                  <div className="space-y-4">
+                </div>
+              ) : (
+                <form onSubmit={handleRegister}>
+                  <div className="space-y-5">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="firstName">Nombre</Label>
-                        <Input id="firstName" placeholder="Juan" required value={firstName} onChange={e => setFirstName(e.target.value)} className="border-muted-foreground/20 focus-visible:ring-flow-blue" />
+                        <Label htmlFor="firstName" className="font-medium">Nombre</Label>
+                        <Input 
+                          id="firstName" 
+                          placeholder="Juan" 
+                          required 
+                          value={firstName} 
+                          onChange={e => setFirstName(e.target.value)} 
+                          className="border-muted-foreground/20 focus-visible:ring-flow-blue h-11" 
+                        />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="lastName">Apellido</Label>
-                        <Input id="lastName" placeholder="Pérez" required value={lastName} onChange={e => setLastName(e.target.value)} className="border-muted-foreground/20 focus-visible:ring-flow-blue" />
+                        <Label htmlFor="lastName" className="font-medium">Apellido</Label>
+                        <Input 
+                          id="lastName" 
+                          placeholder="Pérez" 
+                          required 
+                          value={lastName} 
+                          onChange={e => setLastName(e.target.value)} 
+                          className="border-muted-foreground/20 focus-visible:ring-flow-blue h-11" 
+                        />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="registerEmail">Email</Label>
-                      <Input id="registerEmail" type="email" placeholder="ejemplo@email.com" required value={registerEmail} onChange={e => setRegisterEmail(e.target.value)} className="border-muted-foreground/20 focus-visible:ring-flow-blue" />
+                      <Label htmlFor="registerEmail" className="font-medium">Email</Label>
+                      <Input 
+                        id="registerEmail" 
+                        type="email" 
+                        placeholder="ejemplo@email.com" 
+                        required 
+                        value={registerEmail} 
+                        onChange={e => setRegisterEmail(e.target.value)} 
+                        className="border-muted-foreground/20 focus-visible:ring-flow-blue h-11" 
+                      />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="registerPassword">Contraseña</Label>
-                      <Input id="registerPassword" type="password" required value={registerPassword} onChange={e => setRegisterPassword(e.target.value)} className="border-muted-foreground/20 focus-visible:ring-flow-blue" />
+                      <Label htmlFor="registerPassword" className="font-medium">Contraseña</Label>
+                      <Input 
+                        id="registerPassword" 
+                        type="password" 
+                        required 
+                        value={registerPassword} 
+                        onChange={e => setRegisterPassword(e.target.value)} 
+                        className="border-muted-foreground/20 focus-visible:ring-flow-blue h-11" 
+                      />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-                      <Input id="confirmPassword" type="password" required value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="border-muted-foreground/20 focus-visible:ring-flow-blue" />
+                      <Label htmlFor="confirmPassword" className="font-medium">Confirmar contraseña</Label>
+                      <Input 
+                        id="confirmPassword" 
+                        type="password" 
+                        required 
+                        value={confirmPassword} 
+                        onChange={e => setConfirmPassword(e.target.value)} 
+                        className="border-muted-foreground/20 focus-visible:ring-flow-blue h-11" 
+                      />
                     </div>
-                    <Button className="w-full bg-flow-blue hover:bg-flow-blue/90 text-white" type="submit" disabled={isLoading}>
-                      {isLoading ? <>
+                    <Button 
+                      className="w-full bg-flow-blue hover:bg-flow-blue/90 text-white font-medium h-11" 
+                      type="submit" 
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Cargando...
-                        </> : "Crear cuenta"}
+                        </>
+                      ) : "Crear cuenta"}
                     </Button>
                     
-                    <div className="relative my-4">
+                    <div className="relative my-6">
                       <div className="absolute inset-0 flex items-center">
                         <Separator className="w-full" />
                       </div>
@@ -208,8 +284,17 @@ const AuthPage = () => {
                       </div>
                     </div>
                     
-                    <Button type="button" variant="outline" className="w-full flex gap-2 items-center justify-center border-flow-blue/20 hover:bg-flow-blue/5" onClick={handleGoogleLogin} disabled={googleLoading}>
-                      {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="w-full flex gap-2 items-center justify-center border-flow-blue/20 hover:bg-flow-blue/5 h-11 font-medium" 
+                      onClick={handleGoogleLogin} 
+                      disabled={googleLoading}
+                    >
+                      {googleLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 186.69 190.5">
                             <g transform="translate(1184.583 765.171)">
                               <path d="M-1089.333-687.239v36.888h51.262c-2.251 11.863-9.006 21.908-19.137 28.662l30.913 23.986c18.011-16.625 28.402-41.044 28.402-70.052 0-6.754-.606-13.249-1.732-19.483z" fill="#4285f4" />
@@ -219,10 +304,12 @@ const AuthPage = () => {
                             </g>
                           </svg>
                           Registrarse con Google
-                        </>}
+                        </>
+                      )}
                     </Button>
                   </div>
-                </form>}
+                </form>
+              )}
             </TabsContent>
           </CardContent>
           
@@ -233,6 +320,8 @@ const AuthPage = () => {
           </CardFooter>
         </Tabs>
       </Card>
-    </div>;
+    </div>
+  );
 };
+
 export default AuthPage;

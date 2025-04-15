@@ -71,7 +71,7 @@ const Header = () => {
                     <AvatarImage src="" alt="Avatar" />
                     <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
-                  <span className="hidden sm:inline-block">Mi cuenta</span>
+                  <span className="hidden sm:inline-block font-medium">Mi cuenta</span>
                   <ChevronDown className="h-4 w-4 opacity-70" />
                 </Button>
               </DropdownMenuTrigger>
@@ -79,10 +79,10 @@ const Header = () => {
                 {user && <DropdownMenuItem className="font-medium">{user.email}</DropdownMenuItem>}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/settings">Ajustes</Link>
+                  <Link to="/settings" className="font-medium">Ajustes</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
+                <DropdownMenuItem onClick={() => signOut()} className="font-medium">
                   Cerrar sesión
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -100,7 +100,7 @@ const Header = () => {
         <div className="flex items-center gap-6">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2">
             <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="FLOW Logo" className="h-8" />
-            <span className="font-medium text-lg bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">
+            <span className="font-tt-travels font-medium text-lg bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">
             </span>
           </Link>
         </div>
@@ -114,7 +114,7 @@ const Header = () => {
                     <AvatarImage src="" alt="Avatar" />
                     <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
-                  <span className="hidden sm:inline-block">Mi cuenta</span>
+                  <span className="hidden sm:inline-block font-medium">Mi cuenta</span>
                   <ChevronDown className="h-4 w-4 opacity-70" />
                 </Button>
               </DropdownMenuTrigger>
@@ -122,13 +122,13 @@ const Header = () => {
                 {user && <DropdownMenuItem className="font-medium">{user.email}</DropdownMenuItem>}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/history">Mi historial</Link>
+                  <Link to="/history" className="font-medium">Mi historial</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/settings">Ajustes</Link>
+                  <Link to="/settings" className="font-medium">Ajustes</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
+                <DropdownMenuItem onClick={() => signOut()} className="font-medium">
                   Cerrar sesión
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -136,7 +136,7 @@ const Header = () => {
           ) : (
             <>
               {location.pathname !== '/auth' && (
-                <Button asChild variant="default">
+                <Button asChild variant="default" className="font-medium">
                   <Link to="/auth">Iniciar sesión</Link>
                 </Button>
               )}
