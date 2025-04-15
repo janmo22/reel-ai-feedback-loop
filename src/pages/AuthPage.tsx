@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, AlertCircle, Mail } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -30,6 +32,7 @@ const AuthPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -39,6 +42,7 @@ const AuthPage = () => {
       setIsLoading(false);
     }
   };
+
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
@@ -56,6 +60,7 @@ const AuthPage = () => {
     }
     // No desactivamos googleLoading aquí si todo va bien, ya que la página se redirigirá
   };
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -82,6 +87,7 @@ const AuthPage = () => {
       setIsLoading(false);
     }
   };
+
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-flow-blue/5 via-background to-flow-accent/5 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full opacity-10">
         <div className="absolute -top-20 -left-20 w-72 h-72 bg-flow-blue rounded-full filter blur-3xl"></div>
@@ -94,7 +100,8 @@ const AuthPage = () => {
             <div className="flex flex-col items-center justify-center mb-6">
               <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="FLOW Logo" className="h-16 mb-2" />
               <h1 className="text-2xl font-bold bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">
-            </h1>
+                FLOW
+              </h1>
               <p className="text-muted-foreground">Analiza tus reels con IA</p>
             </div>
             <TabsList className="grid w-full grid-cols-2 bg-muted/50">
@@ -236,4 +243,5 @@ const AuthPage = () => {
       </Card>
     </div>;
 };
+
 export default AuthPage;

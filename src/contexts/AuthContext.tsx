@@ -77,6 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
+            // Añadimos el nombre de dominio personalizado para que aparezca en la pantalla de Google
+            hd: 'analizaconflow.com'
           }
         }
       });
