@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
@@ -10,7 +9,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import EmptyState from '@/components/EmptyState';
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import Header from '@/components/Header';
 import {
   Table,
   TableBody,
@@ -26,7 +24,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
-// Interface updated to work with the Video type
 interface VideoWithFeedback extends Omit<Video, 'feedback'> {
   feedback?: Feedback[];
 }
@@ -41,11 +38,9 @@ const HistoryPage: React.FC = () => {
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
-  // Get error message from location state if present
   useEffect(() => {
     if (location.state?.error) {
       setError(location.state.error);
-      // Clear the error from location state
       window.history.replaceState({}, document.title);
     }
   }, [location]);
@@ -66,22 +61,18 @@ const HistoryPage: React.FC = () => {
       const { data, error } = await supabase
         .from('videos')
         .select('*, feedback(*)')
-        .eq('user_id', user.id) // Only fetch videos belonging to current user
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
       }
 
-      // Map the data to include is_favorite property if it doesn't exist
-      // Use type assertion to help TypeScript understand the structure
       const videosWithFavorites = data?.map(video => {
         const hasFeedback = video.feedback && video.feedback.length > 0;
         return {
           ...video,
-          // Add is_favorite with a default value if it doesn't exist in the database
           is_favorite: 'is_favorite' in video ? video.is_favorite : false,
-          // Update status to completed if there is feedback
           status: hasFeedback ? "completed" : video.status
         };
       }) || [];
@@ -107,7 +98,7 @@ const HistoryPage: React.FC = () => {
         .from('videos')
         .delete()
         .eq('id', videoId)
-        .eq('user_id', user.id); // Ensure only deleting user's own videos
+        .eq('user_id', user.id);
 
       if (error) {
         throw error;
@@ -134,7 +125,6 @@ const HistoryPage: React.FC = () => {
     try {
       setUpdatingFavorite(true);
       
-      // Update in Supabase - check if the column exists first
       const { error } = await supabase
         .from('videos')
         .update({ 
@@ -142,11 +132,10 @@ const HistoryPage: React.FC = () => {
           updated_at: new Date().toISOString()
         })
         .eq('id', videoId)
-        .eq('user_id', user.id); // Ensure only updating user's own videos
+        .eq('user_id', user.id);
       
       if (error) throw error;
       
-      // Update local state
       setVideos(videos.map(video => 
         video.id === videoId 
           ? { ...video, is_favorite: !currentStatus } 
@@ -179,14 +168,12 @@ const HistoryPage: React.FC = () => {
     return format(parseISO(dateString), "d 'de' MMMM, yyyy", { locale: es });
   };
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!user && !loading) {
       navigate('/auth', { replace: true });
     }
   }, [user, loading, navigate]);
 
-  // Filter videos based on active tab
   const filteredVideos = activeTab === "favorites" 
     ? videos.filter(video => video.is_favorite)
     : videos;

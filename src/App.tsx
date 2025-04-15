@@ -16,6 +16,7 @@ import StrategyPage from "./pages/StrategyPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import AppLayout from "./components/layout/AppLayout";
 
 const queryClient = new QueryClient();
 
@@ -33,7 +34,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
-  return <>{children}</>;
+  return <AppLayout>{children}</AppLayout>;
 };
 
 // Auth wrapper that provides the auth context

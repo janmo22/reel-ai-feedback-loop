@@ -8,8 +8,6 @@ import HowItWorks from "@/components/landing/HowItWorks";
 import CallToAction from "@/components/landing/CallToAction";
 import Footer from "@/components/layout/Footer";
 import DashboardFeatures from "@/components/dashboard/DashboardFeatures";
-import DashboardSidebar from "@/components/dashboard/Sidebar";
-import { SidebarInset } from "@/components/ui/sidebar";
 
 const Index: React.FC = () => {
   const { user } = useAuth();
@@ -18,17 +16,12 @@ const Index: React.FC = () => {
   
   if (user) {
     return (
-      <div className="min-h-screen flex bg-gradient-to-br from-white to-gray-50 w-full">
-        <DashboardSidebar />
-        <SidebarInset className="bg-gray-50 overflow-auto flex-1">
-          <div className="container mx-auto px-4 py-6 max-w-7xl">
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-              <DashboardHeader userName={userName} />
-              <DashboardTabs />
-              <DashboardFeatures />
-            </div>
-          </div>
-        </SidebarInset>
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <DashboardHeader userName={userName} />
+          <DashboardTabs />
+          <DashboardFeatures />
+        </div>
       </div>
     );
   }

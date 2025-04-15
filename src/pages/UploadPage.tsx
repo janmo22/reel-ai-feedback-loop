@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
 import VideoUploader from "@/components/video-upload/VideoUploader";
 import ProgressSteps from "@/components/video-upload/ProgressSteps";
 import ProcessingSteps from "@/components/video-upload/ProcessingSteps";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Frases divertidas para mostrar durante la carga
 const funnyLoadingPhrases = [
@@ -37,6 +36,7 @@ const UploadPage = () => {
   const [loadingPhrase, setLoadingPhrase] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   // Rotamos las frases divertidas cada 5 segundos durante el procesamiento
   useEffect(() => {
@@ -101,39 +101,35 @@ const UploadPage = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col w-full">
-      <Header />
-      
-      <main className="flex-1 py-8 px-4 bg-gradient-to-b from-background to-muted/20">
-        <div className="container mx-auto max-w-6xl">
-          <div className="mb-8 text-center">
-            <h1 className="text-3xl md:text-4xl font-bold mb-3 text-flow-blue tracking-tight">
-              ANALIZA TU REEL CON IA
-            </h1>
-            <p className="text-muted-foreground font-satoshi text-lg max-w-xl mx-auto">
-              Sube tu reel para recibir feedback personalizado de IA y mejorar tu engagement
-            </p>
-          </div>
-          
-          <div className="max-w-3xl mx-auto">
-            {/* Progress Steps */}
-            <ProgressSteps currentStep={uploadStep} />
-            
-            {uploadStep === "upload" && (
-              <VideoUploader onUploadComplete={handleUploadComplete} />
-            )}
-            
-            {(uploadStep === "processing" || uploadStep === "complete") && (
-              <ProcessingSteps 
-                currentStep={uploadStep}
-                loadingPhrase={loadingPhrase}
-                onContinue={handleContinue}
-              />
-            )}
-          </div>
+    <main className="py-8 px-4 bg-gradient-to-b from-background to-muted/20">
+      <div className="container mx-auto max-w-6xl">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold mb-3 text-flow-blue tracking-tight">
+            ANALIZA TU REEL CON IA
+          </h1>
+          <p className="text-muted-foreground font-satoshi text-lg max-w-xl mx-auto">
+            Sube tu reel para recibir feedback personalizado de IA y mejorar tu engagement
+          </p>
         </div>
-      </main>
-    </div>
+        
+        <div className="max-w-3xl mx-auto">
+          {/* Progress Steps */}
+          <ProgressSteps currentStep={uploadStep} />
+          
+          {uploadStep === "upload" && (
+            <VideoUploader onUploadComplete={handleUploadComplete} />
+          )}
+          
+          {(uploadStep === "processing" || uploadStep === "complete") && (
+            <ProcessingSteps 
+              currentStep={uploadStep}
+              loadingPhrase={loadingPhrase}
+              onContinue={handleContinue}
+            />
+          )}
+        </div>
+      </div>
+    </main>
   );
 };
 
