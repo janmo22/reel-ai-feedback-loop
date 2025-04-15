@@ -16,8 +16,8 @@ const StrategyPage: React.FC = () => {
         <div className="flex flex-1">
           <DashboardSidebar />
           <SidebarInset className="bg-gray-50 overflow-auto">
-            <div className="container mx-auto py-8 px-4 max-w-6xl">
-              <div className="bg-white rounded-2xl shadow-md p-8 mb-8">
+            <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-6xl">
+              <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
                 <div className="mb-8">
                   <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 flex items-center gap-3">
                     <Target className="h-8 w-8 text-flow-blue" />
@@ -34,10 +34,10 @@ const StrategyPage: React.FC = () => {
           </SidebarInset>
         </div>
       ) : (
-        <>
+        <div className="flex flex-col min-h-screen">
           <Header />
-          <div className="container mx-auto py-8 px-4 max-w-6xl">
-            <div className="bg-white rounded-2xl shadow-md p-8 mb-8">
+          <div className="flex-1 container mx-auto p-4 sm:p-6 md:p-8 max-w-6xl">
+            <div className="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
               <div className="mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 flex items-center gap-3">
                   <Target className="h-8 w-8 text-flow-blue" />
@@ -51,7 +51,7 @@ const StrategyPage: React.FC = () => {
               <StrategyForm />
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

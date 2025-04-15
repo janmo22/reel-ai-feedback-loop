@@ -25,11 +25,15 @@ const DashboardSidebar = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [strategyOpen, setStrategyOpen] = useState(
-    location.pathname === "/strategy" || location.pathname.startsWith("/strategy/")
+    location.pathname === "/strategy" || location.pathname.startsWith("/strategy/") || location.search.includes("tab=")
   );
   
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const isSubActive = (tabParam: string) => {
+    return location.search.includes(tabParam);
   };
   
   const getInitials = () => {
@@ -151,7 +155,7 @@ const DashboardSidebar = () => {
                             <SidebarMenuSubItem key={subItem.label}>
                               <SidebarMenuSubButton
                                 asChild
-                                isActive={location.pathname + location.search === subItem.path}
+                                isActive={isSubActive(subItem.path.split("=")[1])}
                               >
                                 <Link to={subItem.path}>{subItem.label}</Link>
                               </SidebarMenuSubButton>
