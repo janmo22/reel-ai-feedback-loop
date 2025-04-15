@@ -16,6 +16,32 @@ export interface UploadVideoParams {
 export const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
 /**
+ * Fetch user mission data from the database
+ */
+export async function fetchUserMissionData(userId: string) {
+  try {
+    console.log("Fetching user mission data for user:", userId);
+    
+    const { data, error } = await supabase
+      .from('user_mission')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Error fetching user mission data:", error);
+      return null;
+    }
+    
+    console.log("User mission data retrieved:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching user mission data:", error);
+    return null;
+  }
+}
+
+/**
  * Update the video status in Supabase
  */
 export async function updateVideoStatus(videoId: string, status: string) {
@@ -75,7 +101,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
 
 /**
  * Upload the video to the webhook - with improved handling for no-cors mode
- * and clear MIME type indication
+ * and clear MIME type indication, also including user mission data
  */
 export const uploadVideoToWebhook = async (params: {
   videoId: string;
@@ -92,6 +118,9 @@ export const uploadVideoToWebhook = async (params: {
   const mimeType = params.videoFile.type;
   console.log(`Tipo de archivo (MIME Type): ${mimeType}`);
   
+  // Fetch user mission data if available
+  const userMissionData = await fetchUserMissionData(params.userId);
+  
   // Create a FormData object and add all the data
   const formData = new FormData();
   formData.append("videoId", params.videoId);
@@ -101,6 +130,25 @@ export const uploadVideoToWebhook = async (params: {
   formData.append("missions", JSON.stringify(params.missions));
   formData.append("mainMessage", params.mainMessage);
   formData.append("mimeType", mimeType); // Include MIME type explicitly
+  
+  // Add user mission data if available
+  if (userMissionData) {
+    formData.append("userMissionData", JSON.stringify(userMissionData));
+    
+    console.log("Enviando datos de estrategia del usuario con el video:", {
+      valueProposition: userMissionData.value_proposition,
+      mission: userMissionData.mission,
+      niche: userMissionData.niche,
+      targetAudience: userMissionData.target_audience,
+      contentStrategy: {
+        character: userMissionData.content_character,
+        personality: userMissionData.content_personality,
+        tone: userMissionData.content_tone
+      }
+    });
+  } else {
+    console.log("No se encontraron datos de estrategia para este usuario");
+  }
   
   // Add the video file to FormData
   // Set the content type explicitly in the append operation

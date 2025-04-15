@@ -14,10 +14,31 @@ const LoadingResults = () => {
   const [searchParams] = useSearchParams();
   const videoId = searchParams.get('videoId');
   const [isReady, setIsReady] = useState(false);
+  const [hasUserStrategy, setHasUserStrategy] = useState(false);
   
   useEffect(() => {
     // If no videoId is provided, we can't check for results
     if (!videoId || !user) return;
+    
+    // Check if user has strategy data
+    const checkUserStrategy = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_mission')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+          
+        if (error) throw error;
+        
+        // Set flag if user has strategy data
+        setHasUserStrategy(data && data.length > 0);
+      } catch (err) {
+        console.error("Error checking user mission data:", err);
+      }
+    };
+    
+    checkUserStrategy();
     
     // Check initially if feedback already exists
     const checkFeedbackExists = async () => {
@@ -86,6 +107,12 @@ const LoadingResults = () => {
               Estamos procesando tu reel con inteligencia artificial. Este proceso 
               suele tardar aproximadamente <strong>2 minutos</strong> y ocurre en segundo plano.
             </p>
+            {hasUserStrategy && (
+              <div className="flex items-center justify-center gap-2 text-green-600 bg-green-50 p-3 rounded-lg">
+                <Bell className="h-5 w-5" />
+                <p className="font-medium">Tu estrategia de contenido se está utilizando para personalizar el análisis.</p>
+              </div>
+            )}
             <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg">
               <Clock className="h-5 w-5" />
               <p className="font-medium">Puedes cerrar esta ventana y consultar los resultados más tarde en tu historial.</p>
