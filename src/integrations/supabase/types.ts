@@ -41,6 +41,33 @@ export type Database = {
           },
         ]
       }
+      user_mission: {
+        Row: {
+          created_at: string | null
+          id: string
+          mission: string | null
+          updated_at: string | null
+          user_id: string
+          value_proposition: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mission?: string | null
+          updated_at?: string | null
+          user_id: string
+          value_proposition?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mission?: string | null
+          updated_at?: string | null
+          user_id?: string
+          value_proposition?: string | null
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           created_at: string | null

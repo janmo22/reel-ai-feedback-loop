@@ -19,10 +19,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userName }) => {
       <div className="flex flex-col md:flex-row md:items-end justify-between">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900">
-            ¡Bienvenido{firstName ? `, ${firstName}` : ''}!
+            ¡Bienvenido{firstName ? `, ${firstName}!` : '!'}
           </h1>
           <p className="text-gray-500">
-            ¿Qué te gustaría hacer hoy?
+            Define tu estrategia y comienza a optimizar tu contenido
           </p>
         </div>
       </div>
