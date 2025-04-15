@@ -12,7 +12,7 @@ const StrategyPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-white to-gray-50">
-      {user && (
+      {user ? (
         <div className="flex flex-1 w-full">
           <DashboardSidebar />
           <SidebarInset className="bg-gray-50 overflow-auto flex-1">
