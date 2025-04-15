@@ -18,19 +18,17 @@ const Index: React.FC = () => {
   
   if (user) {
     return (
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-gray-50 w-full">
-        <div className="flex flex-1 h-screen">
-          <DashboardSidebar />
-          <SidebarInset className="bg-gray-50 overflow-auto">
-            <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-5xl">
-              <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8 mb-8">
-                <DashboardHeader userName={userName} />
-                <DashboardTabs />
-                <DashboardFeatures />
-              </div>
+      <div className="min-h-screen flex bg-gradient-to-br from-white to-gray-50 w-full">
+        <DashboardSidebar />
+        <SidebarInset className="bg-gray-50 overflow-auto flex-1">
+          <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-5xl">
+            <div className="bg-white rounded-2xl shadow-sm p-6 md:p-8 mb-8">
+              <DashboardHeader userName={userName} />
+              <DashboardTabs />
+              <DashboardFeatures />
             </div>
-          </SidebarInset>
-        </div>
+          </div>
+        </SidebarInset>
       </div>
     );
   }

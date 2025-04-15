@@ -70,7 +70,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   };
 
   return (
-    <Card className="w-full max-w-3xl mx-auto p-6 shadow-lg border-border/40">
+    <Card className="w-full mx-auto p-6 shadow-lg border-border/40">
       {!videoSrc ? (
         <DropZone
           dragActive={dragActive}

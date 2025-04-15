@@ -23,7 +23,7 @@ const Header = () => {
   // Para pages protegidos que no son dashboard, mostramos header completo con navegación
   if (user) {
     return (
-      <header className="border-b bg-background/95 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b bg-background/95 backdrop-blur-md sticky top-0 z-40 w-full">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link to="/dashboard" className="flex items-center gap-2">
@@ -95,7 +95,7 @@ const Header = () => {
   
   // Para landing page y auth page, mostramos el header original
   return (
-    <header className="border-b bg-background/95 backdrop-blur-md sticky top-0 z-40">
+    <header className="border-b bg-background/95 backdrop-blur-md sticky top-0 z-40 w-full">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2">

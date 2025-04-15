@@ -52,7 +52,7 @@ const DashboardSidebar = () => {
     {
       icon: Target,
       label: "Estrategia",
-      path: "#",
+      path: "/strategy",
       description: "Define tu contenido",
       hasSubmenu: true,
       submenu: [

@@ -5,9 +5,9 @@ import { ArrowRight, CheckCircle, Star, BarChart2 } from "lucide-react";
 
 const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col w-full">
       {/* Header */}
-      <header className="bg-gradient-to-r from-flow-blue/10 to-flow-accent/5 border-b">
+      <header className="bg-gradient-to-r from-flow-blue/10 to-flow-accent/5 border-b w-full">
         <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <img 
@@ -171,7 +171,7 @@ const LandingPage: React.FC = () => {
         </section>
       </main>
 
-      <footer className="py-8 px-4 border-t bg-background/80 backdrop-blur-sm">
+      <footer className="py-8 px-4 border-t bg-background/80 backdrop-blur-sm w-full">
         <div className="container mx-auto max-w-5xl">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center">

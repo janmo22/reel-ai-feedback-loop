@@ -193,7 +193,7 @@ const HistoryPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col w-full">
         <Header />
         <div className="container mx-auto py-8 flex items-center justify-center">
           <p>Por favor, inicia sesión para ver tu historial.</p>
@@ -203,9 +203,9 @@ const HistoryPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col w-full">
       <Header />
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-8 px-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Historial de Videos</h1>
           <Button onClick={handleNavigateToUpload}>Subir nuevo video</Button>

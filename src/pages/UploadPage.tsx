@@ -101,7 +101,7 @@ const UploadPage = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col w-full">
       <Header />
       
       <main className="flex-1 py-8 px-4 bg-gradient-to-b from-background to-muted/20">

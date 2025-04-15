@@ -11,11 +11,11 @@ const StrategyPage: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-gray-50">
+    <div className="min-h-screen flex bg-gradient-to-br from-white to-gray-50">
       {user ? (
-        <div className="flex flex-1">
+        <div className="flex flex-1 w-full">
           <DashboardSidebar />
-          <SidebarInset className="bg-gray-50 overflow-auto">
+          <SidebarInset className="bg-gray-50 overflow-auto flex-1">
             <div className="container mx-auto p-4 sm:p-6 md:p-8 max-w-6xl">
               <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
                 <div className="mb-8">
@@ -34,10 +34,10 @@ const StrategyPage: React.FC = () => {
           </SidebarInset>
         </div>
       ) : (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen w-full">
           <Header />
           <div className="flex-1 container mx-auto p-4 sm:p-6 md:p-8 max-w-6xl">
-            <div className="bg-white rounded-2xl shadow-md p-6 md:p-8 mb-8">
+            <div className="bg-white rounded-2xl shadow-md p-6 md:p-8">
               <div className="mb-8">
                 <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 flex items-center gap-3">
                   <Target className="h-8 w-8 text-flow-blue" />
