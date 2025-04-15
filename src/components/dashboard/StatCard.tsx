@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -18,21 +19,27 @@ const StatCard: React.FC<StatCardProps> = ({
   trendUp = true,
 }) => {
   return (
-    <Card className="overflow-hidden border-none bg-white shadow-sm hover:shadow-md transition-all">
+    <Card className="overflow-hidden border border-border/30 bg-gradient-to-br from-white to-gray-50 shadow-sm hover:shadow-md transition-all">
       <CardContent className="pt-6">
         <div className="flex flex-col">
-          <div className="text-flow-blue mb-5">{icon}</div>
+          <div className="bg-flow-blue/10 p-2.5 rounded-lg w-fit flex items-center justify-center mb-5">
+            <div className="text-flow-blue">{icon}</div>
+          </div>
           
-          <h3 className="text-xl font-semibold mb-2">{title}</h3>
+          <h3 className="text-base font-semibold mb-2 text-gray-500">{title}</h3>
           
-          <div className="mt-1">
-            <p className="text-2xl font-medium">{value}</p>
+          <div className="mt-1 flex items-end justify-between">
+            <p className="text-2xl font-bold text-gray-900">{value}</p>
             
-            <p className={`text-sm mt-1 ${
+            <div className={`flex items-center text-sm ${
               trendUp ? "text-emerald-600" : "text-red-500"
             }`}>
-              {trend}
-            </p>
+              {trendUp ? 
+                <ArrowUpRight className="h-4 w-4 mr-1" /> : 
+                <ArrowDownRight className="h-4 w-4 mr-1" />
+              }
+              <span>{trend}</span>
+            </div>
           </div>
         </div>
       </CardContent>

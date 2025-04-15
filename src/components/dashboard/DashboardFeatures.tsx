@@ -5,7 +5,7 @@ import { BarChart3, Star, TrendingUp } from "lucide-react";
 
 const DashboardFeatures: React.FC = () => {
   return (
-    <div className="mb-10">
+    <div className="mb-6 mt-6">
       <div className="grid gap-6 md:grid-cols-3">
         <FeatureCard 
           icon={<BarChart3 className="text-white" />} 
