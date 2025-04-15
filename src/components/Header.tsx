@@ -14,6 +14,13 @@ const Header = () => {
   const isLandingPage = location.pathname === '/';
   const isAuthPage = location.pathname === '/auth';
   
+  // Movida al inicio para solucionar el error TS2448
+  const getInitials = () => {
+    if (!user) return "??";
+    const email = user.email || "";
+    return email.substring(0, 2).toUpperCase();
+  };
+  
   // Si estamos en una página protegida y el usuario está logueado,
   // no mostramos el header completo, ya que usaremos la barra lateral
   if (user && !isLandingPage && !isAuthPage) {
@@ -55,12 +62,6 @@ const Header = () => {
   // Para landing page y auth page, mostramos el header original
   const isActiveRoute = (path: string) => {
     return location.pathname === path;
-  };
-  
-  const getInitials = () => {
-    if (!user) return "??";
-    const email = user.email || "";
-    return email.substring(0, 2).toUpperCase();
   };
   
   return (
