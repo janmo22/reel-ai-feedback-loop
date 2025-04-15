@@ -13,21 +13,63 @@ const Header = () => {
   
   const isLandingPage = location.pathname === '/';
   const isAuthPage = location.pathname === '/auth';
+  const isDashboardPage = location.pathname === '/dashboard';
   
-  // Movida al inicio para solucionar el error TS2448
+  // Función para obtener iniciales del usuario
   const getInitials = () => {
     if (!user) return "??";
     const email = user.email || "";
     return email.substring(0, 2).toUpperCase();
   };
   
-  // Si estamos en una página protegida y el usuario está logueado,
+  // Si estamos en el dashboard y el usuario está logueado,
   // no mostramos el header completo, ya que usaremos la barra lateral
+  if (user && isDashboardPage) {
+    return null;
+  }
+  
+  // Para pages protegidos que no son dashboard, mostramos header completo con navegación
   if (user && !isLandingPage && !isAuthPage) {
     return (
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-40">
         <div className="container flex h-16 items-center justify-between px-4">
-          <SidebarTrigger />
+          <div className="flex items-center gap-6">
+            <Link to="/dashboard" className="flex items-center gap-2">
+              <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="FLOW Logo" className="h-8" />
+            </Link>
+            <nav className="hidden md:flex items-center gap-5">
+              <Link 
+                to="/dashboard" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/dashboard' ? 'text-primary' : 'text-muted-foreground'}`}
+              >
+                Dashboard
+              </Link>
+              <Link 
+                to="/strategy" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/strategy' ? 'text-primary' : 'text-muted-foreground'}`}
+              >
+                Estrategia
+              </Link>
+              <Link 
+                to="/upload" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/upload' ? 'text-primary' : 'text-muted-foreground'}`}
+              >
+                Subir Reel
+              </Link>
+              <Link 
+                to="/history" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/history' ? 'text-primary' : 'text-muted-foreground'}`}
+              >
+                Historial
+              </Link>
+              <Link 
+                to="/settings" 
+                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/settings' ? 'text-primary' : 'text-muted-foreground'}`}
+              >
+                Ajustes
+              </Link>
+            </nav>
+          </div>
           
           <div className="flex items-center gap-4">
             <DropdownMenu>
@@ -60,10 +102,6 @@ const Header = () => {
   }
   
   // Para landing page y auth page, mostramos el header original
-  const isActiveRoute = (path: string) => {
-    return location.pathname === path;
-  };
-  
   return (
     <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-40">
       <div className="container flex h-16 items-center justify-between px-4">

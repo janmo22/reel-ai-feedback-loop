@@ -9,7 +9,7 @@ import Footer from "@/components/layout/Footer";
 
 const SettingsPage: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-gray-50">
       <Header />
       
       <main className="flex-1 container mx-auto py-8 px-4 max-w-5xl">

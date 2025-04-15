@@ -9,16 +9,16 @@ import CallToAction from "@/components/landing/CallToAction";
 import Footer from "@/components/layout/Footer";
 import DashboardFeatures from "@/components/dashboard/DashboardFeatures";
 import DashboardSidebar from "@/components/dashboard/Sidebar";
-import { SidebarInset } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 const Index: React.FC = () => {
   const { user } = useAuth();
   
   const userName = user?.user_metadata?.first_name || user?.email || '';
   
-  return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-gray-50 w-full">
-      {user ? (
+  if (user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-white to-gray-50 w-full">
         <div className="flex flex-1 h-screen">
           <DashboardSidebar />
           <SidebarInset className="bg-gray-50 overflow-auto">
@@ -31,15 +31,17 @@ const Index: React.FC = () => {
             </div>
           </SidebarInset>
         </div>
-      ) : (
-        <>
-          <HeroSection />
-          <HowItWorks />
-          <CallToAction />
-          <Footer />
-        </>
-      )}
-    </div>
+      </div>
+    );
+  }
+  
+  return (
+    <>
+      <HeroSection />
+      <HowItWorks />
+      <CallToAction />
+      <Footer />
+    </>
   );
 };
 
