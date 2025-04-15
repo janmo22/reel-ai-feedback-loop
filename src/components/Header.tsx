@@ -20,47 +20,15 @@ const Header = () => {
     return email.substring(0, 2).toUpperCase();
   };
   
-  // Para pages protegidos que no son dashboard, mostramos header completo con navegación
-  if (user) {
+  // Para páginas con sidebar, mostramos un header simplificado
+  if (user && !isLandingPage && !isAuthPage) {
     return (
-      <header className="border-b bg-background/95 backdrop-blur-md sticky top-0 z-40 w-full">
+      <header className="border-b bg-white/95 backdrop-blur-md sticky top-0 z-40 w-full">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link to="/dashboard" className="flex items-center gap-2">
               <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="FLOW Logo" className="h-8" />
             </Link>
-            <nav className="hidden md:flex items-center gap-5">
-              <Link 
-                to="/dashboard" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/dashboard' ? 'text-primary' : 'text-muted-foreground'}`}
-              >
-                Dashboard
-              </Link>
-              <Link 
-                to="/strategy" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/strategy' ? 'text-primary' : 'text-muted-foreground'}`}
-              >
-                Estrategia
-              </Link>
-              <Link 
-                to="/upload" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/upload' ? 'text-primary' : 'text-muted-foreground'}`}
-              >
-                Subir Reel
-              </Link>
-              <Link 
-                to="/history" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/history' ? 'text-primary' : 'text-muted-foreground'}`}
-              >
-                Historial
-              </Link>
-              <Link 
-                to="/settings" 
-                className={`text-sm font-medium transition-colors hover:text-primary ${location.pathname === '/settings' ? 'text-primary' : 'text-muted-foreground'}`}
-              >
-                Ajustes
-              </Link>
-            </nav>
           </div>
           
           <div className="flex items-center gap-4">
@@ -95,13 +63,11 @@ const Header = () => {
   
   // Para landing page y auth page, mostramos el header original
   return (
-    <header className="border-b bg-background/95 backdrop-blur-md sticky top-0 z-40 w-full">
+    <header className="border-b bg-white/95 backdrop-blur-md sticky top-0 z-40 w-full">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2">
             <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="FLOW Logo" className="h-8" />
-            <span className="font-tt-travels font-medium text-lg bg-gradient-to-r from-flow-blue to-flow-accent bg-clip-text text-transparent">
-            </span>
           </Link>
         </div>
         

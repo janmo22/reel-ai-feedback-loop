@@ -12,10 +12,11 @@ const StrategyPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-white to-gray-50">
-      {user ? (
+      {user && (
         <div className="flex flex-1 w-full">
           <DashboardSidebar />
           <SidebarInset className="bg-gray-50 overflow-auto flex-1">
+            <Header />
             <div className="container mx-auto px-4 py-6 max-w-7xl">
               <div className="bg-white rounded-2xl shadow-md p-6">
                 <div className="mb-8">
@@ -23,7 +24,7 @@ const StrategyPage: React.FC = () => {
                     <Target className="h-8 w-8 text-flow-blue" />
                     Estrategia de contenido
                   </h1>
-                  <p className="text-gray-500 font-tt-travels">
+                  <p className="text-gray-500">
                     Define tu estrategia de contenido para maximizar el impacto de tus videos
                   </p>
                 </div>
@@ -43,7 +44,7 @@ const StrategyPage: React.FC = () => {
                   <Target className="h-8 w-8 text-flow-blue" />
                   Estrategia de contenido
                 </h1>
-                <p className="text-gray-500 font-tt-travels">
+                <p className="text-gray-500">
                   Define tu estrategia de contenido para maximizar el impacto de tus videos
                 </p>
               </div>
