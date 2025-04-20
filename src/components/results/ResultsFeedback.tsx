@@ -1,3 +1,4 @@
+
 import AIFeedbackCard from "@/components/AIFeedbackCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import { AIFeedbackResponse } from "@/types";
@@ -290,7 +291,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
             
             <TabsContent value="engagement" className="mt-0">
               <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <MessageSquare className="mr-3 text-blue-500" /> Potencial de Engagement
+                <Star className="mr-3 text-blue-500" /> Potencial de Engagement
               </h3>
               <p className="text-slate-600 mb-6">El engagement determina cómo tu contenido se distribuye y cuántas interacciones recibe.</p>
               {engagementCategories.length > 0 ? (
@@ -299,7 +300,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   overallScore={feedbackItem.overallEvaluation.score}
                   categories={engagementCategories}
                   showScores={false}
-                  icon={<MessageSquare className="h-5 w-5 text-blue-500" />}
+                  icon={<Star className="h-5 w-5 text-blue-500" />}
                   accentColor="bg-blue-50 border-blue-100"
                 />
               ) : (
@@ -332,7 +333,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                     overallScore={feedbackItem.overallEvaluation.score}
                     categories={contentTypeCategories}
                     showScores={false}
-                    icon={<Lightbulb className="h-5 w-5 text-blue-500" />}
+                    icon={<Star className="h-5 w-5 text-blue-500" />}
                     accentColor="bg-blue-50 border-blue-100"
                   />
                 )}
