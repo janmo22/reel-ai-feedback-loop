@@ -50,9 +50,11 @@ const FeedbackCard = ({
               <CardTitle className="text-lg font-semibold text-slate-800">{title}</CardTitle>
             </div>
           </div>
-          <Badge variant="outline" className={`border ${getScoreColor(overallScore)} border-opacity-20 text-slate-700 px-3 py-1`}>
-            {overallScore}/10
-          </Badge>
+          {showScores && (
+            <Badge variant="outline" className={`border ${getScoreColor(overallScore)} border-opacity-20 text-slate-700 px-3 py-1`}>
+              {overallScore}/10
+            </Badge>
+          )}
         </div>
       </CardHeader>
       
