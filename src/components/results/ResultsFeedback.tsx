@@ -8,7 +8,7 @@ import {
   MessageSquare,
   BarChart,
   Gauge,
-  Lightbulb
+  Star
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SuggestedCopy from "./SuggestedCopy";
@@ -20,8 +20,13 @@ interface ResultsFeedbackProps {
 const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const fd = feedbackItem.feedback_data;
   
-  // Hook subcategories without scores
+  // Hook subcategories with scores displayed
   const hookSubcategories = fd?.videoStructureAndPacing?.hook ? [
+    {
+      name: "Efectividad general del hook",
+      feedback: `Puntuación: ${fd.videoStructureAndPacing.hook.overallEffectivenessScore}/10`,
+      isHighlighted: true
+    },
     {
       name: "Hook verbal",
       feedback: fd.videoStructureAndPacing.hook.attentionGrabbingComment || ""
@@ -52,7 +57,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }
   ] : [];
   
-  // Hook strengths and weaknesses as separate sections
+  // Hook strengths and weaknesses with improved layout
   const hookStrengthsWeaknesses = fd?.videoStructureAndPacing?.hook ? [
     {
       name: "Fortalezas",
@@ -62,13 +67,18 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     {
       name: "Debilidades",
       feedback: fd.videoStructureAndPacing.hook.weaknesses || "",
-      isHighlighted: true
+      isHighlighted: true,
+      className: "whitespace-pre-wrap" // Mejora el formato del texto
     }
   ] : [];
   
-  // Structure and value categories
+  // Structure and value categories with quality score
   const structureCategories = [
     ...(fd?.videoStructureAndPacing?.valueDelivery ? [{
+      name: "Calidad de entrega",
+      feedback: `Puntuación: ${fd.videoStructureAndPacing.valueDelivery.qualityScore}/10`,
+      isHighlighted: true
+    }, {
       name: "Valor principal",
       feedback: fd.videoStructureAndPacing.valueDelivery.comment || "",
       suggestions: [fd.videoStructureAndPacing.valueDelivery.recommendations || ""]
@@ -182,7 +192,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
               <Search className="h-4 w-4" /> SEO
             </TabsTrigger>
             <TabsTrigger value="engagement" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
-              <MessageSquare className="h-4 w-4" /> Engagement
+              <Star className="h-4 w-4" /> Engagement
             </TabsTrigger>
             <TabsTrigger value="estrategia" className="flex gap-1 items-center border rounded-md bg-white data-[state=active]:bg-blue-50 data-[state=active]:border-blue-200">
               <BarChart className="h-4 w-4" /> Estrategia
