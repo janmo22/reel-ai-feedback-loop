@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 
 const DashboardActions: React.FC = () => {
   return (
-    <div className="grid gap-8 md:grid-cols-2">
-      <div className="bg-gradient-to-br from-white to-gray-50 p-6 rounded-xl border border-border/30 shadow-sm hover:shadow-md transition-all duration-300 group">
+    <div className="grid md:grid-cols-2 gap-4">
+      <div className="bg-gradient-to-br from-white to-gray-50 p-6 rounded-xl border border-border/30 shadow-sm hover:shadow-md transition-all duration-300 group flex flex-col justify-between">
         <div className="flex items-center gap-3 mb-5">
           <div className="bg-flow-blue/10 p-2 rounded-lg">
             <Upload className="h-5 w-5 text-flow-blue" />
@@ -25,7 +25,7 @@ const DashboardActions: React.FC = () => {
         </Button>
       </div>
       
-      <div className="bg-gradient-to-br from-white to-gray-50 p-6 rounded-xl border border-border/30 shadow-sm hover:shadow-md transition-all duration-300 group">
+      <div className="bg-gradient-to-br from-white to-gray-50 p-6 rounded-xl border border-border/30 shadow-sm hover:shadow-md transition-all duration-300 group flex flex-col justify-between">
         <div className="flex items-center gap-3 mb-5">
           <div className="bg-flow-blue/10 p-2 rounded-lg">
             <History className="h-5 w-5 text-flow-blue" />
