@@ -106,6 +106,10 @@ export interface AIFeedbackResponse {
       recommendations?: string;
       suggestedOptimizedCopy?: string;
       suggestedOptimizedOnScreenText?: string;
+      onScreenTextSEOAanalysis?: string;
+      coverThumbnailPotentialComment?: string;
+      copySEOAnalysis?: string;
+      advancedDiscoveryFeaturesComment?: string;
     };
     engagementOptimization?: {
       interactionHierarchyComment?: string;
@@ -130,8 +134,8 @@ export interface AIFeedbackResponse {
         strengths?: string;
         weaknesses?: string;
         recommendations?: string;
-        // Add the spokenHookAnalysis property
         spokenHookAnalysis?: string;
+        overallEffectivenessScore?: number;
       };
       buildUpAndPacingComment?: string;
       buildUpAndPacingRecommendations?: string;
@@ -139,6 +143,7 @@ export interface AIFeedbackResponse {
         comment?: string;
         mainFunction?: string;
         recommendations?: string;
+        qualityScore?: number;
       };
       ctaAndEnding?: {
         comment?: string;

@@ -1,4 +1,3 @@
-
 import AIFeedbackCard from "@/components/AIFeedbackCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import { AIFeedbackResponse } from "@/types";
@@ -229,6 +228,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                 </div>
               )}
             </TabsContent>
+            
             
             <TabsContent value="estructura" className="mt-0">
               <h3 className="text-xl font-semibold mb-4 flex items-center">

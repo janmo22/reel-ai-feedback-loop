@@ -84,66 +84,140 @@ export const useVideoResults = (videoId?: string) => {
         for (const item of feedbackData) {
           try {
             const feedbackJson = item.feedback_data as Record<string, any> || {};
-            const finalEval = feedbackJson.finalEvaluation || {};
             
             const aiResponse: AIFeedbackResponse = {
               id: item.id,
               created_at: item.created_at,
               
-              generalStudy: feedbackJson.executiveSummary || "Análisis del contenido del video",
-              contentType: feedbackJson.contentTypeStrategy?.classification || "Contenido educativo",
+              generalStudy: feedbackJson.executiveSummary || "",
+              contentType: feedbackJson.contentTypeStrategy?.classification || "",
               contentTitle: videoData.title,
               contentSubtitle: "Análisis de rendimiento",
               
-              feedback_data: feedbackJson,
+              feedback_data: {
+                executiveSummary: feedbackJson.executiveSummary || "",
+                finalEvaluation: {
+                  overallScore: feedbackJson.finalEvaluation_overallScore || item.overall_score || 0,
+                  finalRecommendations: Array.isArray(feedbackJson.finalEvaluation_finalRecommendations) 
+                    ? feedbackJson.finalEvaluation_finalRecommendations 
+                    : Array.isArray(feedbackJson.finalEvaluation?.finalRecommendations)
+                      ? feedbackJson.finalEvaluation?.finalRecommendations
+                      : []
+                },
+                strategicAlignment: {
+                  targetAudienceClarityComment: feedbackJson.strategicAlignment_targetAudienceClarityComment || "",
+                  valuePropositionClarityComment: feedbackJson.strategicAlignment_valuePropositionClarityComment || "",
+                  creatorConsistencyComment: feedbackJson.strategicAlignment_creatorConsistencyComment || "",
+                  recommendations: feedbackJson.strategicAlignment_recommendations || ""
+                },
+                contentTypeStrategy: {
+                  classification: feedbackJson.contentTypeStrategy_classification || "",
+                  trendAdaptationCritique: feedbackJson.contentTypeStrategy_trendAdaptationCritique || "",
+                  seriesClarityAndHookComment: feedbackJson.contentTypeStrategy_seriesClarityAndHookComment || "",
+                  recommendations: feedbackJson.contentTypeStrategy_recommendations || ""
+                },
+                seoAndDiscoverability: {
+                  keywordIdentificationComment: feedbackJson.seoAndDiscoverability_keywordIdentificationComment || "",
+                  thematicClarityComment: feedbackJson.seoAndDiscoverability_thematicClarityComment || "",
+                  hashtagsSEOAnalysis: feedbackJson.seoAndDiscoverability_hashtagsSEOAnalysis || "",
+                  searchBarPotentialComment: feedbackJson.seoAndDiscoverability_searchBarPotentialComment || "",
+                  recommendations: feedbackJson.seoAndDiscoverability_recommendations || "",
+                  suggestedOptimizedCopy: feedbackJson.seoAndDiscoverability_suggestedOptimizedCopy || "",
+                  suggestedOptimizedOnScreenText: feedbackJson.seoAndDiscoverability_suggestedOptimizedOnScreenText || "",
+                  onScreenTextSEOAanalysis: feedbackJson.seoAndDiscoverability_onScreenTextSEOAanalysis || "",
+                  coverThumbnailPotentialComment: feedbackJson.seoAndDiscoverability_coverThumbnailPotentialComment || "",
+                  copySEOAnalysis: feedbackJson.seoAndDiscoverability_copySEOAnalysis || "",
+                  advancedDiscoveryFeaturesComment: feedbackJson.seoAndDiscoverability_advancedDiscoveryFeaturesComment || ""
+                },
+                engagementOptimization: {
+                  interactionHierarchyComment: feedbackJson.engagementOptimization_interactionHierarchyComment || "",
+                  watchTimePotentialComment: feedbackJson.engagementOptimization_watchTimePotentialComment || "",
+                  viralityFactorsComment: feedbackJson.engagementOptimization_viralityFactorsComment || "",
+                  recommendations: feedbackJson.engagementOptimization_recommendations || ""
+                },
+                platformNativeElements: {
+                  identifiedElements: feedbackJson.platformNativeElements_identifiedElements || "",
+                  integrationEffectivenessComment: feedbackJson.platformNativeElements_integrationEffectivenessComment || "",
+                  recommendations: feedbackJson.platformNativeElements_recommendations || ""
+                },
+                videoStructureAndPacing: {
+                  hook: {
+                    attentionGrabbingComment: feedbackJson.videoStructureAndPacing_hook_attentionGrabbingComment || "",
+                    auditoryHookAnalysis: feedbackJson.videoStructureAndPacing_hook_auditoryHookAnalysis || "",
+                    visualHookAnalysis: feedbackJson.videoStructureAndPacing_hook_visualHookAnalysis || "",
+                    clarityAndSimplicityComment: feedbackJson.videoStructureAndPacing_hook_clarityAndSimplicityComment || "",
+                    authenticityFeelComment: feedbackJson.videoStructureAndPacing_hook_authenticityFeelComment || "",
+                    viewerBenefitCommunicationComment: feedbackJson.videoStructureAndPacing_hook_viewerBenefitCommunicationComment || "",
+                    patternDisruptionComment: feedbackJson.videoStructureAndPacing_hook_patternDisruptionComment || "",
+                    strengths: feedbackJson.videoStructureAndPacing_hook_strengths || "",
+                    weaknesses: feedbackJson.videoStructureAndPacing_hook_weaknesses || "",
+                    recommendations: feedbackJson.videoStructureAndPacing_hook_recommendations || "",
+                    spokenHookAnalysis: feedbackJson.videoStructureAndPacing_hook_spokenHookAnalysis || "",
+                    overallEffectivenessScore: feedbackJson.videoStructureAndPacing_hook_overallEffectivenessScore || 0
+                  },
+                  buildUpAndPacingComment: feedbackJson.videoStructureAndPacing_buildUpAndPacingComment || "",
+                  buildUpAndPacingRecommendations: feedbackJson.videoStructureAndPacing_buildUpAndPacingRecommendations || "",
+                  valueDelivery: {
+                    comment: feedbackJson.videoStructureAndPacing_valueDelivery_comment || "",
+                    mainFunction: feedbackJson.videoStructureAndPacing_valueDelivery_mainFunction || "",
+                    recommendations: feedbackJson.videoStructureAndPacing_valueDelivery_recommendations || "",
+                    qualityScore: feedbackJson.videoStructureAndPacing_valueDelivery_qualityScore || 0
+                  },
+                  ctaAndEnding: {
+                    comment: feedbackJson.videoStructureAndPacing_ctaAndEnding_comment || "",
+                    recommendations: feedbackJson.videoStructureAndPacing_ctaAndEnding_recommendations || ""
+                  }
+                }
+              },
               
               overallEvaluation: {
-                score: finalEval.overallScore || item.overall_score || 0,
-                suggestions: Array.isArray(finalEval.finalRecommendations) 
-                  ? finalEval.finalRecommendations 
-                  : ["Mejora la introducción", "Refuerza el mensaje principal", "Añade una llamada a la acción clara"]
+                score: feedbackJson.finalEvaluation_overallScore || item.overall_score || 0,
+                suggestions: Array.isArray(feedbackJson.finalEvaluation_finalRecommendations) 
+                  ? feedbackJson.finalEvaluation_finalRecommendations 
+                  : []
               },
               
               structure: {
-                hook: feedbackJson.videoStructureAndPacing?.hook ? {
-                  general: feedbackJson.videoStructureAndPacing.hook.attentionGrabbingComment || "",
-                  spoken: feedbackJson.videoStructureAndPacing.hook.spokenHookAnalysis || "",
-                  visual: feedbackJson.videoStructureAndPacing.hook.visualHookAnalysis || "",
-                  strengths: feedbackJson.videoStructureAndPacing.hook.strengths || "",
-                  weaknesses: feedbackJson.videoStructureAndPacing.hook.weaknesses || "",
-                  score: feedbackJson.videoStructureAndPacing.hook.overallEffectivenessScore || 0,
-                  auditory: feedbackJson.videoStructureAndPacing.hook.auditoryHookAnalysis || "",
-                  clarity: feedbackJson.videoStructureAndPacing.hook.clarityAndSimplicityComment || "",
-                  feel: feedbackJson.videoStructureAndPacing.hook.authenticityFeelComment || "",
-                  invitation: feedbackJson.videoStructureAndPacing.hook.viewerBenefitCommunicationComment || "",
-                  patternBreak: feedbackJson.videoStructureAndPacing.hook.patternDisruptionComment || ""
-                } : undefined,
-                buildUp: feedbackJson.videoStructureAndPacing?.buildUpAndPacingComment || "",
-                value: feedbackJson.videoStructureAndPacing?.valueDelivery ? {
-                  comment: feedbackJson.videoStructureAndPacing.valueDelivery.comment || "",
-                  score: feedbackJson.videoStructureAndPacing.valueDelivery.qualityScore || 0,
-                  function: feedbackJson.videoStructureAndPacing.valueDelivery.mainFunction || ""
-                } : undefined,
-                cta: feedbackJson.videoStructureAndPacing?.ctaAndEnding?.comment || ""
+                hook: {
+                  general: feedbackJson.videoStructureAndPacing_hook_attentionGrabbingComment || "",
+                  spoken: feedbackJson.videoStructureAndPacing_hook_spokenHookAnalysis || "",
+                  visual: feedbackJson.videoStructureAndPacing_hook_visualHookAnalysis || "",
+                  auditory: feedbackJson.videoStructureAndPacing_hook_auditoryHookAnalysis || "",
+                  clarity: feedbackJson.videoStructureAndPacing_hook_clarityAndSimplicityComment || "",
+                  feel: feedbackJson.videoStructureAndPacing_hook_authenticityFeelComment || "",
+                  invitation: feedbackJson.videoStructureAndPacing_hook_viewerBenefitCommunicationComment || "",
+                  patternBreak: feedbackJson.videoStructureAndPacing_hook_patternDisruptionComment || "",
+                  strengths: feedbackJson.videoStructureAndPacing_hook_strengths || "",
+                  weaknesses: feedbackJson.videoStructureAndPacing_hook_weaknesses || "",
+                  score: feedbackJson.videoStructureAndPacing_hook_overallEffectivenessScore || 0
+                },
+                buildUp: feedbackJson.videoStructureAndPacing_buildUpAndPacingComment || "",
+                value: {
+                  comment: feedbackJson.videoStructureAndPacing_valueDelivery_comment || "",
+                  score: feedbackJson.videoStructureAndPacing_valueDelivery_qualityScore || 0,
+                  function: feedbackJson.videoStructureAndPacing_valueDelivery_mainFunction || ""
+                },
+                cta: feedbackJson.videoStructureAndPacing_ctaAndEnding_comment || ""
               },
               
               seo: {
-                keywordAnalysis: feedbackJson.seoAndDiscoverability?.keywordIdentificationComment || "",
-                clarity: feedbackJson.seoAndDiscoverability?.thematicClarityComment || "",
-                suggestedText: feedbackJson.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "",
-                suggestedCopy: feedbackJson.seoAndDiscoverability?.suggestedOptimizedCopy || "",
-                trucoFlow: feedbackJson.seoAndDiscoverability?.trucoFlowComment || "Texto no visible que se coloca dentro del editor de la plataforma para mejorar la indexación y distribución del contenido."
+                keywordAnalysis: feedbackJson.seoAndDiscoverability_keywordIdentificationComment || "",
+                clarity: feedbackJson.seoAndDiscoverability_thematicClarityComment || "",
+                suggestedText: feedbackJson.seoAndDiscoverability_suggestedOptimizedOnScreenText || "",
+                suggestedCopy: feedbackJson.seoAndDiscoverability_suggestedOptimizedCopy || "",
+                trucoFlow: "Texto no visible que se coloca dentro del editor de la plataforma para mejorar la indexación y distribución del contenido."
               },
               
-              nativeCodes: feedbackJson.platformNativeElements?.integrationEffectivenessComment || "",
+              nativeCodes: feedbackJson.platformNativeElements_integrationEffectivenessComment || "",
               
               engagementPotential: {
-                interaction: feedbackJson.engagementOptimization?.interactionHierarchyComment || "",
-                watchTime: feedbackJson.engagementOptimization?.watchTimePotentialComment || ""
+                interaction: feedbackJson.engagementOptimization_interactionHierarchyComment || "",
+                watchTime: feedbackJson.engagementOptimization_watchTimePotentialComment || ""
               }
             };
             
             processedFeedback.push(aiResponse);
+            
           } catch (parseError) {
             console.error('Error parsing feedback data:', parseError);
           }

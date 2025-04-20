@@ -74,11 +74,15 @@ const ResultsPage = () => {
   
   // Determine content details
   const contentTitle = videoData.title || "Análisis de Reel";
-  // Access the optional contentType property that we've added to the interface
-  const contentTypeValue = fd?.contentTypeStrategy?.classification || feedbackItem.contentType || "Análisis de contenido";
+  // Get content type from either the structured or flat data
+  const contentTypeValue = fd?.contentTypeStrategy?.classification || 
+                          feedbackItem.contentType || 
+                          "Análisis de contenido";
   
-  // Get overall score
-  const score = feedbackItem.overallEvaluation?.score || 0;
+  // Get overall score from either the structured or flat data
+  const score = fd?.finalEvaluation?.overallScore || 
+               feedbackItem.overallEvaluation?.score || 
+               0;
   
   return (
     <main className="flex-1 py-10 px-4">

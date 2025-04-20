@@ -45,6 +45,17 @@ interface WebhookResponseItem {
     };
     cta?: string;
   };
+  // Add support for flat structure
+  executiveSummary?: string;
+  finalEvaluation_overallScore?: number;
+  finalEvaluation_finalRecommendations?: string[];
+  strategicAlignment_targetAudienceClarityComment?: string;
+  strategicAlignment_valuePropositionClarityComment?: string;
+  strategicAlignment_creatorConsistencyComment?: string;
+  strategicAlignment_recommendations?: string;
+  contentTypeStrategy_classification?: string;
+  contentTypeStrategy_recommendations?: string;
+  // ... and all other flat properties
 }
 
 // Procesamiento de las respuestas del webhook
@@ -111,6 +122,13 @@ serve(async (req) => {
         console.error("Error al verificar si existe feedback previo:", checkError);
       }
       
+      // Get overall score from any available source
+      const overallScore = item.finalEvaluation_overallScore || 
+                           item.overallEvaluation?.score || 
+                           (item.feedback_data?.finalEvaluation?.overallScore) || 0;
+                           
+      console.log(`Score calculado para video ${videoId}: ${overallScore}`);
+      
       // Si ya existe feedback, actualizamos en lugar de insertar
       if (existingFeedback) {
         console.log(`Ya existe feedback para el video ${videoId}, actualizando...`);
@@ -118,7 +136,7 @@ serve(async (req) => {
         const { data: updateData, error: updateError } = await supabase
           .from("feedback")
           .update({
-            overall_score: item.overallEvaluation?.score || 0,
+            overall_score: overallScore,
             feedback_data: item,
             webhook_response: requestData,
             processing_completed_at: new Date().toISOString(),
@@ -137,7 +155,7 @@ serve(async (req) => {
           .from("feedback")
           .insert({
             video_id: videoId,
-            overall_score: item.overallEvaluation?.score || 0,
+            overall_score: overallScore,
             feedback_data: item,
             webhook_response: requestData,
             processing_completed_at: new Date().toISOString(),
