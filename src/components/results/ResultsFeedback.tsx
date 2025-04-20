@@ -25,7 +25,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const hookSubcategories = fd?.videoStructureAndPacing?.hook ? [
     {
       name: "Hook verbal",
-      feedback: fd.videoStructureAndPacing.hook.spokenHookAnalysis || fd.videoStructureAndPacing.hook.attentionGrabbingComment || ""
+      feedback: fd.videoStructureAndPacing.hook.attentionGrabbingComment || ""
     },
     {
       name: "Hook visual",

@@ -130,6 +130,8 @@ export interface AIFeedbackResponse {
         strengths?: string;
         weaknesses?: string;
         recommendations?: string;
+        // Add the spokenHookAnalysis property
+        spokenHookAnalysis?: string;
       };
       buildUpAndPacingComment?: string;
       buildUpAndPacingRecommendations?: string;
@@ -191,4 +193,3 @@ export interface AIFeedbackResponse {
 export interface VideoWithFeedback extends Omit<Video, 'feedback'> {
   feedback?: Feedback[];
 }
-
