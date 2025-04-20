@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, ThumbsUp } from "lucide-react";
+import ScoreBubble from "@/components/ui/score-bubble";
 
 interface FeedbackCardProps {
   title: string;
@@ -34,12 +34,6 @@ const FeedbackCard = ({
 }: FeedbackCardProps) => {
   const [expanded, setExpanded] = useState(isDetailed);
   
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return "bg-green-500";
-    if (score >= 6) return "bg-blue-500";
-    return "bg-red-500";
-  };
-  
   return (
     <Card className="border shadow-sm">
       <CardHeader className={`pb-3 ${expanded ? accentColor : ''}`}>
@@ -51,9 +45,7 @@ const FeedbackCard = ({
             </div>
           </div>
           {showScores && (
-            <Badge variant="outline" className={`border ${getScoreColor(overallScore)} border-opacity-20 text-slate-700 px-3 py-1`}>
-              {overallScore}/10
-            </Badge>
+            <ScoreBubble score={overallScore} size="sm" />
           )}
         </div>
       </CardHeader>
@@ -82,9 +74,7 @@ const FeedbackCard = ({
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-medium text-slate-800">{category.name}</h4>
                   {showScores && category.score !== undefined && (
-                    <Badge variant="outline" className={`border-${getScoreColor(category.score).replace('bg-', '')}-200 text-slate-700`}>
-                      {category.score}/10
-                    </Badge>
+                    <ScoreBubble score={category.score} size="sm" showLabel={false} />
                   )}
                 </div>
                 
