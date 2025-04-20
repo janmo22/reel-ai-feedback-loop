@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, AIFeedbackResponse } from '@/types';
@@ -90,12 +89,13 @@ export const useVideoResults = (videoId?: string) => {
             const aiResponse: AIFeedbackResponse = {
               id: item.id,
               created_at: item.created_at,
-              feedback_data: feedbackJson,
               
-              contentType: feedbackJson.contentTypeStrategy?.classification || "Contenido educativo",
               generalStudy: feedbackJson.executiveSummary || "Análisis del contenido del video",
+              contentType: feedbackJson.contentTypeStrategy?.classification || "Contenido educativo",
               contentTitle: videoData.title,
               contentSubtitle: "Análisis de rendimiento",
+              
+              feedback_data: feedbackJson,
               
               overallEvaluation: {
                 score: finalEval.overallScore || item.overall_score || 0,

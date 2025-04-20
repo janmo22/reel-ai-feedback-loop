@@ -74,7 +74,8 @@ const ResultsPage = () => {
   
   // Determine content details
   const contentTitle = videoData.title || "Análisis de Reel";
-  const contentType = fd?.contentTypeStrategy?.classification || feedbackItem.contentType || "Análisis de contenido";
+  // Access the optional contentType property that we've added to the interface
+  const contentTypeValue = fd?.contentTypeStrategy?.classification || feedbackItem.contentType || "Análisis de contenido";
   
   // Get overall score
   const score = feedbackItem.overallEvaluation?.score || 0;
@@ -98,7 +99,7 @@ const ResultsPage = () => {
                 {contentTitle}
               </h1>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-500">{contentType}</span>
+                <span className="text-sm text-slate-500">{contentTypeValue}</span>
                 {fd?.videoStructureAndPacing?.valueDelivery?.mainFunction && (
                   <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-700 rounded-full">
                     {fd.videoStructureAndPacing.valueDelivery.mainFunction}

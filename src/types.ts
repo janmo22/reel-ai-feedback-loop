@@ -74,6 +74,11 @@ export interface VideoUploadResponse {
 export interface AIFeedbackResponse {
   id: string;
   created_at: string;
+  generalStudy?: string;
+  contentType?: string;
+  contentTitle?: string;
+  contentSubtitle?: string;
+  
   feedback_data?: {
     executiveSummary?: string;
     finalEvaluation?: {
@@ -141,6 +146,44 @@ export interface AIFeedbackResponse {
   overallEvaluation: {
     score: number;
     suggestions: string[];
+  };
+  
+  structure?: {
+    hook?: {
+      general?: string;
+      spoken?: string;
+      auditory?: string;
+      visual?: string;
+      clarity?: string;
+      feel?: string;
+      invitation?: string;
+      patternBreak?: string;
+      strengths?: string;
+      weaknesses?: string;
+      score?: number;
+    };
+    buildUp?: string;
+    value?: {
+      comment?: string;
+      score?: number;
+      function?: string;
+    };
+    cta?: string;
+  };
+  
+  seo?: {
+    keywordAnalysis?: string;
+    clarity?: string;
+    suggestedText?: string;
+    suggestedCopy?: string;
+    trucoFlow?: string;
+  };
+  
+  nativeCodes?: string;
+  
+  engagementPotential?: {
+    interaction?: string;
+    watchTime?: string;
   };
 }
 

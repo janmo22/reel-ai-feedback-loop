@@ -16,7 +16,7 @@ const AIFeedbackCard = ({ feedback }: AIFeedbackProps) => {
   };
 
   // Access feedback data safely using optional chaining
-  const executiveSummary = feedback.feedback_data?.executiveSummary || feedback.generalStudy;
+  const executiveSummary = feedback.feedback_data?.executiveSummary || feedback.generalStudy || "";
   const contentType = feedback.feedback_data?.contentTypeStrategy?.classification || feedback.contentType || "Análisis de contenido";
   const score = feedback.feedback_data?.finalEvaluation?.overallScore || feedback.overallEvaluation?.score || 0;
   const finalRecommendations = feedback.feedback_data?.finalEvaluation?.finalRecommendations || feedback.overallEvaluation?.suggestions || [];
