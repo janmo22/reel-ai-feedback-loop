@@ -1,3 +1,4 @@
+
 import AIFeedbackCard from "@/components/AIFeedbackCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import { AIFeedbackResponse } from "@/types";
@@ -24,7 +25,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const hookSubcategories = fd?.videoStructureAndPacing?.hook ? [
     {
       name: "Hook verbal",
-      feedback: fd.videoStructureAndPacing.hook.spokenHookAnalysis || ""
+      feedback: fd.videoStructureAndPacing.hook.spokenHookAnalysis || fd.videoStructureAndPacing.hook.attentionGrabbingComment || ""
     },
     {
       name: "Hook visual",
