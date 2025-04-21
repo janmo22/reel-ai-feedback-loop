@@ -1,4 +1,3 @@
-
 import AIFeedbackCard from "@/components/AIFeedbackCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import { AIFeedbackResponse } from "@/types";
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SuggestedCopy from "./SuggestedCopy";
+import ScoreBubble from "@/components/ui/score-bubble";
 
 interface ResultsFeedbackProps {
   feedbackItem: AIFeedbackResponse;
@@ -20,6 +20,10 @@ interface ResultsFeedbackProps {
 
 const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const fd = feedbackItem.feedback_data;
+
+  // Extraer puntuaciones dinámicas para el hook y la estructura
+  const hookScore = fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore ?? null;
+  const structureScore = fd?.videoStructureAndPacing?.valueDelivery?.qualityScore ?? null;
   
   // Hook subcategories with scores displayed
   const hookSubcategories = fd?.videoStructureAndPacing?.hook ? [
@@ -57,7 +61,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
       feedback: fd.videoStructureAndPacing.hook.patternDisruptionComment || ""
     }
   ] : [];
-  
+
   // Hook strengths and weaknesses with improved layout
   const hookStrengthsWeaknesses = fd?.videoStructureAndPacing?.hook ? [
     {
@@ -69,10 +73,10 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
       name: "Debilidades",
       feedback: fd.videoStructureAndPacing.hook.weaknesses || "",
       isHighlighted: true,
-      className: "whitespace-pre-wrap" // Mejora el formato del texto
+      className: "whitespace-pre-wrap"
     }
   ] : [];
-  
+
   // Structure and value categories with quality score
   const structureCategories = [
     ...(fd?.videoStructureAndPacing?.valueDelivery ? [{
@@ -95,7 +99,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
       suggestions: [fd.videoStructureAndPacing.ctaAndEnding.recommendations || ""]
     }] : [])
   ];
-  
+
   // SEO categories
   const seoCategories = fd?.seoAndDiscoverability ? [
     {
@@ -120,7 +124,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
       isHighlighted: true
     }
   ] : [];
-  
+
   // Strategic alignment categories
   const strategicCategories = fd?.strategicAlignment ? [
     {
@@ -154,7 +158,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
       feedback: fd.contentTypeStrategy.trendAdaptationCritique || ""
     }] : [])
   ] : [];
-  
+
   // Engagement categories without scores
   const engagementCategories = fd?.engagementOptimization ? [
     {
@@ -171,11 +175,11 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
       feedback: fd.engagementOptimization.viralityFactorsComment || ""
     }
   ] : [];
-  
+
   // Get suggested copy content
   const suggestedOptimizedCopy = fd?.seoAndDiscoverability?.suggestedOptimizedCopy || "";
   const suggestedOptimizedOnScreenText = fd?.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "";
-  
+
   return (
     <div className="space-y-10">
       <AIFeedbackCard feedback={feedbackItem} />
@@ -205,9 +209,14 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
           
           <div className="bg-white p-6 rounded-lg border shadow-sm">
             <TabsContent value="hook" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <Rocket className="mr-3 text-blue-500" /> Análisis del Hook
-              </h3>
+              <div className="flex items-center mb-4 gap-3">
+                <h3 className="text-xl font-semibold flex items-center m-0">
+                  <Rocket className="mr-3 text-blue-500" /> Análisis del Hook
+                </h3>
+                {hookScore !== null && (
+                  <ScoreBubble score={hookScore} size="sm" showLabel={false} />
+                )}
+              </div>
               <p className="text-slate-600 mb-6">Un hook efectivo es crucial para captar la atención en los primeros segundos y evitar que los usuarios deslicen.</p>
               
               {/* Hook subcategories without scores */}
@@ -240,11 +249,15 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
               )}
             </TabsContent>
             
-            
             <TabsContent value="estructura" className="mt-0">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <Layout className="mr-3 text-blue-500" /> Estructura y Valor
-              </h3>
+              <div className="flex items-center mb-4 gap-3">
+                <h3 className="text-xl font-semibold flex items-center m-0">
+                  <Layout className="mr-3 text-blue-500" /> Estructura y Valor
+                </h3>
+                {structureScore !== null && (
+                  <ScoreBubble score={structureScore} size="sm" showLabel={false} />
+                )}
+              </div>
               <p className="text-slate-600 mb-6">La estructura óptima mantiene al espectador interesado mientras se entrega el valor principal del contenido.</p>
               {structureCategories.length > 0 ? (
                 <FeedbackCard
