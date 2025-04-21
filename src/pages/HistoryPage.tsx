@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
 import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileVideo, Eye, Star, Trash2 } from 'lucide-react';
+import { FileVideo, Eye, Star, Trash2, Target } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import EmptyState from '@/components/EmptyState';
@@ -21,7 +22,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import Header from "@/components/Header";
 
 interface VideoWithFeedback extends Omit<Video, 'feedback'> {
   feedback?: Feedback[];
@@ -179,21 +179,34 @@ const HistoryPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col w-full">
-        <div className="container mx-auto py-8 flex items-center justify-center">
-          <p>Por favor, inicia sesión para ver tu historial.</p>
-        </div>
+      <div className="container mx-auto py-8 flex items-center justify-center">
+        <p>Por favor, inicia sesión para ver tu historial.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col w-full">
-      <Header />
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-tt-travels font-bold text-gray-900">Historial de Videos</h1>
-          <Button onClick={handleNavigateToUpload}>Subir nuevo video</Button>
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="mb-8">
+          <div className="flex items-center gap-2 text-flow-blue mb-2">
+            <FileVideo className="h-5 w-5" />
+            <span className="text-sm font-medium">Historial</span>
+          </div>
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-tt-travels font-bold text-gray-900">
+                Historial de Videos
+              </h1>
+              <p className="text-gray-500">
+                Revisa y gestiona todos tus videos analizados
+              </p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <Button onClick={handleNavigateToUpload}>Subir nuevo video</Button>
+            </div>
+          </div>
         </div>
         
         {error && (
