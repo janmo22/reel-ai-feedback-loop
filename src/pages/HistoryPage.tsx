@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
@@ -6,14 +5,36 @@ import { toast } from "@/components/ui/use-toast";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { smartphone, chevronLeft, star } from 'lucide-react'; // Import allowed icons
 import HistoryHeader from "@/components/history/HistoryHeader";
 import VideoHistoryTable from "@/components/history/VideoHistoryTable";
 import { Button } from "@/components/ui/button";
-import { FileUpload, Star } from 'lucide-react';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface VideoWithFeedback extends Omit<Video, 'feedback'> {
   feedback?: Feedback[];
 }
+
+// --- New ResponsiveHeader for the history page to match settings/account ---
+const ResponsiveHistoryHeader = ({ onNavigateToUpload }) => {
+  const isMobile = useIsMobile();
+  return (
+    <div className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4 px-1">
+      <div className="flex items-center gap-2">
+        {/* Title */}
+        <span className="text-flow-blue font-semibold text-xl md:text-2xl flex items-center gap-2">
+          <span className="sr-only md:not-sr-only">Historial de Videos</span>
+        </span>
+      </div>
+      <Button 
+        onClick={onNavigateToUpload}
+        className="w-full md:w-auto flex items-center gap-2"
+      >
+        <span>Subir video</span>
+      </Button>
+    </div>
+  );
+};
 
 const HistoryPage: React.FC = () => {
   const [videos, setVideos] = useState<VideoWithFeedback[]>([]);
@@ -24,6 +45,7 @@ const HistoryPage: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (location.state?.error) {
@@ -169,19 +191,10 @@ const HistoryPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto">
-      <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <HistoryHeader />
-          <Button 
-            onClick={handleNavigateToUpload}
-            className="w-full md:w-auto flex items-center gap-2"
-          >
-            <FileUpload className="h-4 w-4" />
-            <span>Subir video</span>
-          </Button>
-        </div>
-        
+    <div className="container p-2 md:p-8 max-w-3xl md:max-w-7xl mx-auto">
+      <div className="bg-white rounded-lg shadow-sm p-2 md:p-6">
+        <ResponsiveHistoryHeader onNavigateToUpload={handleNavigateToUpload} />
+
         {error && (
           <div className="mb-6">
             <div className="bg-red-100 text-red-700 px-4 py-3 rounded">
@@ -189,14 +202,14 @@ const HistoryPage: React.FC = () => {
             </div>
           </div>
         )}
-        
-        <div className="mb-6">
+
+        <div className="mb-4 md:mb-6">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "all" | "favorites")}>
             <TabsList className="grid w-full grid-cols-2 max-w-xs">
               <TabsTrigger value="all">Todos</TabsTrigger>
               <TabsTrigger value="favorites" className="flex items-center gap-1">
                 <Star className="h-4 w-4" />
-                <span>Favoritos</span>
+                <span className="sr-only md:not-sr-only">Favoritos</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>

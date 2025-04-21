@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,17 +8,20 @@
     <meta name="description" content="Analiza tus reels con inteligencia artificial" />
     <meta name="author" content="FLOW" />
 
+    <!-- Open Graph/fb -->
     <meta property="og:title" content="Analiza con FLOW" />
     <meta property="og:description" content="Analiza tus reels con inteligencia artificial" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    
+
+    <!-- Remove any badges/hints of lovable.dev -->
+    <meta name="robots" content="index, follow" />
     <style>
-      /* Hide lovable badge */
       .lovable-badge,
       #lovable-badge,
       [data-lovable-badge],
@@ -31,9 +34,10 @@
       }
     </style>
   </head>
-
   <body>
     <div id="root"></div>
+    <!-- Required script for Lovable projects -->
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
