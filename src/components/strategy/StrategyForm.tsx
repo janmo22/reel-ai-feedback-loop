@@ -33,7 +33,12 @@ type StrategyFormValues = {
   mission: string;
 };
 
-const StrategyForm = () => {
+// Define la interfaz para las props del componente
+interface StrategyFormProps {
+  currentTab: string;
+}
+
+const StrategyForm: React.FC<StrategyFormProps> = ({ currentTab }) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -41,10 +46,8 @@ const StrategyForm = () => {
   const navigate = useNavigate();
   const [saveSuccess, setSaveSuccess] = useState(false);
   
-  // Parse tab from URL query parameter
-  const queryParams = new URLSearchParams(location.search);
-  const tabFromUrl = queryParams.get('tab') || 'value';
-  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  // Use la prop currentTab como estado inicial
+  const [activeTab, setActiveTab] = useState(currentTab);
   
   // Update URL when tab changes
   const updateTabInUrl = (newTab: string) => {
