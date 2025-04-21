@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import Header from "@/components/Header";
 
 interface VideoWithFeedback extends Omit<Video, 'feedback'> {
   feedback?: Feedback[];
@@ -188,6 +189,7 @@ const HistoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col w-full">
+      <Header />
       <div className="container mx-auto py-8 px-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl md:text-3xl font-tt-travels font-bold text-gray-900">Historial de Videos</h1>

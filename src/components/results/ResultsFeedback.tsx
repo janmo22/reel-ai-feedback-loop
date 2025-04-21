@@ -1,4 +1,3 @@
-
 import AIFeedbackCard from "@/components/AIFeedbackCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import { AIFeedbackResponse } from "@/types";
@@ -16,9 +15,7 @@ import SuggestedCopy from "./SuggestedCopy";
 import ScoreBubble from "@/components/ui/score-bubble";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
-// Diccionario básico para tooltips (moved here from FeedbackCard for better contextual info and extensibility)
 const attributeDescriptions: Record<string, string> = {
-  "Efectividad general del hook": "Mide qué tan efectivo es el inicio del video para captar la atención.",
   "Hook verbal": "Evaluación del comentario o frase principal dicha al inicio.",
   "Hook visual": "Análisis de los elementos visuales que captan la atención.",
   "Hook auditivo": "Elementos de audio/sound design utilizados para atraer al espectador.",
@@ -26,9 +23,6 @@ const attributeDescriptions: Record<string, string> = {
   "Comunicación de beneficio": "Si el espectador entiende qué valor recibirá.",
   "Autenticidad": "Grado de naturalidad y cercanía trasmitida.",
   "Disrupción de patrón": "Uso de recursos que rompen la expectativa y evitan el scroll.",
-  "Fortalezas": "", // no tooltip
-  "Debilidades": "", // no tooltip
-  "Calidad de entrega": "Calidad en la presentación y transmisión del valor.",
   "Valor principal": "Comentario sobre el aporte de valor clave del video.",
   "Desarrollo y ritmo": "Fluidez y ritmo de la secuencia de partes del video.",
   "Call to Action (CTA)": "Calidad y claridad de la llamada a la acción.",
@@ -36,7 +30,7 @@ const attributeDescriptions: Record<string, string> = {
   "Análisis de palabras clave": "Revisión sobre uso de palabras que ayudan al SEO.",
   "Análisis de hashtags": "Uso y calidad de los hashtags aplicados.",
   "Potencial de búsqueda": "Capacidad del video de aparecer en búsquedas relevantes.",
-  "Esto te va a dar más Flow": "Ocultar el texto en los primeros segundos del vídeo desde la aplicación propia para que el algoritmo te indexe mejor.",
+  "Esto te va a dar más Flow": "Ocultar el texto en los primeros segundos del vídeo desde la aplicación propia para que el algoritmo te indexe mejor",
   "Consistencia del creador": "Nivel de coherencia con el contenido previo del creador.",
   "Claridad de audiencia objetivo": "Si queda clara la audiencia a la que va dirigido.",
   "Propuesta de valor": "Claridad y fuerza de la propuesta de valor.",
@@ -50,7 +44,6 @@ const attributeDescriptions: Record<string, string> = {
   "Efectividad de integración": "Cómo de bien se integran estos elementos.",
 };
 
-
 interface ResultsFeedbackProps {
   feedbackItem: AIFeedbackResponse;
 }
@@ -58,10 +51,7 @@ interface ResultsFeedbackProps {
 const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const fd = feedbackItem.feedback_data;
 
-  // Removed "Efectividad general del hook" completely (not used anymore)
-
   const hookSubcategories = fd?.videoStructureAndPacing?.hook ? [
-    // We'll add tooltip icons here for each mini attribute except the "Fortalezas" / "Debilidades"
     {
       name: "Hook verbal",
       feedback: fd.videoStructureAndPacing.hook.attentionGrabbingComment || ""
@@ -106,10 +96,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }
   ] : [];
 
-  // Removed "Calidad de entrega" from structureCategories:
   const structureCategories = [
     ...(fd?.videoStructureAndPacing?.valueDelivery ? [
-      // Omit Calidad de entrega now
       {
         name: "Valor principal",
         feedback: fd.videoStructureAndPacing.valueDelivery.comment || "",
@@ -147,7 +135,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     },
     {
       name: "Esto te va a dar más Flow",
-      // Text replaced with fixed string as requested
       feedback: "Ocultar el texto en los primeros segundos del vídeo desde la aplicación propia para que el algoritmo te indexe mejor",
       isHighlighted: true
     }
@@ -204,9 +191,13 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const suggestedOptimizedCopy = fd?.seoAndDiscoverability?.suggestedOptimizedCopy || "";
   const suggestedOptimizedOnScreenText = fd?.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "";
 
-  // Helper component for rendering a category title with tooltip info icon (except for no-tooltips category names)
   const CategoryTitle = ({ name }: { name: string }) => {
-    if (!attributeDescriptions[name] || attributeDescriptions[name].trim() === "") {
+    if (
+      !attributeDescriptions[name] ||
+      attributeDescriptions[name].trim() === "" ||
+      name === "Fortalezas" ||
+      name === "Debilidades"
+    ) {
       return <>{name}</>;
     }
     return (
@@ -215,7 +206,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
           <TooltipTrigger asChild>
             <h4 tabIndex={0} className="font-medium text-slate-800 flex items-center gap-1 cursor-pointer select-none">
               {name}
-              <InfoIcon className="text-blue-500 h-4 w-4" />
+              <svg className="text-blue-500 h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="8"/></svg>
             </h4>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
@@ -226,25 +217,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     );
   };
 
-  // Info icon component reused for tooltips (using Info from lucide-react)
-  const InfoIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="16" x2="12" y2="12" />
-      <line x1="12" y1="8" x2="12" y2="8" />
-    </svg>
-  );
-
-  // Render the categories with the updated title component
   return (
     <div className="space-y-10">
       <AIFeedbackCard feedback={feedbackItem} />
@@ -278,7 +250,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                 <h3 className="text-xl font-semibold flex items-center m-0">
                   <Rocket className="mr-3 text-blue-500" /> Análisis del Hook
                 </h3>
-                {/* No hookScore here anymore */}
               </div>
               <p className="text-slate-600 mb-6">Un hook efectivo es crucial para captar la atención en los primeros segundos y evitar que los usuarios deslicen.</p>
               
@@ -289,10 +260,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                     overallScore={feedbackItem.overallEvaluation.score}
                     categories={hookSubcategories.map(cat => ({
                       ...cat,
-                      // Add custom title with tooltip except for Fortalezas/Debilidades handled separately
-                      name: (
-                        <CategoryTitle key={cat.name} name={cat.name} />
-                      ),
+                      name: <CategoryTitle key={cat.name} name={cat.name} />,
                     }))}
                     showScores={false}
                     icon={<Rocket className="h-5 w-5 text-blue-500" />}

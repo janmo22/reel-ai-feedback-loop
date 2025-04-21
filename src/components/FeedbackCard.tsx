@@ -2,14 +2,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ThumbsUp, Info } from "lucide-react";
+import { ThumbsUp, Info } from "lucide-react";
 import ScoreBubble from "@/components/ui/score-bubble";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
-// Diccionario básico para tooltips
+// Diccionario para tooltips (sin calidad de entrega ni efectividad general del hook, y "Esto te va a dar más Flow" con el texto especial según lo pedido)
 const attributeDescriptions: Record<string, string> = {
-  "Efectividad general del hook": "Mide qué tan efectivo es el inicio del video para captar la atención.",
   "Hook verbal": "Evaluación del comentario o frase principal dicha al inicio.",
   "Hook visual": "Análisis de los elementos visuales que captan la atención.",
   "Hook auditivo": "Elementos de audio/sound design utilizados para atraer al espectador.",
@@ -17,9 +15,6 @@ const attributeDescriptions: Record<string, string> = {
   "Comunicación de beneficio": "Si el espectador entiende qué valor recibirá.",
   "Autenticidad": "Grado de naturalidad y cercanía trasmitida.",
   "Disrupción de patrón": "Uso de recursos que rompen la expectativa y evitan el scroll.",
-  "Fortalezas": "",
-  "Debilidades": "",
-  "Calidad de entrega": "Calidad en la presentación y transmisión del valor.",
   "Valor principal": "Comentario sobre el aporte de valor clave del video.",
   "Desarrollo y ritmo": "Fluidez y ritmo de la secuencia de partes del video.",
   "Call to Action (CTA)": "Calidad y claridad de la llamada a la acción.",
@@ -27,7 +22,7 @@ const attributeDescriptions: Record<string, string> = {
   "Análisis de palabras clave": "Revisión sobre uso de palabras que ayudan al SEO.",
   "Análisis de hashtags": "Uso y calidad de los hashtags aplicados.",
   "Potencial de búsqueda": "Capacidad del video de aparecer en búsquedas relevantes.",
-  "Esto te va a dar más Flow": "Recomendaciones especiales del análisis AI para mejorar tu alcance.",
+  "Esto te va a dar más Flow": "Ocultar el texto en los primeros segundos del vídeo desde la aplicación propia para que el algoritmo te indexe mejor",
   "Consistencia del creador": "Nivel de coherencia con el contenido previo del creador.",
   "Claridad de audiencia objetivo": "Si queda clara la audiencia a la que va dirigido.",
   "Propuesta de valor": "Claridad y fuerza de la propuesta de valor.",
@@ -45,7 +40,7 @@ interface FeedbackCardProps {
   title: string;
   overallScore: number;
   categories: {
-    name: string | React.ReactNode; // Adjusted for tooltip wrapped titles as React nodes
+    name: string | React.ReactNode;
     score?: number;
     feedback: string;
     suggestions?: string[];
@@ -93,7 +88,8 @@ const FeedbackCard = ({
           onClick={() => setExpanded(!expanded)}
         >
           <span className="font-medium text-sm text-slate-600">{expanded ? "Ocultar detalles" : "Ver detalles"}</span>
-          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          {expanded ? <svg className="w-4 h-4" viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+            : <svg className="w-4 h-4" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
         </Button>
 
         {expanded && (
@@ -110,7 +106,12 @@ const FeedbackCard = ({
                 >
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-1">
-                      {typeof category.name === "string" && attributeDescriptions[category.name] ? (
+                      {/* Mini atributo: si NO es fortalezas/debilidades y hay descripción, pone tooltip */}
+                      {(typeof category.name === "string" && 
+                        attributeDescriptions[category.name] && 
+                        category.name !== "Fortalezas" && 
+                        category.name !== "Debilidades"
+                      ) ? (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <span tabIndex={0} className="flex items-center gap-1 cursor-pointer select-none">
@@ -123,8 +124,10 @@ const FeedbackCard = ({
                           </TooltipContent>
                         </Tooltip>
                       ) : (
-                        // If category name is already a React node (like wrapped with tooltip), render directly
-                        typeof category.name !== "string" ? category.name : <h4 className="font-medium text-slate-800">{category.name}</h4>
+                        // Si es fortalezas/debilidades o ReactNode personalizado, solo muestra el texto/título sin tooltip
+                        typeof category.name !== "string"
+                          ? category.name
+                          : <h4 className="font-medium text-slate-800">{category.name}</h4>
                       )}
                     </div>
                     {showScores && category.score !== undefined && (
