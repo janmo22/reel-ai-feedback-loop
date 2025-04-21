@@ -188,30 +188,6 @@ const HistoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col w-full">
-      <div className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur-md">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Link to="/dashboard">
-              <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="FLOW Logo" className="h-8" />
-            </Link>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 font-semibold text-lg">
-                {user.email?.slice(0,2).toUpperCase()}
-              </div>
-              <div className="flex flex-col items-start">
-                <span className="text-base font-semibold text-gray-900">{user.email?.split('@')[0]}</span>
-                <span className="text-xs text-gray-500">{user.email}</span>
-              </div>
-              <Button asChild variant="ghost" size="sm" className="gap-2 text-sm ml-4">
-                <Link to="/settings">Mi cuenta</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className="container mx-auto py-8 px-4">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl md:text-3xl font-tt-travels font-bold text-gray-900">Historial de Videos</h1>

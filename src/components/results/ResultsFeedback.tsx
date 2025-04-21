@@ -1,10 +1,11 @@
+
 import AIFeedbackCard from "@/components/AIFeedbackCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import { AIFeedbackResponse } from "@/types";
-import { 
-  Rocket, 
-  Layout, 
-  Search, 
+import {
+  Rocket,
+  Layout,
+  Search,
   MessageSquare,
   BarChart,
   Gauge,
@@ -13,6 +14,42 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SuggestedCopy from "./SuggestedCopy";
 import ScoreBubble from "@/components/ui/score-bubble";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+
+// Diccionario básico para tooltips (moved here from FeedbackCard for better contextual info and extensibility)
+const attributeDescriptions: Record<string, string> = {
+  "Efectividad general del hook": "Mide qué tan efectivo es el inicio del video para captar la atención.",
+  "Hook verbal": "Evaluación del comentario o frase principal dicha al inicio.",
+  "Hook visual": "Análisis de los elementos visuales que captan la atención.",
+  "Hook auditivo": "Elementos de audio/sound design utilizados para atraer al espectador.",
+  "Claridad y simplicidad": "Qué tan directo y comprensible es el mensaje inicial.",
+  "Comunicación de beneficio": "Si el espectador entiende qué valor recibirá.",
+  "Autenticidad": "Grado de naturalidad y cercanía trasmitida.",
+  "Disrupción de patrón": "Uso de recursos que rompen la expectativa y evitan el scroll.",
+  "Fortalezas": "", // no tooltip
+  "Debilidades": "", // no tooltip
+  "Calidad de entrega": "Calidad en la presentación y transmisión del valor.",
+  "Valor principal": "Comentario sobre el aporte de valor clave del video.",
+  "Desarrollo y ritmo": "Fluidez y ritmo de la secuencia de partes del video.",
+  "Call to Action (CTA)": "Calidad y claridad de la llamada a la acción.",
+  "Claridad temática": "Precisión en el enfoque del tema presentado.",
+  "Análisis de palabras clave": "Revisión sobre uso de palabras que ayudan al SEO.",
+  "Análisis de hashtags": "Uso y calidad de los hashtags aplicados.",
+  "Potencial de búsqueda": "Capacidad del video de aparecer en búsquedas relevantes.",
+  "Esto te va a dar más Flow": "Ocultar el texto en los primeros segundos del vídeo desde la aplicación propia para que el algoritmo te indexe mejor.",
+  "Consistencia del creador": "Nivel de coherencia con el contenido previo del creador.",
+  "Claridad de audiencia objetivo": "Si queda clara la audiencia a la que va dirigido.",
+  "Propuesta de valor": "Claridad y fuerza de la propuesta de valor.",
+  "Clasificación": "Tipo de contenido según su propósito principal.",
+  "Claridad de serie": "Si pertenece a una serie, claridad de concepto.",
+  "Adaptación de tendencias": "Qué tanto aprovecha tendencias actuales.",
+  "Interacción": "Capacidad de provocar comentarios, likes o compartir.",
+  "Tiempo de visualización": "Capacidad de mantener viendo el contenido completo.",
+  "Factores de viralidad": "Recursos y técnicas que aumentan la opción de viralizar.",
+  "Elementos identificados": "Elementos nativos de la plataforma identificados.",
+  "Efectividad de integración": "Cómo de bien se integran estos elementos.",
+};
+
 
 interface ResultsFeedbackProps {
   feedbackItem: AIFeedbackResponse;
@@ -21,10 +58,10 @@ interface ResultsFeedbackProps {
 const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const fd = feedbackItem.feedback_data;
 
-  const hookScore = fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore ?? null;
-  const structureScore = fd?.videoStructureAndPacing?.valueDelivery?.qualityScore ?? null;
-  
+  // Removed "Efectividad general del hook" completely (not used anymore)
+
   const hookSubcategories = fd?.videoStructureAndPacing?.hook ? [
+    // We'll add tooltip icons here for each mini attribute except the "Fortalezas" / "Debilidades"
     {
       name: "Hook verbal",
       feedback: fd.videoStructureAndPacing.hook.attentionGrabbingComment || ""
@@ -69,16 +106,16 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }
   ] : [];
 
+  // Removed "Calidad de entrega" from structureCategories:
   const structureCategories = [
-    ...(fd?.videoStructureAndPacing?.valueDelivery ? [{
-      name: "Calidad de entrega",
-      feedback: `Puntuación: ${fd.videoStructureAndPacing.valueDelivery.qualityScore}/10`,
-      isHighlighted: true
-    }, {
-      name: "Valor principal",
-      feedback: fd.videoStructureAndPacing.valueDelivery.comment || "",
-      suggestions: [fd.videoStructureAndPacing.valueDelivery.recommendations || ""]
-    }] : []),
+    ...(fd?.videoStructureAndPacing?.valueDelivery ? [
+      // Omit Calidad de entrega now
+      {
+        name: "Valor principal",
+        feedback: fd.videoStructureAndPacing.valueDelivery.comment || "",
+        suggestions: [fd.videoStructureAndPacing.valueDelivery.recommendations || ""]
+      }
+    ] : []),
     ...(fd?.videoStructureAndPacing?.buildUpAndPacingComment ? [{
       name: "Desarrollo y ritmo",
       feedback: fd.videoStructureAndPacing.buildUpAndPacingComment || "",
@@ -110,7 +147,8 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     },
     {
       name: "Esto te va a dar más Flow",
-      feedback: fd.seoAndDiscoverability.recommendations || "",
+      // Text replaced with fixed string as requested
+      feedback: "Ocultar el texto en los primeros segundos del vídeo desde la aplicación propia para que el algoritmo te indexe mejor",
       isHighlighted: true
     }
   ] : [];
@@ -166,6 +204,47 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const suggestedOptimizedCopy = fd?.seoAndDiscoverability?.suggestedOptimizedCopy || "";
   const suggestedOptimizedOnScreenText = fd?.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "";
 
+  // Helper component for rendering a category title with tooltip info icon (except for no-tooltips category names)
+  const CategoryTitle = ({ name }: { name: string }) => {
+    if (!attributeDescriptions[name] || attributeDescriptions[name].trim() === "") {
+      return <>{name}</>;
+    }
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <h4 tabIndex={0} className="font-medium text-slate-800 flex items-center gap-1 cursor-pointer select-none">
+              {name}
+              <InfoIcon className="text-blue-500 h-4 w-4" />
+            </h4>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs">
+            <span className="text-xs text-slate-700">{attributeDescriptions[name]}</span>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
+  // Info icon component reused for tooltips (using Info from lucide-react)
+  const InfoIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="16" x2="12" y2="12" />
+      <line x1="12" y1="8" x2="12" y2="8" />
+    </svg>
+  );
+
+  // Render the categories with the updated title component
   return (
     <div className="space-y-10">
       <AIFeedbackCard feedback={feedbackItem} />
@@ -199,9 +278,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                 <h3 className="text-xl font-semibold flex items-center m-0">
                   <Rocket className="mr-3 text-blue-500" /> Análisis del Hook
                 </h3>
-                {hookScore !== null && (
-                  <ScoreBubble score={hookScore} size="sm" showLabel={false} />
-                )}
+                {/* No hookScore here anymore */}
               </div>
               <p className="text-slate-600 mb-6">Un hook efectivo es crucial para captar la atención en los primeros segundos y evitar que los usuarios deslicen.</p>
               
@@ -210,7 +287,13 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   <FeedbackCard
                     title="Detalles del Hook"
                     overallScore={feedbackItem.overallEvaluation.score}
-                    categories={hookSubcategories}
+                    categories={hookSubcategories.map(cat => ({
+                      ...cat,
+                      // Add custom title with tooltip except for Fortalezas/Debilidades handled separately
+                      name: (
+                        <CategoryTitle key={cat.name} name={cat.name} />
+                      ),
+                    }))}
                     showScores={false}
                     icon={<Rocket className="h-5 w-5 text-blue-500" />}
                     accentColor="bg-blue-50 border-blue-100"
@@ -238,8 +321,12 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                 <h3 className="text-xl font-semibold flex items-center m-0">
                   <Layout className="mr-3 text-blue-500" /> Estructura y Valor
                 </h3>
-                {structureScore !== null && (
-                  <ScoreBubble score={structureScore} size="sm" showLabel={false} />
+                {Number.isFinite(fd?.videoStructureAndPacing?.valueDelivery?.qualityScore) && (
+                  <ScoreBubble 
+                    score={fd.videoStructureAndPacing.valueDelivery.qualityScore} 
+                    size="sm" 
+                    showLabel={false} 
+                  />
                 )}
               </div>
               <p className="text-slate-600 mb-6">La estructura óptima mantiene al espectador interesado mientras se entrega el valor principal del contenido.</p>
@@ -247,7 +334,10 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                 <FeedbackCard
                   title="Evaluación de Estructura"
                   overallScore={feedbackItem.overallEvaluation.score}
-                  categories={structureCategories}
+                  categories={structureCategories.map(cat => ({
+                    ...cat,
+                    name: <CategoryTitle key={cat.name} name={cat.name} />,
+                  }))}
                   showScores={false}
                   icon={<Layout className="h-5 w-5 text-blue-500" />}
                   accentColor="bg-blue-50 border-blue-100"
@@ -266,7 +356,10 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                 <FeedbackCard
                   title="SEO y Descubribilidad"
                   overallScore={feedbackItem.overallEvaluation.score}
-                  categories={seoCategories}
+                  categories={seoCategories.map(cat => ({
+                    ...cat,
+                    name: <CategoryTitle key={cat.name} name={cat.name} />,
+                  }))}
                   showScores={false}
                   highlightCategories={true}
                   icon={<Search className="h-5 w-5 text-blue-500" />}
@@ -295,7 +388,10 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                 <FeedbackCard
                   title="Potencial de Engagement"
                   overallScore={feedbackItem.overallEvaluation.score}
-                  categories={engagementCategories}
+                  categories={engagementCategories.map(cat => ({
+                    ...cat,
+                    name: <CategoryTitle key={cat.name} name={cat.name} />,
+                  }))}
                   showScores={false}
                   icon={<Star className="h-5 w-5 text-blue-500" />}
                   accentColor="bg-blue-50 border-blue-100"
@@ -315,7 +411,10 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   <FeedbackCard
                     title="Alineación Estratégica"
                     overallScore={feedbackItem.overallEvaluation.score}
-                    categories={strategicCategories}
+                    categories={strategicCategories.map(cat => ({
+                      ...cat,
+                      name: <CategoryTitle key={cat.name} name={cat.name} />,
+                    }))}
                     showScores={false}
                     icon={<BarChart className="h-5 w-5 text-blue-500" />}
                     accentColor="bg-blue-50 border-blue-100"
@@ -328,7 +427,10 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   <FeedbackCard
                     title="Estrategia de Tipo de Contenido"
                     overallScore={feedbackItem.overallEvaluation.score}
-                    categories={contentTypeCategories}
+                    categories={contentTypeCategories.map(cat => ({
+                      ...cat,
+                      name: <CategoryTitle key={cat.name} name={cat.name} />,
+                    }))}
                     showScores={false}
                     icon={<Star className="h-5 w-5 text-blue-500" />}
                     accentColor="bg-blue-50 border-blue-100"
@@ -356,7 +458,10 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                       feedback: fd.platformNativeElements.integrationEffectivenessComment || "",
                       suggestions: [fd.platformNativeElements.recommendations || ""]
                     }
-                  ]}
+                  ].map(cat => ({
+                    ...cat,
+                    name: <CategoryTitle key={cat.name} name={cat.name} />,
+                  }))}
                   showScores={false}
                   icon={<Gauge className="h-5 w-5 text-blue-500" />}
                   accentColor="bg-blue-50 border-blue-100"
