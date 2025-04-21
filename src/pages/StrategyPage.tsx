@@ -33,6 +33,8 @@ const StrategyPage: React.FC = () => {
             Define tu estrategia de contenido para maximizar el impacto de tus videos
           </p>
         </div>
+        
+        {/* Pass the currentTab as a prop to StrategyForm */}
         <StrategyForm currentTab={currentTab} />
       </div>
     </div>
