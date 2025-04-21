@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
@@ -22,6 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import HistoryHeader from "@/components/history/HistoryHeader";
+import VideoHistoryTable from "@/components/history/VideoHistoryTable";
 
 interface VideoWithFeedback extends Omit<Video, 'feedback'> {
   feedback?: Feedback[];
@@ -188,121 +189,44 @@ const HistoryPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <div className="bg-white rounded-2xl shadow-md p-6">
-        <div className="mb-8">
-          <div className="flex items-center gap-2 text-flow-blue mb-2">
-            <FileVideo className="h-5 w-5" />
-            <span className="text-sm font-medium">Historial</span>
+        <HistoryHeader onNavigateToUpload={handleNavigateToUpload} />
+        {error && (
+          <div className="mb-6">
+            <div className="bg-red-100 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
           </div>
-          
-          <div className="flex flex-col md:flex-row md:items-end justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-tt-travels font-bold text-gray-900">
-                Historial de Videos
-              </h1>
-              <p className="text-gray-500">
-                Revisa y gestiona todos tus videos analizados
-              </p>
-            </div>
-            <div className="mt-4 md:mt-0">
-              <Button onClick={handleNavigateToUpload}>Subir nuevo video</Button>
-            </div>
+        )}
+        <div className="mb-6">
+          <div className="flex gap-2">
+            <button
+              className={`px-4 py-2 rounded ${
+                activeTab === "all" ? "bg-blue-600 text-white" : "bg-gray-100"
+              }`}
+              onClick={() => setActiveTab("all")}
+            >
+              Todos
+            </button>
+            <button
+              className={`px-4 py-2 rounded ${
+                activeTab === "favorites" ? "bg-blue-600 text-white" : "bg-gray-100"
+              }`}
+              onClick={() => setActiveTab("favorites")}
+            >
+              Favoritos
+            </button>
           </div>
         </div>
-        
-        {error && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>
-              {error}
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        <Tabs defaultValue="all" className="mb-6" onValueChange={(value) => setActiveTab(value as "all" | "favorites")}>
-          <TabsList>
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            <TabsTrigger value="favorites">Favoritos</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        
-        {loading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-          </div>
-        ) : filteredVideos.length === 0 ? (
-          <EmptyState 
-            icon={<FileVideo />}
-            title={activeTab === "favorites" ? "No hay videos favoritos" : "No hay videos en tu historial"}
-            description={activeTab === "favorites" ? "No has marcado ningún video como favorito" : "Sube un video para comenzar a recibir análisis"}
-            actionText="Subir video"
-            onAction={handleNavigateToUpload}
-          />
-        ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Favorito</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredVideos.map((video) => (
-                  <TableRow key={video.id}>
-                    <TableCell className="font-medium">{video.title}</TableCell>
-                    <TableCell>
-                      <div className={`
-                        px-3 py-1 rounded-full text-xs font-medium inline-flex items-center
-                        ${video.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}
-                      `}>
-                        {video.status === "completed" ? "Completado" : "Procesando"}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatDate(video.created_at)}</TableCell>
-                    <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-8 w-8 p-0" 
-                        onClick={() => toggleFavorite(video.id, video.is_favorite)}
-                        disabled={updatingFavorite}
-                      >
-                        <Star className={`h-4 w-4 ${video.is_favorite ? "fill-blue-400 text-blue-400" : "text-muted-foreground"}`} />
-                      </Button>
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="inline-flex items-center"
-                        onClick={() => navigate(`/results?videoId=${video.id}`)}
-                        disabled={video.status === "processing"}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        Ver
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="inline-flex items-center text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                        onClick={() => deleteVideo(video.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Eliminar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        <VideoHistoryTable
+          loading={loading}
+          videos={filteredVideos}
+          activeTab={activeTab}
+          updatingFavorite={updatingFavorite}
+          onToggleFavorite={toggleFavorite}
+          onView={(videoId, status) => navigate(`/results?videoId=${videoId}`)}
+          onDelete={deleteVideo}
+          onAction={handleNavigateToUpload}
+        />
       </div>
     </div>
   );
