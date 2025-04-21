@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,9 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Asegurarse de que no haya conflictos con caché de autenticaciones previas
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
-            // Añadimos el nombre de dominio personalizado para que aparezca en la pantalla de Google
-            hd: 'analizaconflow.com'
+            prompt: 'consent'
           }
         }
       });

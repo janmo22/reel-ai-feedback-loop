@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
 import { toast } from "@/components/ui/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileVideo, Eye, Star, Trash2, Target } from 'lucide-react';
+import { FileVideo, Eye, Star, Trash2, Settings } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import EmptyState from '@/components/EmptyState';
