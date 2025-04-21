@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
@@ -5,7 +6,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { smartphone, chevronLeft, star } from 'lucide-react'; // Import allowed icons
+import { Smartphone, ChevronLeft, Star } from 'lucide-react'; // Fixed icon import capitalization
 import HistoryHeader from "@/components/history/HistoryHeader";
 import VideoHistoryTable from "@/components/history/VideoHistoryTable";
 import { Button } from "@/components/ui/button";
@@ -231,3 +232,4 @@ const HistoryPage: React.FC = () => {
 };
 
 export default HistoryPage;
+
