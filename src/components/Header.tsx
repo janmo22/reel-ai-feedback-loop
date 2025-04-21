@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Menu } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Header = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const isMobile = useIsMobile();
   
   const isLandingPage = location.pathname === '/';
   const isAuthPage = location.pathname === '/auth';
@@ -24,27 +26,27 @@ const Header = () => {
   if (isLandingPage || isAuthPage) {
     return (
       <header className="border-b bg-white/95 backdrop-blur-md sticky top-0 z-40 w-full">
-        <div className="container flex h-16 items-center justify-between px-4">
+        <div className="container flex h-14 md:h-16 items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2">
-              <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="FLOW Logo" className="h-8" />
+              <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="FLOW Logo" className="h-7 md:h-8" />
             </Link>
           </div>
           <div className="flex items-center gap-4">
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2 text-sm">
-                    <Avatar className="h-7 w-7">
+                  <Button variant="ghost" size="sm" className="gap-1 md:gap-2 text-sm">
+                    <Avatar className="h-6 w-6 md:h-7 md:w-7">
                       <AvatarImage src="" alt="Avatar" />
                       <AvatarFallback>{getInitials()}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline-block font-medium">Mi cuenta</span>
-                    <ChevronDown className="h-4 w-4 opacity-70" />
+                    {!isMobile && <span className="font-medium">Mi cuenta</span>}
+                    <ChevronDown className="h-3 w-3 md:h-4 md:w-4 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  {user && <DropdownMenuItem className="font-medium">{user.email}</DropdownMenuItem>}
+                  {user && <DropdownMenuItem className="font-medium truncate">{user.email}</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to="/history" className="font-medium">Mi historial</Link>
@@ -61,7 +63,7 @@ const Header = () => {
             ) : (
               <>
                 {location.pathname !== '/auth' && (
-                  <Button asChild variant="default" className="font-medium">
+                  <Button asChild variant="default" className="font-medium text-sm px-3 py-1.5 h-8 md:h-9 md:px-4 md:py-2 md:text-base">
                     <Link to="/auth">Iniciar sesión</Link>
                   </Button>
                 )}
@@ -80,21 +82,21 @@ const Header = () => {
 
   return (
     <header className="border-b bg-white/95 backdrop-blur-md sticky top-0 z-40 w-full">
-      <div className="container flex h-16 items-center justify-end px-4">
+      <div className="container flex h-14 md:h-16 items-center justify-end px-4">
         <div className="flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 text-sm">
-                <Avatar className="h-7 w-7">
+              <Button variant="ghost" size="sm" className="gap-1 md:gap-2 text-sm">
+                <Avatar className="h-6 w-6 md:h-7 md:w-7">
                   <AvatarImage src="" alt="Avatar" />
                   <AvatarFallback>{getInitials()}</AvatarFallback>
                 </Avatar>
-                <span className="hidden sm:inline-block font-medium">Mi cuenta</span>
-                <ChevronDown className="h-4 w-4 opacity-70" />
+                {!isMobile && <span className="font-medium">Mi cuenta</span>}
+                <ChevronDown className="h-3 w-3 md:h-4 md:w-4 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {user && <DropdownMenuItem className="font-medium">{user.email}</DropdownMenuItem>}
+              {user && <DropdownMenuItem className="font-medium truncate">{user.email}</DropdownMenuItem>}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link to="/settings" className="font-medium">Ajustes</Link>

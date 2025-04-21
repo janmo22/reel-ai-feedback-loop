@@ -132,4 +132,32 @@
   .glass-panel {
     @apply backdrop-blur-md bg-white/80 dark:bg-black/30 border border-white/20 shadow-lg;
   }
+
+  /* Mobile responsive improvements */
+  @media (max-width: 768px) {
+    .container {
+      @apply px-4;
+    }
+
+    h1 {
+      @apply text-2xl;
+    }
+
+    h2 {
+      @apply text-xl;
+    }
+
+    .flow-card {
+      @apply p-4;
+    }
+  }
 }
+
+/* Hide Lovable badge everywhere */
+.lovable-badge {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+

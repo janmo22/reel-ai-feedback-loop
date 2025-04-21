@@ -1,28 +1,15 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
 import { toast } from "@/components/ui/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
-import { FileVideo, Eye, Star, Trash2, Settings } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import EmptyState from '@/components/EmptyState';
-import { format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from "@/contexts/AuthContext";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import HistoryHeader from "@/components/history/HistoryHeader";
 import VideoHistoryTable from "@/components/history/VideoHistoryTable";
+import { Button } from "@/components/ui/button";
+import { FileUpload, Star } from 'lucide-react';
 
 interface VideoWithFeedback extends Omit<Video, 'feedback'> {
   feedback?: Feedback[];
@@ -163,11 +150,6 @@ const HistoryPage: React.FC = () => {
     navigate('/upload');
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Fecha desconocida";
-    return format(parseISO(dateString), "d 'de' MMMM, yyyy", { locale: es });
-  };
-
   useEffect(() => {
     if (!user && !loading) {
       navigate('/auth', { replace: true });
@@ -187,9 +169,19 @@ const HistoryPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
-      <div className="bg-white rounded-2xl shadow-md p-6">
-        <HistoryHeader onNavigateToUpload={handleNavigateToUpload} />
+    <div className="p-6 md:p-8 max-w-7xl mx-auto">
+      <div className="bg-white rounded-lg shadow-sm p-4 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <HistoryHeader />
+          <Button 
+            onClick={handleNavigateToUpload}
+            className="w-full md:w-auto flex items-center gap-2"
+          >
+            <FileUpload className="h-4 w-4" />
+            <span>Subir video</span>
+          </Button>
+        </div>
+        
         {error && (
           <div className="mb-6">
             <div className="bg-red-100 text-red-700 px-4 py-3 rounded">
@@ -197,26 +189,19 @@ const HistoryPage: React.FC = () => {
             </div>
           </div>
         )}
+        
         <div className="mb-6">
-          <div className="flex gap-2">
-            <button
-              className={`px-4 py-2 rounded ${
-                activeTab === "all" ? "bg-blue-600 text-white" : "bg-gray-100"
-              }`}
-              onClick={() => setActiveTab("all")}
-            >
-              Todos
-            </button>
-            <button
-              className={`px-4 py-2 rounded ${
-                activeTab === "favorites" ? "bg-blue-600 text-white" : "bg-gray-100"
-              }`}
-              onClick={() => setActiveTab("favorites")}
-            >
-              Favoritos
-            </button>
-          </div>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "all" | "favorites")}>
+            <TabsList className="grid w-full grid-cols-2 max-w-xs">
+              <TabsTrigger value="all">Todos</TabsTrigger>
+              <TabsTrigger value="favorites" className="flex items-center gap-1">
+                <Star className="h-4 w-4" />
+                <span>Favoritos</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
+        
         <VideoHistoryTable
           loading={loading}
           videos={filteredVideos}
