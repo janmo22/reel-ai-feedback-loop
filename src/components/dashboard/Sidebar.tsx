@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Target, History, Settings, Upload, LogOut, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "@/components/ui/sidebar";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 
 const DashboardSidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     user,
     signOut
@@ -15,12 +17,23 @@ const DashboardSidebar = () => {
   
   const [strategyOpen, setStrategyOpen] = useState(location.pathname === "/strategy" || location.pathname.startsWith("/strategy/") || location.search.includes("tab="));
   
+  // Extract the current tab from URL query params
+  const getCurrentTab = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get('tab') || "value";
+  };
+  
   const isActive = (path: string) => {
     return location.pathname === path;
   };
   
   const isSubActive = (tabParam: string) => {
-    return location.search.includes(tabParam);
+    return location.search.includes(`tab=${tabParam}`);
+  };
+  
+  const handleSubmenuClick = (path: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate(path);
   };
   
   const getInitials = () => {
@@ -43,10 +56,12 @@ const DashboardSidebar = () => {
     submenu: [{
       label: "Propuesta de valor",
       path: "/strategy?tab=value",
+      tabValue: "value",
       description: "Define tu valor diferencial"
     }, {
       label: "Las 4Ps",
       path: "/strategy?tab=4ps",
+      tabValue: "4ps",
       description: "Posicionamiento y personalidad"
     }]
   }, {
@@ -132,9 +147,11 @@ const DashboardSidebar = () => {
                             <SidebarMenuSubItem key={subItem.label}>
                               <SidebarMenuSubButton 
                                 asChild 
-                                isActive={isSubActive(subItem.path.split("=")[1])}
+                                isActive={isSubActive(subItem.tabValue)}
                               >
-                                <Link to={subItem.path}>{subItem.label}</Link>
+                                <Link to={subItem.path} onClick={(e) => handleSubmenuClick(subItem.path, e)}>
+                                  {subItem.label}
+                                </Link>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
                           ))}

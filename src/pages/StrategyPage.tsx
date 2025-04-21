@@ -1,9 +1,26 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import StrategyForm from "@/components/strategy/StrategyForm";
 import { Target } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const StrategyPage: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [currentTab, setCurrentTab] = useState<string>("value");
+  
+  // Extract tab from URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab) {
+      setCurrentTab(tab);
+    } else if (!location.search) {
+      // Default tab if no query parameter is present
+      setCurrentTab("value");
+    }
+  }, [location.search]);
+  
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <div className="bg-white rounded-2xl shadow-md p-6">
@@ -16,7 +33,7 @@ const StrategyPage: React.FC = () => {
             Define tu estrategia de contenido para maximizar el impacto de tus videos
           </p>
         </div>
-        <StrategyForm />
+        <StrategyForm currentTab={currentTab} />
       </div>
     </div>
   );

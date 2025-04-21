@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
@@ -23,7 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
-import Header from "@/components/Header";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface VideoWithFeedback extends Omit<Video, 'feedback'> {
   feedback?: Feedback[];
@@ -169,6 +170,12 @@ const HistoryPage: React.FC = () => {
     return format(parseISO(dateString), "d 'de' MMMM, yyyy", { locale: es });
   };
 
+  const getInitials = () => {
+    if (!user) return "??";
+    const email = user.email || "";
+    return email.substring(0, 2).toUpperCase();
+  };
+
   useEffect(() => {
     if (!user && !loading) {
       navigate('/auth', { replace: true });
@@ -182,7 +189,6 @@ const HistoryPage: React.FC = () => {
   if (!user) {
     return (
       <div className="min-h-screen flex flex-col w-full">
-        <Header />
         <div className="container mx-auto py-8 flex items-center justify-center">
           <p>Por favor, inicia sesión para ver tu historial.</p>
         </div>
@@ -192,11 +198,21 @@ const HistoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col w-full">
-      <Header />
       <div className="container mx-auto py-8 px-4">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Historial de Videos</h1>
+          <h1 className="text-2xl md:text-3xl font-tt-travels font-bold text-gray-900">Historial de Videos</h1>
           <Button onClick={handleNavigateToUpload}>Subir nuevo video</Button>
+        </div>
+        
+        <div className="flex items-center gap-3 mb-6">
+          <Avatar className="h-9 w-9">
+            <AvatarImage src="" alt="Avatar" />
+            <AvatarFallback>{getInitials()}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm font-medium">{user.user_metadata?.first_name || 'Usuario'}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[150px]">{user.email}</p>
+          </div>
         </div>
         
         {error && (

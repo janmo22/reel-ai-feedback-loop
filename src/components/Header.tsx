@@ -73,8 +73,7 @@ const Header = () => {
     );
   }
   
-  // Para páginas con sidebar autenticadas
-  // Evitar mostrar cabecera extra en historial, solo mostrar el menú (correjimos duplicidad)
+  // Evitar mostrar cabecera en historial, solo mostrar el menú (corregimos duplicidad)
   if (isHistoryPage) {
     return null;
   }
