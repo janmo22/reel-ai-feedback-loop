@@ -1,9 +1,45 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ThumbsUp } from "lucide-react";
+import { ChevronDown, ChevronUp, ThumbsUp, Info } from "lucide-react";
 import ScoreBubble from "@/components/ui/score-bubble";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+
+// Diccionario básico para tooltips
+const attributeDescriptions: Record<string, string> = {
+  "Efectividad general del hook": "Mide qué tan efectivo es el inicio del video para captar la atención.",
+  "Hook verbal": "Evaluación del comentario o frase principal dicha al inicio.",
+  "Hook visual": "Análisis de los elementos visuales que captan la atención.",
+  "Hook auditivo": "Elementos de audio/sound design utilizados para atraer al espectador.",
+  "Claridad y simplicidad": "Qué tan directo y comprensible es el mensaje inicial.",
+  "Comunicación de beneficio": "Si el espectador entiende qué valor recibirá.",
+  "Autenticidad": "Grado de naturalidad y cercanía trasmitida.",
+  "Disrupción de patrón": "Uso de recursos que rompen la expectativa y evitan el scroll.",
+  "Fortalezas": "Puntos más sólidos identificados.",
+  "Debilidades": "Áreas a mejorar según el análisis.",
+  "Calidad de entrega": "Calidad en la presentación y transmisión del valor.",
+  "Valor principal": "Comentario sobre el aporte de valor clave del video.",
+  "Desarrollo y ritmo": "Fluidez y ritmo de la secuencia de partes del video.",
+  "Call to Action (CTA)": "Calidad y claridad de la llamada a la acción.",
+  "Claridad temática": "Precisión en el enfoque del tema presentado.",
+  "Análisis de palabras clave": "Revisión sobre uso de palabras que ayudan al SEO.",
+  "Análisis de hashtags": "Uso y calidad de los hashtags aplicados.",
+  "Potencial de búsqueda": "Capacidad del video de aparecer en búsquedas relevantes.",
+  "Esto te va a dar más Flow": "Recomendaciones especiales del análisis AI para mejorar tu alcance.",
+  "Consistencia del creador": "Nivel de coherencia con el contenido previo del creador.",
+  "Claridad de audiencia objetivo": "Si queda clara la audiencia a la que va dirigido.",
+  "Propuesta de valor": "Claridad y fuerza de la propuesta de valor.",
+  "Clasificación": "Tipo de contenido según su propósito principal.",
+  "Claridad de serie": "Si pertenece a una serie, claridad de concepto.",
+  "Adaptación de tendencias": "Qué tanto aprovecha tendencias actuales.",
+  "Interacción": "Capacidad de provocar comentarios, likes o compartir.",
+  "Tiempo de visualización": "Capacidad de mantener viendo el contenido completo.",
+  "Factores de viralidad": "Recursos y técnicas que aumentan la opción de viralizar.",
+  "Elementos identificados": "Elementos nativos de la plataforma identificados.",
+  "Efectividad de integración": "Cómo de bien se integran estos elementos.",
+};
 
 interface FeedbackCardProps {
   title: string;
@@ -14,6 +50,7 @@ interface FeedbackCardProps {
     feedback: string;
     suggestions?: string[];
     isHighlighted?: boolean;
+    className?: string;
   }[];
   isDetailed?: boolean;
   showScores?: boolean;
@@ -33,7 +70,6 @@ const FeedbackCard = ({
   accentColor = "bg-slate-50 border-slate-100" 
 }: FeedbackCardProps) => {
   const [expanded, setExpanded] = useState(isDetailed);
-  
   return (
     <Card className="border shadow-sm">
       <CardHeader className={`pb-3 ${expanded ? accentColor : ''}`}>
@@ -49,7 +85,7 @@ const FeedbackCard = ({
           )}
         </div>
       </CardHeader>
-      
+    
       <CardContent>
         <Button 
           variant="ghost" 
@@ -59,42 +95,58 @@ const FeedbackCard = ({
           <span className="font-medium text-sm text-slate-600">{expanded ? "Ocultar detalles" : "Ver detalles"}</span>
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </Button>
-        
+    
         {expanded && (
           <div className="space-y-5 mt-4 animate-in fade-in-50 duration-300">
-            {categories.map((category, index) => (
-              <div 
-                key={index} 
-                className={`border-b last:border-b-0 pb-5 last:pb-0 mb-5 last:mb-0 ${
-                  category.isHighlighted || (highlightCategories && category.name === "Esto te va a dar más Flow") 
-                    ? "bg-blue-50 p-4 rounded-md border border-blue-100" 
-                    : ""
-                }`}
-              >
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-medium text-slate-800">{category.name}</h4>
-                  {showScores && category.score !== undefined && (
-                    <ScoreBubble score={category.score} size="sm" showLabel={false} />
+            <TooltipProvider>
+              {categories.map((category, index) => (
+                <div 
+                  key={index} 
+                  className={`border-b last:border-b-0 pb-5 last:pb-0 mb-5 last:mb-0 ${
+                    category.isHighlighted || (highlightCategories && category.name === "Esto te va a dar más Flow") 
+                      ? "bg-blue-50 p-4 rounded-md border border-blue-100" 
+                      : ""
+                  } ${category.className ?? ""}`}
+                >
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-1">
+                      <h4 className="font-medium text-slate-800">{category.name}</h4>
+                      {attributeDescriptions[category.name] && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span tabIndex={0}>
+                              <Info className="text-blue-500 h-4 w-4 cursor-pointer inline-block" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            <span className="text-xs text-slate-700">{attributeDescriptions[category.name]}</span>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                    {showScores && category.score !== undefined && (
+                      <ScoreBubble score={category.score} size="sm" showLabel={false} />
+                    )}
+                  </div>
+    
+                  <p className="text-sm text-slate-700 mb-4">{category.feedback}</p>
+    
+                  {category.suggestions && category.suggestions.length > 0 && (
+                    <div className="bg-blue-50 p-4 rounded-md mt-4 border-l-2 border-blue-500">
+                      <h5 className="text-sm font-medium text-slate-700 mb-2">Recomendaciones:</h5>
+                      <ul className="space-y-3">
+                        {category.suggestions.map((suggestion, idx) => (
+                          <li key={idx} className="text-sm flex gap-2">
+                            <ThumbsUp size={14} className="text-blue-600 flex-shrink-0 mt-1" />
+                            <span className="text-slate-700">{suggestion}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </div>
-                
-                <p className="text-sm text-slate-700 mb-4">{category.feedback}</p>
-                
-                {category.suggestions && category.suggestions.length > 0 && (
-                  <div className="bg-blue-50 p-4 rounded-md mt-4 border-l-2 border-blue-500">
-                    <h5 className="text-sm font-medium text-slate-700 mb-2">Recomendaciones:</h5>
-                    <ul className="space-y-3">
-                      {category.suggestions.map((suggestion, idx) => (
-                        <li key={idx} className="text-sm flex gap-2">
-                          <ThumbsUp size={14} className="text-blue-600 flex-shrink-0 mt-1" />
-                          <span className="text-slate-700">{suggestion}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            ))}
+              ))}
+            </TooltipProvider>
           </div>
         )}
       </CardContent>

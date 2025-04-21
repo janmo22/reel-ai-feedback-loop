@@ -21,17 +21,10 @@ interface ResultsFeedbackProps {
 const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const fd = feedbackItem.feedback_data;
 
-  // Extraer puntuaciones dinámicas para el hook y la estructura
   const hookScore = fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore ?? null;
   const structureScore = fd?.videoStructureAndPacing?.valueDelivery?.qualityScore ?? null;
   
-  // Hook subcategories with scores displayed
   const hookSubcategories = fd?.videoStructureAndPacing?.hook ? [
-    {
-      name: "Efectividad general del hook",
-      feedback: `Puntuación: ${fd.videoStructureAndPacing.hook.overallEffectivenessScore}/10`,
-      isHighlighted: true
-    },
     {
       name: "Hook verbal",
       feedback: fd.videoStructureAndPacing.hook.attentionGrabbingComment || ""
@@ -62,7 +55,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }
   ] : [];
 
-  // Hook strengths and weaknesses with improved layout
   const hookStrengthsWeaknesses = fd?.videoStructureAndPacing?.hook ? [
     {
       name: "Fortalezas",
@@ -77,7 +69,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }
   ] : [];
 
-  // Structure and value categories with quality score
   const structureCategories = [
     ...(fd?.videoStructureAndPacing?.valueDelivery ? [{
       name: "Calidad de entrega",
@@ -100,7 +91,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }] : [])
   ];
 
-  // SEO categories
   const seoCategories = fd?.seoAndDiscoverability ? [
     {
       name: "Claridad temática",
@@ -125,7 +115,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }
   ] : [];
 
-  // Strategic alignment categories
   const strategicCategories = fd?.strategicAlignment ? [
     {
       name: "Consistencia del creador",
@@ -142,7 +131,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }
   ] : [];
 
-  // Content type strategy
   const contentTypeCategories = fd?.contentTypeStrategy ? [
     {
       name: "Clasificación",
@@ -159,7 +147,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }] : [])
   ] : [];
 
-  // Engagement categories without scores
   const engagementCategories = fd?.engagementOptimization ? [
     {
       name: "Interacción",
@@ -176,7 +163,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
     }
   ] : [];
 
-  // Get suggested copy content
   const suggestedOptimizedCopy = fd?.seoAndDiscoverability?.suggestedOptimizedCopy || "";
   const suggestedOptimizedOnScreenText = fd?.seoAndDiscoverability?.suggestedOptimizedOnScreenText || "";
 
@@ -219,7 +205,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
               </div>
               <p className="text-slate-600 mb-6">Un hook efectivo es crucial para captar la atención en los primeros segundos y evitar que los usuarios deslicen.</p>
               
-              {/* Hook subcategories without scores */}
               {hookSubcategories.length > 0 && (
                 <div className="mb-8">
                   <FeedbackCard
@@ -233,7 +218,6 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                 </div>
               )}
               
-              {/* Hook strengths and weaknesses */}
               {hookStrengthsWeaknesses.length > 0 && (
                 <div>
                   <FeedbackCard

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -33,9 +32,8 @@ type StrategyFormValues = {
   mission: string;
 };
 
-// Define la interfaz para las props del componente
 interface StrategyFormProps {
-  currentTab: string;
+  currentTab?: string;
 }
 
 const StrategyForm: React.FC<StrategyFormProps> = ({ currentTab }) => {
@@ -46,10 +44,8 @@ const StrategyForm: React.FC<StrategyFormProps> = ({ currentTab }) => {
   const navigate = useNavigate();
   const [saveSuccess, setSaveSuccess] = useState(false);
   
-  // Use la prop currentTab como estado inicial
-  const [activeTab, setActiveTab] = useState(currentTab);
+  const [activeTab, setActiveTab] = useState(currentTab || "value");
   
-  // Update URL when tab changes
   const updateTabInUrl = (newTab: string) => {
     setActiveTab(newTab);
     const searchParams = new URLSearchParams(location.search);
@@ -76,7 +72,6 @@ const StrategyForm: React.FC<StrategyFormProps> = ({ currentTab }) => {
     }
   });
 
-  // Fetch existing data if available
   useEffect(() => {
     const fetchUserStrategy = async () => {
       if (!user) return;
@@ -178,7 +173,6 @@ const StrategyForm: React.FC<StrategyFormProps> = ({ currentTab }) => {
           
           <TabsContent value="value" className="pt-2 animate-fade-in">
             <div className="grid gap-8 md:grid-cols-2">
-              {/* Grupo 1: Tu propuesta de valor */}
               <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue mb-1">
@@ -264,7 +258,6 @@ const StrategyForm: React.FC<StrategyFormProps> = ({ currentTab }) => {
                 </CardContent>
               </Card>
               
-              {/* Segunda tarjeta: Tu propuesta */}
               <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue mb-1">
@@ -375,7 +368,6 @@ const StrategyForm: React.FC<StrategyFormProps> = ({ currentTab }) => {
           
           <TabsContent value="4ps" className="pt-2 animate-fade-in">
             <div className="space-y-8">
-              {/* Personaje */}
               <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue">
@@ -404,7 +396,6 @@ const StrategyForm: React.FC<StrategyFormProps> = ({ currentTab }) => {
                 </CardContent>
               </Card>
               
-              {/* Personalidad - Convertido a RadioGroup */}
               <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue">
@@ -531,7 +522,6 @@ const StrategyForm: React.FC<StrategyFormProps> = ({ currentTab }) => {
                 </CardContent>
               </Card>
               
-              {/* Producto */}
               <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue">
@@ -560,7 +550,6 @@ const StrategyForm: React.FC<StrategyFormProps> = ({ currentTab }) => {
                 </CardContent>
               </Card>
               
-              {/* Posicionamiento */}
               <Card className="border-flow-blue/20 shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="bg-gradient-to-r from-flow-blue/5 to-flow-accent/5">
                   <div className="flex items-center gap-2 text-flow-blue">
