@@ -12,8 +12,8 @@ const Header = () => {
   
   const isLandingPage = location.pathname === '/';
   const isAuthPage = location.pathname === '/auth';
-  
-  // Función para obtener iniciales del usuario
+  const isHistoryPage = location.pathname === '/history';
+
   const getInitials = () => {
     if (!user) return "??";
     const email = user.email || "";
@@ -30,7 +30,6 @@ const Header = () => {
               <img src="/lovable-uploads/3c9a72c2-c7cb-434b-a53c-191e56b8a161.png" alt="FLOW Logo" className="h-8" />
             </Link>
           </div>
-          
           <div className="flex items-center gap-4">
             {user ? (
               <DropdownMenu>
@@ -74,7 +73,12 @@ const Header = () => {
     );
   }
   
-  // Para páginas con sidebar (páginas autenticadas), mostramos un header simplificado
+  // Para páginas con sidebar autenticadas
+  // Evitar mostrar cabecera extra en historial, solo mostrar el menú (correjimos duplicidad)
+  if (isHistoryPage) {
+    return null;
+  }
+
   return (
     <header className="border-b bg-white/95 backdrop-blur-md sticky top-0 z-40 w-full">
       <div className="container flex h-16 items-center justify-end px-4">

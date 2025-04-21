@@ -8,15 +8,14 @@ const StrategyPage: React.FC = () => {
     <div className="container mx-auto px-4 py-6 max-w-7xl">
       <div className="bg-white rounded-2xl shadow-md p-6">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900 flex items-center gap-3">
-            <Target className="h-8 w-8 text-flow-blue" />
+          <h1 className="text-2xl md:text-3xl font-tt-travels font-bold mb-2 text-gray-900 flex items-center gap-3">
+            <Target className="h-7 w-7 text-flow-blue" />
             Estrategia de contenido
           </h1>
           <p className="text-gray-500">
             Define tu estrategia de contenido para maximizar el impacto de tus videos
           </p>
         </div>
-        
         <StrategyForm />
       </div>
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Target, History, Settings, Upload, LogOut, ChevronDown, ChevronUp } from "lucide-react";
@@ -161,9 +160,6 @@ const DashboardSidebar = () => {
             <LogOut className="h-4 w-4 mr-2" />
             Cerrar sesión
           </Button>
-          <div className="text-xs text-muted-foreground text-center">
-            FLOW © 2023-2025
-          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

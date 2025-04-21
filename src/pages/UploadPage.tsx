@@ -6,7 +6,6 @@ import ProcessingSteps from "@/components/video-upload/ProcessingSteps";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
-// Frases divertidas para mostrar durante la carga
 const funnyLoadingPhrases = [
   "La IA está analizando tu reel con microscopio digital...",
   "Enseñando a nuestros robots a apreciar tu creatividad...",
@@ -38,13 +37,10 @@ const UploadPage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   
-  // Rotamos las frases divertidas cada 5 segundos durante el procesamiento
   useEffect(() => {
     if (uploadStep === "processing") {
-      // Seleccionar frase inicial
       setLoadingPhrase(funnyLoadingPhrases[Math.floor(Math.random() * funnyLoadingPhrases.length)]);
       
-      // Configurar intervalo para cambiar la frase
       const phraseInterval = setInterval(() => {
         setLoadingPhrase(funnyLoadingPhrases[Math.floor(Math.random() * funnyLoadingPhrases.length)]);
       }, 5000);
@@ -61,7 +57,6 @@ const UploadPage = () => {
     
     console.log("Información enviada correctamente, procesando análisis...");
     
-    // Mostrar toast con una frase divertida
     const randomPhrase = funnyLoadingPhrases[Math.floor(Math.random() * funnyLoadingPhrases.length)];
     toast({
       title: "¡Reel recibido! 🎬",
@@ -70,21 +65,19 @@ const UploadPage = () => {
     });
     
     if (data.response && data.response.videoId) {
-      // Navigate to the results page with the video ID to track progress
       navigate("/results", {
         state: {
           videoId: data.response.videoId,
           videoData: {
             title: data.title || "Video sin título",
             description: data.description || "",
-            isProcessing: true // Add flag to indicate processing state
+            isProcessing: true
           }
         }
       });
     }
   };
   
-  // Handler for the continue button in the ProcessingSteps component
   const handleContinue = () => {
     if (uploadData && uploadData.response && uploadData.response.videoId) {
       navigate("/results", {
@@ -93,7 +86,7 @@ const UploadPage = () => {
           videoData: {
             title: uploadData.title || "Video sin título",
             description: uploadData.description || "",
-            isProcessing: true // Add flag to indicate processing state
+            isProcessing: true
           }
         }
       });
@@ -104,22 +97,18 @@ const UploadPage = () => {
     <main className="py-8 px-4 bg-gradient-to-b from-background to-muted/20">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3 text-flow-blue tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-tt-travels font-bold mb-2 text-gray-900">
             ANALIZA TU REEL CON IA
           </h1>
           <p className="text-muted-foreground font-satoshi text-lg max-w-xl mx-auto">
             Sube tu reel para recibir feedback personalizado de IA y mejorar tu engagement
           </p>
         </div>
-        
         <div className="max-w-3xl mx-auto">
-          {/* Progress Steps */}
           <ProgressSteps currentStep={uploadStep} />
-          
           {uploadStep === "upload" && (
             <VideoUploader onUploadComplete={handleUploadComplete} />
           )}
-          
           {(uploadStep === "processing" || uploadStep === "complete") && (
             <ProcessingSteps 
               currentStep={uploadStep}

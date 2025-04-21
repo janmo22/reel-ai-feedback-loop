@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { Check, LoaderCircle, VideoIcon, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
 interface UploadFormProps {
   title: string;
   description: string;
@@ -21,6 +23,7 @@ interface UploadFormProps {
   uploadProgress: number;
   isComplete: boolean;
 }
+
 const UploadForm: React.FC<UploadFormProps> = ({
   title,
   description,
@@ -53,9 +56,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <MissionButton id="mission-educate" isSelected={missions.includes('educar')} onClick={() => onMissionChange('educar')} title="Educar" description="Compartir conocimientos o enseñar algo nuevo" />
-          
           <MissionButton id="mission-entertain" isSelected={missions.includes('entretener')} onClick={() => onMissionChange('entretener')} title="Entretener" description="Divertir o captar la atención de la audiencia" />
-          
           <MissionButton id="mission-inspire" isSelected={missions.includes('inspirar')} onClick={() => onMissionChange('inspirar')} title="Inspirar" description="Motivar o transmitir un mensaje emocional" />
         </div>
       </div>
@@ -82,14 +83,22 @@ const UploadForm: React.FC<UploadFormProps> = ({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button type="submit" disabled={!title || isUploading || missions.length === 0 || !mainMessage} className="w-full sm:w-auto bg-flow-electric hover:bg-flow-electric/90 font-medium py-6 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-flow-dark bg-zinc-400 hover:bg-zinc-300">
-                {isUploading ? <>
+              <Button
+                type="submit"
+                disabled={!title || isUploading || missions.length === 0 || !mainMessage}
+                className="w-full sm:w-auto bg-flow-blue hover:bg-flow-accent text-white font-bold text-base py-4 px-10 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                {isUploading ? (
+                  <>
                     <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
                     Procesando...
-                  </> : <>
+                  </>
+                ) : (
+                  <>
                     <VideoIcon className="mr-2 h-5 w-5" />
                     Enviar para análisis
-                  </>}
+                  </>
+                )}
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">
@@ -100,6 +109,7 @@ const UploadForm: React.FC<UploadFormProps> = ({
       </div>
     </form>;
 };
+
 const MissionButton = ({
   id,
   isSelected,
@@ -107,12 +117,12 @@ const MissionButton = ({
   title,
   description
 }) => {
-  return <button type="button" id={id} onClick={onClick} className={`flex flex-col items-start text-left p-3 rounded-md border transition-all duration-200 ${isSelected ? "border-flow-electric bg-flow-electric/10 shadow-md" : "border-border/60 hover:border-flow-electric/60 hover:bg-flow-electric/5"}`}>
+  return <button type="button" id={id} onClick={onClick} className={`flex flex-col items-start text-left p-3 rounded-lg border-2 transition-all duration-200 font-satoshi shadow-sm
+      ${isSelected ? "border-flow-blue bg-flow-blue/10 text-flow-blue" : "border-border/60 hover:border-flow-blue/60 hover:bg-flow-blue/5"}
+      `}>
       <div className="flex items-center justify-between w-full">
-        <span className={`font-medium ${isSelected ? "text-flow-electric" : ""}`}>
-          {title}
-        </span>
-        {isSelected && <Check className="h-4 w-4 text-flow-electric" />}
+        <span className="font-medium">{title}</span>
+        {isSelected && <Check className="h-4 w-4 text-flow-blue" />}
       </div>
       <span className="text-xs text-muted-foreground mt-1">
         {description}
