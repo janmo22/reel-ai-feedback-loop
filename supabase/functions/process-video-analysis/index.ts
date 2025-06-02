@@ -42,52 +42,55 @@ serve(async (req) => {
     // Convert file to array buffer
     const videoBuffer = await videoFile.arrayBuffer()
     
-    // Upload video to Gemini File API
+    // Upload video to Gemini File API with correct multipart format
     console.log('Uploading video to Gemini File API...')
+    
+    const boundary = '----formdata-boundary-' + Math.random().toString(36).substr(2, 16)
+    
+    // Create properly formatted multipart body
+    const textEncoder = new TextEncoder()
+    const chunks = []
+    
+    // Add metadata part
+    chunks.push(textEncoder.encode(`--${boundary}\r\n`))
+    chunks.push(textEncoder.encode(`Content-Disposition: form-data; name="metadata"\r\n`))
+    chunks.push(textEncoder.encode(`Content-Type: application/json\r\n\r\n`))
+    chunks.push(textEncoder.encode(JSON.stringify({
+      file: {
+        displayName: `video-${videoId}`,
+        mimeType: videoFile.type || 'video/mp4'
+      }
+    })))
+    chunks.push(textEncoder.encode(`\r\n`))
+    
+    // Add file part
+    chunks.push(textEncoder.encode(`--${boundary}\r\n`))
+    chunks.push(textEncoder.encode(`Content-Disposition: form-data; name="file"\r\n`))
+    chunks.push(textEncoder.encode(`Content-Type: ${videoFile.type || 'video/mp4'}\r\n\r\n`))
+    
+    // Add file data
+    chunks.push(new Uint8Array(videoBuffer))
+    
+    // Add closing boundary
+    chunks.push(textEncoder.encode(`\r\n--${boundary}--\r\n`))
+    
+    // Combine all chunks
+    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
+    const body = new Uint8Array(totalLength)
+    let offset = 0
+    for (const chunk of chunks) {
+      body.set(chunk, offset)
+      offset += chunk.length
+    }
+
     const uploadResponse = await fetch('https://generativelanguage.googleapis.com/upload/v1beta/files', {
       method: 'POST',
       headers: {
         'X-Goog-Upload-Protocol': 'multipart',
         'X-Goog-Api-Key': GOOGLE_GEMINI_API_KEY,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
       },
-      body: (() => {
-        const boundary = '----formdata-boundary-' + Math.random().toString(36).substr(2, 16)
-        const chunks = []
-        
-        chunks.push(`--${boundary}\r\n`)
-        chunks.push(`Content-Disposition: form-data; name="metadata"\r\n`)
-        chunks.push(`Content-Type: application/json\r\n\r\n`)
-        chunks.push(JSON.stringify({
-          file: {
-            displayName: `video-${videoId}`,
-            mimeType: videoFile.type || 'video/mp4'
-          }
-        }))
-        chunks.push(`\r\n--${boundary}\r\n`)
-        chunks.push(`Content-Disposition: form-data; name="file"\r\n`)
-        chunks.push(`Content-Type: ${videoFile.type || 'video/mp4'}\r\n\r\n`)
-        
-        const encoder = new TextEncoder()
-        const textParts = chunks.map(chunk => encoder.encode(chunk))
-        const videoPart = new Uint8Array(videoBuffer)
-        const endBoundary = encoder.encode(`\r\n--${boundary}--\r\n`)
-        
-        const totalLength = textParts.reduce((sum, part) => sum + part.length, 0) + videoPart.length + endBoundary.length
-        const result = new Uint8Array(totalLength)
-        
-        let offset = 0
-        for (const part of textParts.slice(0, -1)) {
-          result.set(part, offset)
-          offset += part.length
-        }
-        result.set(videoPart, offset)
-        offset += videoPart.length
-        result.set(textParts[textParts.length - 1], offset)
-        offset += textParts[textParts.length - 1].length
-        result.set(endBoundary, offset)
-        
-        return result
-      })()
+      body: body
     })
 
     if (!uploadResponse.ok) {
@@ -295,7 +298,7 @@ serve(async (req) => {
     
     // Try to update video status to error if we have the videoId
     try {
-      const formData = await req.clone().formData()
+      const formData = await req.formData()
       const videoId = formData.get('videoId') as string
       
       if (videoId) {
