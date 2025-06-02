@@ -23,6 +23,8 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let videoId: string | null = null;
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -32,7 +34,7 @@ serve(async (req) => {
     const formData = await req.formData()
     
     // Extract form data
-    const videoId = formData.get('videoId') as string
+    videoId = formData.get('videoId') as string
     const userId = formData.get('userId') as string
     const title = formData.get('title') as string
     const description = formData.get('description') as string || ''
@@ -189,10 +191,7 @@ serve(async (req) => {
     // Step 7: Update video status
     const { error: videoUpdateError } = await supabaseClient
       .from('videos')
-      .update({ 
-        status: 'completed',
-        feedback_received: true
-      })
+      .update({ status: 'completed' })
       .eq('id', videoId)
 
     if (videoUpdateError) {
@@ -218,10 +217,8 @@ serve(async (req) => {
     console.error('Error in video analysis:', error)
     
     // Try to update video status to error if we have the videoId
-    try {
-      const formData = await req.formData()
-      const videoId = formData.get('videoId') as string
-      if (videoId) {
+    if (videoId) {
+      try {
         const supabaseClient = createClient(
           Deno.env.get('SUPABASE_URL') ?? '',
           Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -231,9 +228,9 @@ serve(async (req) => {
           .from('videos')
           .update({ status: 'error' })
           .eq('id', videoId)
+      } catch (updateError) {
+        console.error('Failed to update video status to error:', updateError)
       }
-    } catch (updateError) {
-      console.error('Failed to update video status to error:', updateError)
     }
 
     return new Response(
