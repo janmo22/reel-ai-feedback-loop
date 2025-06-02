@@ -9,7 +9,7 @@ import NoResults from "@/components/results/NoResults";
 import { useToast } from "@/hooks/use-toast";
 import ResultsFeedback from "@/components/results/ResultsFeedback";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const ResultsPage = () => {
   const navigate = useNavigate();
@@ -18,17 +18,19 @@ const ResultsPage = () => {
   const isProcessing = location.state?.videoData?.isProcessing === true;
   const { feedback, videoData, loading, hasFeedback, toggleFavorite, error, unauthorized } = useVideoResults();
   const { toast } = useToast();
+  const [analysisCompleteNotified, setAnalysisCompleteNotified] = useState(false);
   
   // Show notification when analysis is ready if coming from the processing state
   useEffect(() => {
     // If we're no longer loading and we have feedback and were previously in processing state
-    if (!loading && hasFeedback && isProcessing) {
+    if (!loading && hasFeedback && isProcessing && !analysisCompleteNotified) {
       toast({
-        title: "¡Análisis completado!",
+        title: "¡Análisis completado! ✨",
         description: "Tu reel ha sido analizado correctamente y está listo para revisar."
       });
+      setAnalysisCompleteNotified(true);
     }
-  }, [loading, hasFeedback, isProcessing, toast]);
+  }, [loading, hasFeedback, isProcessing, toast, analysisCompleteNotified]);
   
   const handleShare = () => {
     toast({
@@ -38,7 +40,7 @@ const ResultsPage = () => {
   };
   
   // Show loading screen if the video is currently being processed or if we're still loading data
-  if (loading || isProcessing) {
+  if (loading || (isProcessing && !hasFeedback)) {
     return (
       <main className="flex-1 py-8 px-4 flex items-center justify-center">
         <LoadingResults />

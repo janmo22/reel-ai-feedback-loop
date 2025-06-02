@@ -101,7 +101,7 @@ export function useVideoUpload(onUploadComplete: (data: {
     }
     
     setIsUploading(true);
-    startSimulation(); // Start a progress simulation
+    startSimulation();
     
     try {
       console.log("Iniciando proceso de upload y análisis...");
@@ -118,10 +118,7 @@ export function useVideoUpload(onUploadComplete: (data: {
       const videoId = videoData.id;
       console.log("Video record created with ID:", videoId);
       
-      // Step 2: Send to Edge Function for analysis
-      console.log("Enviando video para análisis con Edge Function...");
-      
-      // Call onUploadComplete immediately with basic data
+      // Step 2: Call onUploadComplete immediately with basic data
       onUploadComplete({
         video: videoFile,
         title,
@@ -135,8 +132,10 @@ export function useVideoUpload(onUploadComplete: (data: {
         },
       });
       
-      // Continue with the actual processing in the background
+      // Step 3: Continue with analysis in the background
       try {
+        console.log("Enviando video para análisis con Edge Function...");
+        
         await uploadVideoToWebhook({
           videoId,
           userId: user.id,
@@ -151,17 +150,17 @@ export function useVideoUpload(onUploadComplete: (data: {
         stopSimulation(100);
         
         toast({
-          title: "¡Video enviado! 🎬",
-          description: "Tu reel está siendo analizado. Te notificaremos cuando esté listo.",
+          title: "¡Análisis completado! 🎬",
+          description: "Tu reel ha sido analizado exitosamente. Revisa los resultados.",
         });
         
       } catch (analysisError: any) {
-        console.error("Error en el análisis (pero el video fue creado):", analysisError);
+        console.error("Error en el análisis:", analysisError);
+        stopSimulation(0);
         
-        // Even if analysis fails, we still created the video record
         toast({
-          title: "Video guardado",
-          description: "El video fue guardado pero hubo un problema con el análisis. Puedes intentar de nuevo más tarde.",
+          title: "Error en el análisis",
+          description: "Hubo un problema procesando tu video. Puedes intentar de nuevo más tarde.",
           variant: "destructive"
         });
       }
