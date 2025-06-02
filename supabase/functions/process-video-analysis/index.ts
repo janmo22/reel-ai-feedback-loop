@@ -55,6 +55,16 @@ serve(async (req) => {
 
     console.log('Processing video analysis for:', { videoId, userId, title })
 
+    // Update video status to processing
+    const { error: processingUpdateError } = await supabaseClient
+      .from('videos')
+      .update({ status: 'processing' })
+      .eq('id', videoId)
+
+    if (processingUpdateError) {
+      console.error('Error updating video to processing status:', processingUpdateError)
+    }
+
     // Step 1: Upload video to Google Gemini File API
     const geminiApiKey = Deno.env.get('GOOGLE_GEMINI_API_KEY')
     if (!geminiApiKey) {
@@ -167,7 +177,7 @@ serve(async (req) => {
     const cleanedAnalysis = deepClean(parsedAnalysis)
     const flattenedAnalysis = flatten(cleanedAnalysis)
 
-    // Step 6: Save results to database
+    // Step 6: Save results to database (removed processing_completed_at field)
     console.log('Saving analysis to database...')
     const { error: feedbackError } = await supabaseClient
       .from('feedback')
@@ -175,7 +185,6 @@ serve(async (req) => {
         video_id: videoId,
         overall_score: cleanedAnalysis.finalEvaluation?.overallScore || 0,
         feedback_data: cleanedAnalysis,
-        processing_completed_at: new Date().toISOString(),
         webhook_response: {
           raw_response: rawAnalysis,
           flattened: flattenedAnalysis,
