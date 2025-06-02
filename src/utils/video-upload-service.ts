@@ -12,9 +12,6 @@ export interface UploadVideoParams {
   mainMessage: string;
 }
 
-// The webhook URL for uploading videos (updated to production webhook)
-export const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
-
 /**
  * Fetch user mission data from the database
  */
@@ -66,7 +63,6 @@ export async function createVideoRecord(userId: string, title: string, descripti
   try {
     console.log("Creando registro de video en Supabase...");
     
-    // Remove missions from the direct insertion since the column doesn't exist
     const { data: videoData, error: videoError } = await supabase
       .from('videos')
       .insert([
@@ -74,9 +70,9 @@ export async function createVideoRecord(userId: string, title: string, descripti
           title,
           description,
           user_id: userId,
-          video_url: "placeholder-url", // Will be updated later
-          status: 'processing', // Changed from 'uploading' to 'processing' to match valid status values
-          // missions field is removed from here
+          video_url: "processing", // Placeholder URL during processing
+          status: 'processing',
+          feedback_received: false
         }
       ])
       .select()
@@ -100,8 +96,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
 }
 
 /**
- * Upload the video to the webhook - with improved handling for no-cors mode
- * and clear MIME type indication, also including user mission data
+ * Upload video for analysis using the new Edge Function
  */
 export const uploadVideoToWebhook = async (params: {
   videoId: string;
@@ -112,105 +107,64 @@ export const uploadVideoToWebhook = async (params: {
   missions: string[];
   mainMessage: string;
 }): Promise<VideoUploadResponse> => {
-  console.log("Enviando datos al webhook:", WEBHOOK_URL);
-  
-  // Get MIME type from the file
-  const mimeType = params.videoFile.type;
-  console.log(`Tipo de archivo (MIME Type): ${mimeType}`);
-  
-  // Fetch user mission data if available
-  const userMissionData = await fetchUserMissionData(params.userId);
-  
-  // Create a FormData object and add all the data
-  const formData = new FormData();
-  formData.append("videoId", params.videoId);
-  formData.append("userId", params.userId);
-  formData.append("title", params.title);
-  formData.append("description", params.description || "");
-  formData.append("missions", JSON.stringify(params.missions));
-  formData.append("mainMessage", params.mainMessage);
-  formData.append("mimeType", mimeType); // Include MIME type explicitly
-  
-  // Add user mission data if available
-  if (userMissionData) {
-    formData.append("userMissionData", JSON.stringify(userMissionData));
-    
-    console.log("Enviando datos de estrategia del usuario con el video:", {
-      valueProposition: userMissionData.value_proposition,
-      mission: userMissionData.mission,
-      niche: userMissionData.niche,
-      targetAudience: userMissionData.target_audience,
-      contentStrategy: {
-        character: userMissionData.content_character,
-        personality: userMissionData.content_personality,
-        tone: userMissionData.content_tone
-      }
-    });
-  } else {
-    console.log("No se encontraron datos de estrategia para este usuario");
-  }
-  
-  // Add the video file to FormData
-  // Set the content type explicitly in the append operation
-  formData.append("video", params.videoFile);
-  
-  console.log(`Enviando video: Nombre=${params.videoFile.name}, Tamaño=${params.videoFile.size} bytes, Tipo=${mimeType}`);
+  console.log("Enviando video para análisis con Edge Function...");
   
   try {
-    // Update video status to processing before sending to webhook
-    await updateVideoStatus(params.videoId, 'processing');
+    // Fetch user mission data if available
+    const userMissionData = await fetchUserMissionData(params.userId);
     
-    // Using regular fetch mode first to try to get a response
-    const response = await fetch(WEBHOOK_URL, {
-      method: "POST",
-      body: formData,
-      headers: {
-        // Note: We don't set Content-Type manually for FormData as the browser sets it automatically with boundary
-        "X-Content-Type": mimeType, // Custom header for additional MIME type info
-      }
+    // Create a FormData object and add all the data
+    const formData = new FormData();
+    formData.append("videoId", params.videoId);
+    formData.append("userId", params.userId);
+    formData.append("title", params.title);
+    formData.append("description", params.description || "");
+    formData.append("missions", JSON.stringify(params.missions));
+    formData.append("mainMessage", params.mainMessage);
+    formData.append("mimeType", params.videoFile.type);
+    
+    // Add user mission data if available
+    if (userMissionData) {
+      formData.append("userMissionData", JSON.stringify(userMissionData));
+      console.log("Enviando datos de estrategia del usuario con el video");
+    } else {
+      console.log("No se encontraron datos de estrategia para este usuario");
+    }
+    
+    // Add the video file to FormData
+    formData.append("video", params.videoFile);
+    
+    console.log(`Enviando video para análisis: Nombre=${params.videoFile.name}, Tamaño=${params.videoFile.size} bytes, Tipo=${params.videoFile.type}`);
+    
+    // Call the Edge Function
+    const { data, error } = await supabase.functions.invoke('process-video-analysis', {
+      body: formData
     });
     
-    if (response.ok) {
-      console.log("Datos enviados correctamente al webhook con respuesta");
-      
-      return { 
-        status: "processing", 
-        videoId: params.videoId,
-        message: "Video enviado para procesamiento. Revisa los resultados más tarde."
-      };
-    }
-    
-    console.warn("La respuesta del webhook no fue exitosa, usando modo no-cors como respaldo");
-    throw new Error("La respuesta del webhook no fue exitosa");
-  } catch (fetchError) {
-    console.warn("Error al intentar fetch con modo normal:", fetchError);
-    
-    try {
-      // Fallback to no-cors mode
-      await fetch(WEBHOOK_URL, {
-        method: "POST",
-        body: formData,
-        mode: "no-cors", // Fallback to no-cors mode
-        headers: {
-          "X-Content-Type": mimeType, // Custom header for additional MIME type info
-        }
-      });
-      
-      console.log("Datos enviados al webhook usando modo no-cors");
-      
-      return { 
-        status: "processing", 
-        videoId: params.videoId,
-        message: "Video enviado para procesamiento. Revisa los resultados más tarde."
-      };
-    } catch (noCorsError) {
-      console.error("Error en ambos métodos de envío:", noCorsError);
-      
-      // Update video status to error
+    if (error) {
+      console.error("Error calling Edge Function:", error);
       await updateVideoStatus(params.videoId, 'error');
-      
-      throw new Error(`Error al enviar el video: ${noCorsError.message}`);
+      throw new Error(`Error al procesar el video: ${error.message}`);
     }
+    
+    if (data && data.success) {
+      console.log("Video enviado para análisis exitosamente:", data);
+      return { 
+        success: true,
+        videoId: params.videoId,
+        message: data.message || "Video enviado para análisis. El procesamiento puede tardar algunos minutos.",
+        status: "processing"
+      };
+    } else {
+      console.error("Error en la respuesta del Edge Function:", data);
+      await updateVideoStatus(params.videoId, 'error');
+      throw new Error(data?.error || "Error desconocido en el procesamiento");
+    }
+    
+  } catch (error: any) {
+    console.error("Error en el proceso de análisis:", error);
+    await updateVideoStatus(params.videoId, 'error');
+    throw new Error(`Error al procesar el video: ${error.message}`);
   }
 };
 
