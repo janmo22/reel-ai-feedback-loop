@@ -26,6 +26,7 @@ serve(async (req) => {
   }
 
   let videoId: string | null = null;
+  let formData: FormData | null = null;
 
   try {
     const supabaseClient = createClient(
@@ -33,7 +34,8 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const formData = await req.formData()
+    // Parse form data once
+    formData = await req.formData()
     const videoFile = formData.get('video') as File
     videoId = formData.get('videoId') as string
     const userId = formData.get('userId') as string
@@ -51,11 +53,22 @@ serve(async (req) => {
 
     // Validate video file type
     const mimeType = videoFile.type || 'video/mp4'
-    if (!SUPPORTED_VIDEO_TYPES.includes(mimeType)) {
-      console.warn(`Unsupported MIME type: ${mimeType}, using video/mp4 as fallback`)
+    console.log(`Original MIME type: ${mimeType}`)
+    
+    // Map common variations to supported types
+    let finalMimeType = mimeType
+    if (mimeType === 'video/quicktime') {
+      finalMimeType = 'video/mov'
+    } else if (mimeType === 'video/x-msvideo') {
+      finalMimeType = 'video/avi'
+    }
+    
+    if (!SUPPORTED_VIDEO_TYPES.includes(finalMimeType)) {
+      console.warn(`Unsupported MIME type: ${finalMimeType}, using video/mp4 as fallback`)
+      finalMimeType = 'video/mp4'
     }
 
-    console.log(`Processing video: ${videoFile.name}, Size: ${videoFile.size} bytes, Type: ${mimeType}`)
+    console.log(`Processing video: ${videoFile.name}, Size: ${videoFile.size} bytes, Final Type: ${finalMimeType}`)
 
     const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY')
     if (!GOOGLE_GEMINI_API_KEY) {
@@ -66,65 +79,50 @@ serve(async (req) => {
     const videoBuffer = await videoFile.arrayBuffer()
     console.log(`Video buffer size: ${videoBuffer.byteLength} bytes`)
     
-    // Upload video to Gemini File API with correct multipart format
+    // Upload video to Gemini File API
     console.log('Uploading video to Gemini File API...')
     
-    const boundary = '----formdata-boundary-' + Math.random().toString(36).substr(2, 16)
+    const uploadFormData = new FormData()
     
-    // Create properly formatted multipart body
-    const textEncoder = new TextEncoder()
-    const chunks = []
-    
-    // Add metadata part
-    chunks.push(textEncoder.encode(`--${boundary}\r\n`))
-    chunks.push(textEncoder.encode(`Content-Disposition: form-data; name="metadata"\r\n`))
-    chunks.push(textEncoder.encode(`Content-Type: application/json\r\n\r\n`))
-    chunks.push(textEncoder.encode(JSON.stringify({
+    // Add metadata as JSON string
+    const metadata = {
       file: {
         displayName: `video-${videoId}`,
-        mimeType: mimeType
+        mimeType: finalMimeType
       }
-    })))
-    chunks.push(textEncoder.encode(`\r\n`))
-    
-    // Add file part
-    chunks.push(textEncoder.encode(`--${boundary}\r\n`))
-    chunks.push(textEncoder.encode(`Content-Disposition: form-data; name="file"\r\n`))
-    chunks.push(textEncoder.encode(`Content-Type: ${mimeType}\r\n\r\n`))
-    
-    // Add file data
-    chunks.push(new Uint8Array(videoBuffer))
-    
-    // Add closing boundary
-    chunks.push(textEncoder.encode(`\r\n--${boundary}--\r\n`))
-    
-    // Combine all chunks
-    const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0)
-    const body = new Uint8Array(totalLength)
-    let offset = 0
-    for (const chunk of chunks) {
-      body.set(chunk, offset)
-      offset += chunk.length
     }
+    uploadFormData.append('metadata', JSON.stringify(metadata))
+    
+    // Add the actual file
+    const fileBlob = new Blob([videoBuffer], { type: finalMimeType })
+    uploadFormData.append('file', fileBlob)
 
-    console.log(`Multipart body created, total size: ${body.length} bytes`)
+    console.log('Uploading to Gemini with metadata:', metadata)
 
     // Upload with timeout
     const uploadController = new AbortController()
-    const uploadTimeout = setTimeout(() => uploadController.abort(), 120000) // 2 minutes timeout
+    const uploadTimeout = setTimeout(() => {
+      console.log('Upload timeout triggered')
+      uploadController.abort()
+    }, 120000) // 2 minutes timeout
 
-    const uploadResponse = await fetch('https://generativelanguage.googleapis.com/upload/v1beta/files', {
-      method: 'POST',
-      headers: {
-        'X-Goog-Upload-Protocol': 'multipart',
-        'X-Goog-Api-Key': GOOGLE_GEMINI_API_KEY,
-        'Content-Type': `multipart/form-data; boundary=${boundary}`,
-      },
-      body: body,
-      signal: uploadController.signal
-    })
-
-    clearTimeout(uploadTimeout)
+    let uploadResponse
+    try {
+      uploadResponse = await fetch('https://generativelanguage.googleapis.com/upload/v1beta/files', {
+        method: 'POST',
+        headers: {
+          'X-Goog-Upload-Protocol': 'multipart',
+          'X-Goog-Api-Key': GOOGLE_GEMINI_API_KEY,
+        },
+        body: uploadFormData,
+        signal: uploadController.signal
+      })
+    } catch (uploadError) {
+      console.error('Upload request failed:', uploadError)
+      throw new Error(`Failed to upload video to Gemini: ${uploadError.message}`)
+    } finally {
+      clearTimeout(uploadTimeout)
+    }
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text()
@@ -133,11 +131,14 @@ serve(async (req) => {
     }
 
     const uploadResult = await uploadResponse.json()
-    const fileUri = uploadResult.file?.uri
+    console.log('Upload result:', uploadResult)
     
-    if (!fileUri) {
-      console.error('Upload result:', uploadResult)
-      throw new Error('No file URI received from Gemini upload')
+    const fileUri = uploadResult.file?.uri
+    const fileName = uploadResult.file?.name
+    
+    if (!fileUri || !fileName) {
+      console.error('Upload result missing data:', uploadResult)
+      throw new Error('No file URI or name received from Gemini upload')
     }
     
     console.log('Video uploaded to Gemini:', fileUri)
@@ -146,18 +147,16 @@ serve(async (req) => {
     let fileReady = false
     let attempts = 0
     const maxAttempts = 30
-    const fileName = uploadResult.file?.name
-
-    if (!fileName) {
-      throw new Error('No file name received from Gemini upload')
-    }
 
     console.log('Waiting for file processing...')
     while (!fileReady && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 2000))
       
       const statusController = new AbortController()
-      const statusTimeout = setTimeout(() => statusController.abort(), 30000) // 30 seconds timeout
+      const statusTimeout = setTimeout(() => {
+        console.log(`Status check timeout on attempt ${attempts + 1}`)
+        statusController.abort()
+      }, 30000) // 30 seconds timeout
       
       try {
         const statusResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${fileName}`, {
@@ -172,7 +171,8 @@ serve(async (req) => {
         if (!statusResponse.ok) {
           const errorText = await statusResponse.text()
           console.error(`Status check error (${statusResponse.status}):`, errorText)
-          throw new Error(`Failed to check file status: ${errorText}`)
+          attempts++
+          continue
         }
         
         const statusResult = await statusResponse.json()
@@ -191,7 +191,7 @@ serve(async (req) => {
         if (statusError.name === 'AbortError') {
           console.error(`Status check timeout on attempt ${attempts + 1}`)
         } else {
-          throw statusError
+          console.error(`Status check error on attempt ${attempts + 1}:`, statusError)
         }
         attempts++
       }
@@ -271,41 +271,50 @@ serve(async (req) => {
     console.log('Starting video analysis with Gemini 1.5 Pro...')
     
     const analysisController = new AbortController()
-    const analysisTimeout = setTimeout(() => analysisController.abort(), 300000) // 5 minutes timeout
+    const analysisTimeout = setTimeout(() => {
+      console.log('Analysis timeout triggered')
+      analysisController.abort()
+    }, 300000) // 5 minutes timeout
     
-    const analysisResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': GOOGLE_GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: contextPrompt
-              },
-              {
-                fileData: {
-                  mimeType: mimeType,
-                  fileUri: fileUri
+    let analysisResponse
+    try {
+      analysisResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_GEMINI_API_KEY,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: contextPrompt
+                },
+                {
+                  fileData: {
+                    mimeType: finalMimeType,
+                    fileUri: fileUri
+                  }
                 }
-              }
-            ]
+              ]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.4,
+            topK: 32,
+            topP: 1,
+            maxOutputTokens: 8192,
           }
-        ],
-        generationConfig: {
-          temperature: 0.4,
-          topK: 32,
-          topP: 1,
-          maxOutputTokens: 8192,
-        }
-      }),
-      signal: analysisController.signal
-    })
-
-    clearTimeout(analysisTimeout)
+        }),
+        signal: analysisController.signal
+      })
+    } catch (analysisError) {
+      console.error('Analysis request failed:', analysisError)
+      throw new Error(`Failed to analyze video: ${analysisError.message}`)
+    } finally {
+      clearTimeout(analysisTimeout)
+    }
 
     if (!analysisResponse.ok) {
       const errorText = await analysisResponse.text()
