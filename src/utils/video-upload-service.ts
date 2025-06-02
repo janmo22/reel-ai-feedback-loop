@@ -71,8 +71,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
           description,
           user_id: userId,
           video_url: "processing", // Placeholder URL during processing
-          status: 'processing',
-          feedback_received: false
+          status: 'processing'
         }
       ])
       .select()
