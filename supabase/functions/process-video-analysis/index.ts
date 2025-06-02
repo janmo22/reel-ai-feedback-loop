@@ -7,10 +7,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Supported video MIME types by Gemini
+const SUPPORTED_VIDEO_TYPES = [
+  'video/mp4',
+  'video/mpeg',
+  'video/mov',
+  'video/avi',
+  'video/x-flv',
+  'video/mpg',
+  'video/webm',
+  'video/wmv',
+  'video/3gpp'
+]
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
+
+  let videoId: string | null = null;
 
   try {
     const supabaseClient = createClient(
@@ -20,7 +35,7 @@ serve(async (req) => {
 
     const formData = await req.formData()
     const videoFile = formData.get('video') as File
-    const videoId = formData.get('videoId') as string
+    videoId = formData.get('videoId') as string
     const userId = formData.get('userId') as string
     const title = formData.get('title') as string
     const description = formData.get('description') as string
@@ -31,8 +46,16 @@ serve(async (req) => {
     console.log('Processing video analysis for:', { videoId, userId, title })
 
     if (!videoFile || !videoId || !userId) {
-      throw new Error('Missing required fields')
+      throw new Error('Missing required fields: video, videoId, or userId')
     }
+
+    // Validate video file type
+    const mimeType = videoFile.type || 'video/mp4'
+    if (!SUPPORTED_VIDEO_TYPES.includes(mimeType)) {
+      console.warn(`Unsupported MIME type: ${mimeType}, using video/mp4 as fallback`)
+    }
+
+    console.log(`Processing video: ${videoFile.name}, Size: ${videoFile.size} bytes, Type: ${mimeType}`)
 
     const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY')
     if (!GOOGLE_GEMINI_API_KEY) {
@@ -41,6 +64,7 @@ serve(async (req) => {
 
     // Convert file to array buffer
     const videoBuffer = await videoFile.arrayBuffer()
+    console.log(`Video buffer size: ${videoBuffer.byteLength} bytes`)
     
     // Upload video to Gemini File API with correct multipart format
     console.log('Uploading video to Gemini File API...')
@@ -58,7 +82,7 @@ serve(async (req) => {
     chunks.push(textEncoder.encode(JSON.stringify({
       file: {
         displayName: `video-${videoId}`,
-        mimeType: videoFile.type || 'video/mp4'
+        mimeType: mimeType
       }
     })))
     chunks.push(textEncoder.encode(`\r\n`))
@@ -66,7 +90,7 @@ serve(async (req) => {
     // Add file part
     chunks.push(textEncoder.encode(`--${boundary}\r\n`))
     chunks.push(textEncoder.encode(`Content-Disposition: form-data; name="file"\r\n`))
-    chunks.push(textEncoder.encode(`Content-Type: ${videoFile.type || 'video/mp4'}\r\n\r\n`))
+    chunks.push(textEncoder.encode(`Content-Type: ${mimeType}\r\n\r\n`))
     
     // Add file data
     chunks.push(new Uint8Array(videoBuffer))
@@ -83,6 +107,12 @@ serve(async (req) => {
       offset += chunk.length
     }
 
+    console.log(`Multipart body created, total size: ${body.length} bytes`)
+
+    // Upload with timeout
+    const uploadController = new AbortController()
+    const uploadTimeout = setTimeout(() => uploadController.abort(), 120000) // 2 minutes timeout
+
     const uploadResponse = await fetch('https://generativelanguage.googleapis.com/upload/v1beta/files', {
       method: 'POST',
       headers: {
@@ -90,47 +120,85 @@ serve(async (req) => {
         'X-Goog-Api-Key': GOOGLE_GEMINI_API_KEY,
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
       },
-      body: body
+      body: body,
+      signal: uploadController.signal
     })
+
+    clearTimeout(uploadTimeout)
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text()
-      throw new Error(`Failed to upload video to Gemini: ${errorText}`)
+      console.error('Gemini upload error response:', errorText)
+      throw new Error(`Failed to upload video to Gemini (${uploadResponse.status}): ${errorText}`)
     }
 
     const uploadResult = await uploadResponse.json()
-    const fileUri = uploadResult.file.uri
+    const fileUri = uploadResult.file?.uri
+    
+    if (!fileUri) {
+      console.error('Upload result:', uploadResult)
+      throw new Error('No file URI received from Gemini upload')
+    }
+    
     console.log('Video uploaded to Gemini:', fileUri)
 
     // Wait for file to be processed
     let fileReady = false
     let attempts = 0
     const maxAttempts = 30
+    const fileName = uploadResult.file?.name
 
+    if (!fileName) {
+      throw new Error('No file name received from Gemini upload')
+    }
+
+    console.log('Waiting for file processing...')
     while (!fileReady && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      const statusResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${uploadResult.file.name}`, {
-        headers: {
-          'X-Goog-Api-Key': GOOGLE_GEMINI_API_KEY,
+      const statusController = new AbortController()
+      const statusTimeout = setTimeout(() => statusController.abort(), 30000) // 30 seconds timeout
+      
+      try {
+        const statusResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/files/${fileName}`, {
+          headers: {
+            'X-Goog-Api-Key': GOOGLE_GEMINI_API_KEY,
+          },
+          signal: statusController.signal
+        })
+        
+        clearTimeout(statusTimeout)
+        
+        if (!statusResponse.ok) {
+          const errorText = await statusResponse.text()
+          console.error(`Status check error (${statusResponse.status}):`, errorText)
+          throw new Error(`Failed to check file status: ${errorText}`)
         }
-      })
-      
-      const statusResult = await statusResponse.json()
-      console.log(`File status check ${attempts + 1}:`, statusResult.state)
-      
-      if (statusResult.state === 'ACTIVE') {
-        fileReady = true
-        console.log('File is ready for analysis')
-      } else if (statusResult.state === 'FAILED') {
-        throw new Error('File processing failed')
+        
+        const statusResult = await statusResponse.json()
+        console.log(`File status check ${attempts + 1}:`, statusResult.state)
+        
+        if (statusResult.state === 'ACTIVE') {
+          fileReady = true
+          console.log('File is ready for analysis')
+        } else if (statusResult.state === 'FAILED') {
+          throw new Error(`File processing failed: ${statusResult.error || 'Unknown error'}`)
+        }
+        
+        attempts++
+      } catch (statusError) {
+        clearTimeout(statusTimeout)
+        if (statusError.name === 'AbortError') {
+          console.error(`Status check timeout on attempt ${attempts + 1}`)
+        } else {
+          throw statusError
+        }
+        attempts++
       }
-      
-      attempts++
     }
 
     if (!fileReady) {
-      throw new Error('File processing timeout')
+      throw new Error(`File processing timeout after ${maxAttempts} attempts`)
     }
 
     // Create context for the analysis
@@ -201,6 +269,10 @@ serve(async (req) => {
 
     // Analyze video with Gemini 1.5 Pro
     console.log('Starting video analysis with Gemini 1.5 Pro...')
+    
+    const analysisController = new AbortController()
+    const analysisTimeout = setTimeout(() => analysisController.abort(), 300000) // 5 minutes timeout
+    
     const analysisResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent', {
       method: 'POST',
       headers: {
@@ -216,7 +288,7 @@ serve(async (req) => {
               },
               {
                 fileData: {
-                  mimeType: videoFile.type || 'video/mp4',
+                  mimeType: mimeType,
                   fileUri: fileUri
                 }
               }
@@ -229,12 +301,16 @@ serve(async (req) => {
           topP: 1,
           maxOutputTokens: 8192,
         }
-      })
+      }),
+      signal: analysisController.signal
     })
+
+    clearTimeout(analysisTimeout)
 
     if (!analysisResponse.ok) {
       const errorText = await analysisResponse.text()
-      throw new Error(`Gemini API error: ${errorText}`)
+      console.error('Gemini analysis error:', errorText)
+      throw new Error(`Gemini API error (${analysisResponse.status}): ${errorText}`)
     }
 
     const analysisResult = await analysisResponse.json()
@@ -244,16 +320,23 @@ serve(async (req) => {
     const analysisText = analysisResult.candidates?.[0]?.content?.parts?.[0]?.text
     
     if (!analysisText) {
+      console.error('Analysis result:', analysisResult)
       throw new Error('No analysis content received from Gemini')
     }
+
+    console.log('Raw analysis text length:', analysisText.length)
 
     // Parse JSON response
     let feedbackData
     try {
-      feedbackData = JSON.parse(analysisText)
+      // Clean the response text in case there are markdown code blocks
+      const cleanedText = analysisText.replace(/```json\n?|\n?```/g, '').trim()
+      feedbackData = JSON.parse(cleanedText)
+      console.log('Successfully parsed analysis JSON')
     } catch (parseError) {
       console.error('Failed to parse JSON response:', parseError)
-      throw new Error('Invalid JSON response from analysis')
+      console.error('Raw analysis text:', analysisText.substring(0, 500) + '...')
+      throw new Error(`Invalid JSON response from analysis: ${parseError.message}`)
     }
 
     // Save analysis to database
@@ -285,6 +368,8 @@ serve(async (req) => {
       throw new Error(`Failed to update video status: ${updateError.message}`)
     }
 
+    console.log('Video analysis process completed successfully')
+
     return new Response(JSON.stringify({ 
       success: true, 
       message: 'Video analysis completed successfully',
@@ -297,11 +382,8 @@ serve(async (req) => {
     console.error('Error in video analysis:', error)
     
     // Try to update video status to error if we have the videoId
-    try {
-      const formData = await req.formData()
-      const videoId = formData.get('videoId') as string
-      
-      if (videoId) {
+    if (videoId) {
+      try {
         const supabaseClient = createClient(
           Deno.env.get('SUPABASE_URL') ?? '',
           Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -314,9 +396,11 @@ serve(async (req) => {
             updated_at: new Date().toISOString()
           })
           .eq('id', videoId)
+          
+        console.log(`Updated video ${videoId} status to error`)
+      } catch (updateError) {
+        console.error('Error updating video status to error:', updateError)
       }
-    } catch (updateError) {
-      console.error('Error updating video status to error:', updateError)
     }
 
     return new Response(JSON.stringify({ 
