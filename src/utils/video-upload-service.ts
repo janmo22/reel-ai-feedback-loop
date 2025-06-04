@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { VideoUploadResponse } from "@/types";
 
@@ -12,8 +11,8 @@ export interface UploadVideoParams {
   mainMessage: string;
 }
 
-// Updated webhook URL to Railway production endpoint
-export const WEBHOOK_URL = "https://primary-production-9b33.up.railway.app/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
+// Updated webhook URL to n8n endpoint
+export const WEBHOOK_URL = "https://janmoliner33.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
 /**
  * Fetch user mission data from the database
@@ -98,7 +97,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
 }
 
 /**
- * Upload the video to the webhook - Railway production endpoint
+ * Upload the video to the webhook - n8n endpoint
  */
 export const uploadVideoToWebhook = async (params: {
   videoId: string;
@@ -109,7 +108,7 @@ export const uploadVideoToWebhook = async (params: {
   missions: string[];
   mainMessage: string;
 }): Promise<VideoUploadResponse> => {
-  console.log("Enviando datos al webhook de Railway:", WEBHOOK_URL);
+  console.log("Enviando datos al webhook de n8n:", WEBHOOK_URL);
   
   // Get MIME type from the file
   const mimeType = params.videoFile.type;
@@ -166,9 +165,9 @@ export const uploadVideoToWebhook = async (params: {
     // Update video status to processing before sending to webhook
     await updateVideoStatus(params.videoId, 'processing');
     
-    console.log("Enviando petición al webhook de Railway...");
+    console.log("Enviando petición al webhook de n8n...");
     
-    // Send to Railway webhook with timeout and proper error handling
+    // Send to n8n webhook with timeout and proper error handling
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
     
@@ -187,7 +186,7 @@ export const uploadVideoToWebhook = async (params: {
     console.log(`Respuesta del webhook: ${response.status} ${response.statusText}`);
     
     if (response.ok) {
-      console.log("Datos enviados correctamente al webhook de Railway");
+      console.log("Datos enviados correctamente al webhook de n8n");
       
       let responseText = '';
       try {
