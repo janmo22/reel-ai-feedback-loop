@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { VideoUploadResponse } from "@/types";
 
@@ -12,8 +11,8 @@ export interface UploadVideoParams {
   mainMessage: string;
 }
 
-// The webhook URL for uploading videos (updated to production webhook)
-export const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
+// Updated webhook URL to Railway production endpoint
+export const WEBHOOK_URL = "https://primary-production-9b33.up.railway.app/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
 /**
  * Fetch user mission data from the database
@@ -66,7 +65,6 @@ export async function createVideoRecord(userId: string, title: string, descripti
   try {
     console.log("Creando registro de video en Supabase...");
     
-    // Remove missions from the direct insertion since the column doesn't exist
     const { data: videoData, error: videoError } = await supabase
       .from('videos')
       .insert([
@@ -75,8 +73,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
           description,
           user_id: userId,
           video_url: "placeholder-url", // Will be updated later
-          status: 'processing', // Changed from 'uploading' to 'processing' to match valid status values
-          // missions field is removed from here
+          status: 'processing',
         }
       ])
       .select()
@@ -100,8 +97,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
 }
 
 /**
- * Upload the video to the webhook - with improved handling for no-cors mode
- * and clear MIME type indication, also including user mission data
+ * Upload the video to the webhook - Railway production endpoint
  */
 export const uploadVideoToWebhook = async (params: {
   videoId: string;
@@ -112,7 +108,7 @@ export const uploadVideoToWebhook = async (params: {
   missions: string[];
   mainMessage: string;
 }): Promise<VideoUploadResponse> => {
-  console.log("Enviando datos al webhook:", WEBHOOK_URL);
+  console.log("Enviando datos al webhook de Railway:", WEBHOOK_URL);
   
   // Get MIME type from the file
   const mimeType = params.videoFile.type;
@@ -129,7 +125,7 @@ export const uploadVideoToWebhook = async (params: {
   formData.append("description", params.description || "");
   formData.append("missions", JSON.stringify(params.missions));
   formData.append("mainMessage", params.mainMessage);
-  formData.append("mimeType", mimeType); // Include MIME type explicitly
+  formData.append("mimeType", mimeType);
   
   // Add user mission data if available
   if (userMissionData) {
@@ -151,7 +147,6 @@ export const uploadVideoToWebhook = async (params: {
   }
   
   // Add the video file to FormData
-  // Set the content type explicitly in the append operation
   formData.append("video", params.videoFile);
   
   console.log(`Enviando video: Nombre=${params.videoFile.name}, Tamaño=${params.videoFile.size} bytes, Tipo=${mimeType}`);
@@ -160,39 +155,34 @@ export const uploadVideoToWebhook = async (params: {
     // Update video status to processing before sending to webhook
     await updateVideoStatus(params.videoId, 'processing');
     
-    // Using regular fetch mode first to try to get a response
+    // Send to Railway webhook with proper error handling
     const response = await fetch(WEBHOOK_URL, {
       method: "POST",
       body: formData,
       headers: {
-        // Note: We don't set Content-Type manually for FormData as the browser sets it automatically with boundary
-        "X-Content-Type": mimeType, // Custom header for additional MIME type info
+        "X-Content-Type": mimeType,
       }
     });
     
     if (response.ok) {
-      console.log("Datos enviados correctamente al webhook con respuesta");
+      console.log("Datos enviados correctamente al webhook de Railway");
       
       return { 
         status: "processing", 
         videoId: params.videoId,
         message: "Video enviado para procesamiento. Revisa los resultados más tarde."
       };
-    }
-    
-    console.warn("La respuesta del webhook no fue exitosa, usando modo no-cors como respaldo");
-    throw new Error("La respuesta del webhook no fue exitosa");
-  } catch (fetchError) {
-    console.warn("Error al intentar fetch con modo normal:", fetchError);
-    
-    try {
-      // Fallback to no-cors mode
+    } else {
+      console.error("Error en la respuesta del webhook:", response.status, response.statusText);
+      
+      // Try with no-cors as fallback
+      console.log("Intentando con modo no-cors como respaldo...");
       await fetch(WEBHOOK_URL, {
         method: "POST",
         body: formData,
-        mode: "no-cors", // Fallback to no-cors mode
+        mode: "no-cors",
         headers: {
-          "X-Content-Type": mimeType, // Custom header for additional MIME type info
+          "X-Content-Type": mimeType,
         }
       });
       
@@ -203,14 +193,14 @@ export const uploadVideoToWebhook = async (params: {
         videoId: params.videoId,
         message: "Video enviado para procesamiento. Revisa los resultados más tarde."
       };
-    } catch (noCorsError) {
-      console.error("Error en ambos métodos de envío:", noCorsError);
-      
-      // Update video status to error
-      await updateVideoStatus(params.videoId, 'error');
-      
-      throw new Error(`Error al enviar el video: ${noCorsError.message}`);
     }
+  } catch (fetchError) {
+    console.error("Error al enviar al webhook:", fetchError);
+    
+    // Update video status to error
+    await updateVideoStatus(params.videoId, 'error');
+    
+    throw new Error(`Error al enviar el video: ${fetchError.message}`);
   }
 };
 

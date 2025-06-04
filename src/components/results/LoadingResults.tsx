@@ -13,7 +13,6 @@ const LoadingResults = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const videoId = searchParams.get('videoId');
-  const [isReady, setIsReady] = useState(false);
   const [hasUserStrategy, setHasUserStrategy] = useState(false);
   
   useEffect(() => {
@@ -31,7 +30,6 @@ const LoadingResults = () => {
           
         if (error) throw error;
         
-        // Set flag if user has strategy data
         setHasUserStrategy(data && data.length > 0);
       } catch (err) {
         console.error("Error checking user mission data:", err);
@@ -51,17 +49,13 @@ const LoadingResults = () => {
           
         if (error) throw error;
         
-        // If feedback exists, set ready state to true
+        // If feedback exists, redirect to results
         if (data && data.length > 0) {
-          setIsReady(true);
           toast({
             title: "¡Análisis completado!",
             description: "Tu reel ha sido analizado correctamente.",
           });
-          // Wait a moment before redirecting to ensure the toast is seen
-          setTimeout(() => {
-            navigate(`/results?videoId=${videoId}`, { replace: true });
-          }, 1500);
+          navigate(`/results?videoId=${videoId}`, { replace: true });
         }
       } catch (err) {
         console.error("Error checking feedback:", err);
@@ -72,20 +66,17 @@ const LoadingResults = () => {
     
     // Set up real-time subscription to feedback table
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel('processing-updates')
       .on('postgres_changes', 
           { event: 'INSERT', schema: 'public', table: 'feedback', filter: `video_id=eq.${videoId}` },
           (payload) => {
-            console.log('New feedback received:', payload);
-            setIsReady(true);
+            console.log('New feedback detected:', payload);
             toast({
               title: "¡Análisis completado!",
               description: "Tu reel ha sido analizado correctamente.",
             });
-            // Wait a moment before redirecting to ensure the toast is seen
-            setTimeout(() => {
-              navigate(`/results?videoId=${videoId}`, { replace: true });
-            }, 1500);
+            // Navigate to results
+            navigate(`/results?videoId=${videoId}`, { replace: true });
           }
       )
       .subscribe();
@@ -105,7 +96,7 @@ const LoadingResults = () => {
           <div className="space-y-4">
             <p>
               Estamos procesando tu reel con inteligencia artificial. Este proceso 
-              suele tardar aproximadamente <strong>2 minutos</strong> y ocurre en segundo plano.
+              suele tardar aproximadamente <strong>2 minutos</strong>.
             </p>
             {hasUserStrategy && (
               <div className="flex items-center justify-center gap-2 text-green-600 bg-green-50 p-3 rounded-lg">
@@ -115,11 +106,8 @@ const LoadingResults = () => {
             )}
             <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg">
               <Clock className="h-5 w-5" />
-              <p className="font-medium">Puedes cerrar esta ventana y consultar los resultados más tarde en tu historial.</p>
+              <p className="font-medium">La página se actualizará automáticamente cuando esté listo.</p>
             </div>
-            <p className="text-muted-foreground italic">
-              La página se actualizará automáticamente cuando el análisis esté listo.
-            </p>
           </div>
         }
         actionText="Ver historial de videos"

@@ -2,65 +2,33 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// Tipos para las respuestas del webhook
+// Tipos para las respuestas del webhook de Railway
 interface WebhookResponseItem {
   videoId: string;
   userId: string;
-  generalStudy: string;
-  contentType: string;
-  engagementPotential: {
-    interaction: string;
-    watchTime: string;
-  };
-  nativeCodes: string;
-  overallEvaluation: {
-    score: number;
-    suggestions: string[];
-  };
-  seo: {
-    keywordAnalysis: string;
-    suggestedCopy: string;
-    suggestedText: string;
-    clarity: string;
-  };
-  structure?: {
-    hook?: {
-      general: string;
-      spoken: string;
-      auditory: string;
-      visual: string;
-      clarity: string;
-      feel: string;
-      invitation: string;
-      patternBreak: string;
-      strengths: string;
-      weaknesses: string;
-      score: number;
-    };
-    buildUp?: string;
-    value?: {
-      comment: string;
-      score: number;
-      function: string;
-    };
-    cta?: string;
-  };
-  // Add support for flat structure
   executiveSummary?: string;
-  finalEvaluation_overallScore?: number;
-  finalEvaluation_finalRecommendations?: string[];
-  strategicAlignment_targetAudienceClarityComment?: string;
-  strategicAlignment_valuePropositionClarityComment?: string;
-  strategicAlignment_creatorConsistencyComment?: string;
-  strategicAlignment_recommendations?: string;
-  contentTypeStrategy_classification?: string;
-  contentTypeStrategy_recommendations?: string;
-  // ... and all other flat properties
+  strategicAlignment?: any;
+  videoStructureAndPacing?: any;
+  platformNativeElements?: any;
+  engagementOptimization?: any;
+  seoAndDiscoverability?: any;
+  contentTypeStrategy?: any;
+  finalEvaluation?: {
+    overallScore?: number;
+    finalRecommendations?: string[];
+  };
+  // Backwards compatibility with old format
+  generalStudy?: string;
+  contentType?: string;
+  overallEvaluation?: {
+    score?: number;
+    suggestions?: string[];
+  };
 }
 
 // Procesamiento de las respuestas del webhook
 serve(async (req) => {
-  console.log("Recibiendo respuesta del webhook");
+  console.log("Recibiendo respuesta del webhook de Railway");
   
   // CORS headers
   const headers = {
@@ -85,7 +53,7 @@ serve(async (req) => {
   try {
     // Obtener los datos del cuerpo de la solicitud
     const requestData = await req.json();
-    console.log("Datos recibidos del webhook:", requestData);
+    console.log("Datos recibidos del webhook de Railway:", requestData);
     
     // Verificar que la respuesta es un array como se espera
     if (!Array.isArray(requestData)) {
@@ -108,10 +76,10 @@ serve(async (req) => {
       // Verificar que tenemos los campos necesarios
       if (!videoId || !userId) {
         console.error("Elemento sin videoId o userId:", item);
-        continue; // Skip this item and process the next one
+        continue;
       }
       
-      // Verificar si ya existe un feedback para este video para evitar duplicados
+      // Verificar si ya existe un feedback para este video
       const { data: existingFeedback, error: checkError } = await supabase
         .from("feedback")
         .select("id")
@@ -122,10 +90,10 @@ serve(async (req) => {
         console.error("Error al verificar si existe feedback previo:", checkError);
       }
       
-      // Get overall score from any available source
-      const overallScore = item.finalEvaluation_overallScore || 
+      // Get overall score from multiple possible sources
+      const overallScore = item.finalEvaluation?.overallScore || 
                            item.overallEvaluation?.score || 
-                           (item.feedback_data?.finalEvaluation?.overallScore) || 0;
+                           0;
                            
       console.log(`Score calculado para video ${videoId}: ${overallScore}`);
       
@@ -133,16 +101,13 @@ serve(async (req) => {
       if (existingFeedback) {
         console.log(`Ya existe feedback para el video ${videoId}, actualizando...`);
         
-        const { data: updateData, error: updateError } = await supabase
+        const { error: updateError } = await supabase
           .from("feedback")
           .update({
             overall_score: overallScore,
             feedback_data: item,
-            webhook_response: requestData,
-            processing_completed_at: new Date().toISOString(),
           })
-          .eq("id", existingFeedback.id)
-          .select();
+          .eq("id", existingFeedback.id);
           
         if (updateError) {
           console.error(`Error al actualizar feedback para video ${videoId}:`, updateError);
@@ -151,14 +116,12 @@ serve(async (req) => {
         }
       } else {
         // Guardar los datos de feedback en la tabla de feedback
-        const { data: feedbackData, error: feedbackError } = await supabase
+        const { error: feedbackError } = await supabase
           .from("feedback")
           .insert({
             video_id: videoId,
             overall_score: overallScore,
             feedback_data: item,
-            webhook_response: requestData,
-            processing_completed_at: new Date().toISOString(),
           });
           
         if (feedbackError) {
@@ -173,8 +136,6 @@ serve(async (req) => {
         .from("videos")
         .update({
           status: "completed",
-          feedback_received: true,
-          is_favorite: false, // Set explicit default value for is_favorite
           updated_at: new Date().toISOString()
         })
         .eq("id", videoId);
