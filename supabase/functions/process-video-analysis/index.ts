@@ -29,10 +29,9 @@ const MIME_TYPE_MAPPING: Record<string, string> = {
 
 // File size limit 100MB
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
-const CHUNK_SIZE = 1024 * 1024; // 1MB chunks for streaming
 
 // Retry configuration
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 3;
 const INITIAL_BACKOFF = 3000;
 
 // Timeout configuration for large files
@@ -143,7 +142,7 @@ serve(async (req) => {
     const analysisData = await performAnalysisWithTimeout(
       fileUri, 
       mimeType, 
-      contextPrompt(title, description, mainMessage, missions, userMissionData),
+      createDetailedAnalysisPrompt(title, description, mainMessage, missions, userMissionData),
       GOOGLE_GEMINI_API_KEY
     );
 
@@ -153,7 +152,7 @@ serve(async (req) => {
       .from('feedback')
       .insert({
         video_id: videoId,
-        overall_score: parseInt(analysisData.finalEvaluation_overallScore) || 7,
+        overall_score: parseInt(analysisData.finalEvaluation?.overallScore) || 7,
         feedback_data: analysisData
       })
 
@@ -194,37 +193,15 @@ serve(async (req) => {
           Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
         
-        // Create fallback feedback for user experience
-        const fallbackFeedback = createFallbackFeedback(error.message);
-        
         await supabaseClient
-          .from('feedback')
-          .insert({
-            video_id: videoId,
-            overall_score: 5,
-            feedback_data: fallbackFeedback
+          .from('videos')
+          .update({ 
+            status: 'error',
+            updated_at: new Date().toISOString()
           })
-          .then(() => {
-            return supabaseClient
-              .from('videos')
-              .update({ 
-                status: 'completed', // Mark as completed with fallback
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', videoId)
-          })
-          .catch(() => {
-            // If fallback fails, mark as error
-            return supabaseClient
-              .from('videos')
-              .update({ 
-                status: 'error',
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', videoId)
-          })
+          .eq('id', videoId)
           
-        console.log(`Updated video ${videoId} with fallback or error status`);
+        console.log(`Updated video ${videoId} status to error`);
       } catch (updateError: any) {
         console.error('Error updating video status:', updateError);
       }
@@ -298,10 +275,10 @@ async function uploadToGeminiWithRetry(videoFile: File, videoId: string, mimeTyp
   }
 }
 
-// Optimized file processing wait
+// Enhanced file processing wait with existence checks
 async function waitForFileProcessing(fileName: string, apiKey: string): Promise<boolean> {
   let attempts = 0;
-  const maxAttempts = 120; // 20 minutes max wait
+  const maxAttempts = 150; // 25 minutes max wait
   let checkInterval = 5000; // Start with 5 seconds
   
   console.log('Waiting for file processing...');
@@ -310,9 +287,9 @@ async function waitForFileProcessing(fileName: string, apiKey: string): Promise<
     await new Promise(resolve => setTimeout(resolve, checkInterval));
     attempts++;
     
-    // Progressive interval increase
-    if (attempts > 5) {
-      checkInterval = Math.min(checkInterval * 1.1, 10000); // Max 10 seconds
+    // Progressive interval increase for large files
+    if (attempts > 10) {
+      checkInterval = Math.min(checkInterval * 1.05, 10000); // Max 10 seconds
     }
     
     try {
@@ -324,26 +301,29 @@ async function waitForFileProcessing(fileName: string, apiKey: string): Promise<
       });
       
       if (!statusResponse.ok) {
-        if (statusResponse.status === 404 && attempts > 10) {
-          throw new Error('File not found after extended wait');
+        if (statusResponse.status === 404) {
+          console.log(`File not found yet on attempt ${attempts}, waiting...`);
+          continue;
         }
-        continue;
+        throw new Error(`Status check failed: ${statusResponse.status}`);
       }
       
       const statusResult = await statusResponse.json();
       console.log(`File status check ${attempts}: ${statusResult.state}`);
       
       if (statusResult.state === 'ACTIVE') {
+        console.log('File is now ACTIVE and ready for analysis');
         return true;
       } else if (statusResult.state === 'FAILED') {
         throw new Error(`File processing failed: ${statusResult.error || 'Unknown error'}`);
       }
       
     } catch (error: any) {
-      if (error.message.includes('File not found')) {
-        throw error;
-      }
       console.error(`Status check error on attempt ${attempts}:`, error.message);
+      // For large files, continue trying unless it's a permanent error
+      if (attempts > 50 && error.message.includes('not found')) {
+        throw new Error('File processing failed: File became unavailable');
+      }
     }
   }
   
@@ -358,6 +338,8 @@ async function performAnalysisWithTimeout(fileUri: string, mimeType: string, pro
   }, ANALYSIS_TIMEOUT);
   
   try {
+    console.log('Sending analysis request to Gemini...');
+    
     const analysisResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent', {
       method: 'POST',
       headers: {
@@ -381,10 +363,10 @@ async function performAnalysisWithTimeout(fileUri: string, mimeType: string, pro
           }
         ],
         generationConfig: {
-          temperature: 0.2,
-          topK: 10,
+          temperature: 0.1,
+          topK: 20,
           topP: 0.8,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 8192,
         }
       }),
       signal: analysisController.signal
@@ -394,10 +376,13 @@ async function performAnalysisWithTimeout(fileUri: string, mimeType: string, pro
     
     if (!analysisResponse.ok) {
       const errorText = await analysisResponse.text();
+      console.error('Gemini analysis error:', errorText);
       throw new Error(`Gemini analysis error (${analysisResponse.status}): ${errorText}`);
     }
 
     const analysisResult = await analysisResponse.json();
+    console.log('Received analysis result from Gemini');
+    
     const analysisText = analysisResult.candidates?.[0]?.content?.parts?.[0]?.text;
     
     if (!analysisText) {
@@ -406,11 +391,15 @@ async function performAnalysisWithTimeout(fileUri: string, mimeType: string, pro
 
     // Parse JSON response
     try {
+      console.log('Parsing JSON response...');
       const cleanedText = analysisText.replace(/```json\n?|\n?```/g, '').trim();
-      return JSON.parse(cleanedText);
+      const parsedData = JSON.parse(cleanedText);
+      console.log('Successfully parsed analysis data');
+      return parsedData;
     } catch (parseError: any) {
-      console.error('Failed to parse JSON response, creating fallback');
-      return createFallbackFeedback('Analysis completed but response format needs improvement');
+      console.error('Failed to parse JSON response:', parseError);
+      console.error('Raw response:', analysisText);
+      throw new Error('Analysis completed but response format was invalid');
     }
     
   } catch (error: any) {
@@ -422,128 +411,109 @@ async function performAnalysisWithTimeout(fileUri: string, mimeType: string, pro
   }
 }
 
-// Create fallback feedback for error cases
-function createFallbackFeedback(errorMessage: string) {
-  return {
-    executiveSummary: `Tu video ha sido procesado, aunque hubo algunas limitaciones técnicas durante el análisis completo. El video se ha subido correctamente y contiene contenido valioso que puede ser mejorado con las siguientes recomendaciones generales.`,
-    finalEvaluation_overallScore: "6",
-    finalEvaluation_finalRecommendations: [
-      "Mejora la calidad del audio para mayor claridad",
-      "Optimiza el gancho inicial para captar atención rápidamente", 
-      "Añade una llamada a la acción clara al final"
-    ],
-    contentTypeStrategy_classification: "Contenido educativo/informativo",
-    contentTypeStrategy_trendAdaptationCritique: "El contenido muestra potencial para adaptarse a tendencias actuales",
-    contentTypeStrategy_seriesClarityAndHookComment: "Se recomienda mejorar la claridad del mensaje inicial",
-    contentTypeStrategy_recommendations: "Enfócate en crear un gancho más atractivo y mantener la consistencia temática",
-    strategicAlignment_targetAudienceClarityComment: "La audiencia objetivo puede definirse mejor",
-    strategicAlignment_valuePropositionClarityComment: "La propuesta de valor está presente pero puede ser más explícita",
-    strategicAlignment_creatorConsistencyComment: "Mantén un estilo consistente en futuros contenidos",
-    strategicAlignment_recommendations: "Define claramente tu nicho y mantén coherencia en el mensaje",
-    seoAndDiscoverability_keywordIdentificationComment: "Se pueden identificar palabras clave relevantes para mejorar el alcance",
-    seoAndDiscoverability_thematicClarityComment: "El tema principal es identificable pero puede ser más específico",
-    seoAndDiscoverability_hashtagsSEOAnalysis: "Los hashtags pueden optimizarse para mejor descubrimiento",
-    seoAndDiscoverability_searchBarPotentialComment: "Tiene potencial de búsqueda con optimizaciones",
-    seoAndDiscoverability_recommendations: "Optimiza palabras clave y hashtags específicos del nicho",
-    seoAndDiscoverability_suggestedOptimizedCopy: "Crea una descripción más específica con palabras clave relevantes",
-    seoAndDiscoverability_suggestedOptimizedOnScreenText: "Añade texto en pantalla que refuerce el mensaje principal",
-    seoAndDiscoverability_onScreenTextSEOAanalysis: "El texto en pantalla puede ser más estratégico para SEO",
-    seoAndDiscoverability_coverThumbnailPotentialComment: "La portada puede optimizarse para mayor atractivo visual",
-    seoAndDiscoverability_copySEOAnalysis: "El copy puede mejorarse con keywords específicas",
-    seoAndDiscoverability_advancedDiscoveryFeaturesComment: "Utiliza funciones avanzadas de la plataforma para mayor alcance",
-    engagementOptimization_interactionHierarchyComment: "Estructura el contenido para fomentar más interacciones",
-    engagementOptimization_watchTimePotentialComment: "El tiempo de visualización puede incrementarse con mejor estructura",
-    engagementOptimization_viralityFactorsComment: "Incorpora elementos que fomenten el compartir",
-    engagementOptimization_recommendations: "Mejora la interactividad y elementos virales",
-    platformNativeElements_identifiedElements: "Utiliza efectos y elementos nativos de la plataforma",
-    platformNativeElements_integrationEffectivenessComment: "La integración de elementos nativos puede ser más efectiva",
-    platformNativeElements_recommendations: "Experimenta con funciones específicas de la plataforma",
-    videoStructureAndPacing_hook_attentionGrabbingComment: "El gancho inicial necesita ser más impactante",
-    videoStructureAndPacing_hook_auditoryHookAnalysis: "El audio inicial puede ser más atractivo",
-    videoStructureAndPacing_hook_visualHookAnalysis: "Los elementos visuales iniciales pueden mejorarse",
-    videoStructureAndPacing_hook_clarityAndSimplicityComment: "Simplifica el mensaje inicial para mayor claridad",
-    videoStructureAndPacing_hook_authenticityFeelComment: "Mantén la autenticidad mientras mejoras la presentación",
-    videoStructureAndPacing_hook_viewerBenefitCommunicationComment: "Comunica el beneficio para el espectador más claramente",
-    videoStructureAndPacing_hook_patternDisruptionComment: "Rompe patrones esperados para captar atención",
-    videoStructureAndPacing_hook_strengths: "El contenido tiene valor informativo",
-    videoStructureAndPacing_hook_weaknesses: "Necesita mayor impacto inicial",
-    videoStructureAndPacing_hook_recommendations: "Crea un gancho más directo y atractivo",
-    videoStructureAndPacing_hook_spokenHookAnalysis: "Las primeras palabras pueden ser más impactantes",
-    videoStructureAndPacing_hook_overallEffectivenessScore: "6",
-    videoStructureAndPacing_buildUpAndPacingComment: "El ritmo del video puede optimizarse",
-    videoStructureAndPacing_buildUpAndPacingRecommendations: "Mantén un ritmo dinámico y evita momentos lentos",
-    videoStructureAndPacing_valueDelivery_comment: "El valor se entrega pero puede ser más eficiente",
-    videoStructureAndPacing_valueDelivery_mainFunction: "Informar y educar al espectador",
-    videoStructureAndPacing_valueDelivery_recommendations: "Estructura el contenido para entregar valor más rápidamente",
-    videoStructureAndPacing_valueDelivery_qualityScore: "6",
-    videoStructureAndPacing_ctaAndEnding_comment: "Añade una llamada a la acción clara al final",
-    videoStructureAndPacing_ctaAndEnding_recommendations: "Termina con una invitación específica a la acción"
-  };
+// Create detailed analysis prompt matching exact specifications
+function createDetailedAnalysisPrompt(title: string, description: string, mainMessage: string, missions: string[], userMissionData: any) {
+  const prompt = `Actúa como un **analista de élite de contenido de video para redes sociales (TikTok/Instagram)**. Tu conocimiento abarca algoritmos, psicología del espectador, optimización SEO en plataformas sociales, storytelling visual y las **últimas mejores prácticas para maximizar el rendimiento y la conexión con la audiencia**. Tu objetivo es realizar un análisis **exhaustivo, crítico y extremadamente detallado** del video proporcionado, generando insights profundos y recomendaciones **ultra-accionables**. Devuelve tu evaluación **EXCLUSIVAMENTE** en el formato JSON definido en \`response_schema\`. Es **imperativo** que rellenes **TODOS** los campos requeridos, incluyendo **todos** los sub‑campos y los campos de recomendaciones condicionales, justificando cada evaluación. No incluyas **ABSOLUTAMENTE NADA** fuera de la estructura JSON definida.
+
+### Perfil de la cuenta (contexto)
+value_proposition: ${userMissionData?.value_proposition || 'Sin datos suficientes para evaluar'}
+mission: ${userMissionData?.mission || 'Sin datos suficientes para evaluar'}
+target_audience: ${userMissionData?.target_audience || 'Sin datos suficientes para evaluar'}
+audience_interests: ${userMissionData?.audience_interests || 'Sin datos suficientes para evaluar'}
+solution_approach: ${userMissionData?.solution_approach || 'Sin datos suficientes para evaluar'}
+differentiating_factor: ${userMissionData?.differentiating_factor || 'Sin datos suficientes para evaluar'}
+positioning_type: ${userMissionData?.positioning_type || 'Sin datos suficientes para evaluar'}
+content_character: ${userMissionData?.content_character || 'Sin datos suficientes para evaluar'}
+content_personality: ${userMissionData?.content_personality || 'Sin datos suficientes para evaluar'}
+content_tone: ${userMissionData?.content_tone || 'Sin datos suficientes para evaluar'}
+niche: ${userMissionData?.niche || 'Sin datos suficientes para evaluar'}
+audience_perception: ${userMissionData?.audience_perception || 'Sin datos suficientes para evaluar'}
+
+**Nota**: Si alguno de los campos anteriores está vacío ('' | null | 'x' | 'no lo sé'), considérelo *no disponible* y responda **'Sin datos suficientes para evaluar'** en los comentarios correspondientes dentro del JSON de respuesta donde sea aplicable.
+
+Considera la **misión del video**: ${missions.join(', ')}, el **título**: ${title}, la **descripción**: ${description}, y el **mensaje principal**: ${mainMessage}. **Todo tu análisis y cada recomendación deben estar orientados a ayudar al usuario a alcanzar su misión, optimizando el video según las mejores prácticas Y considerando el contexto de la cuenta.**
+
+Devuelve ÚNICAMENTE un objeto JSON con esta estructura exacta:
+
+{
+  "executiveSummary": "string",
+  "strategicAlignment": {
+    "targetAudienceClarityComment": "string",
+    "valuePropositionClarityComment": "string", 
+    "creatorConsistencyComment": "string",
+    "recommendations": "string"
+  },
+  "videoStructureAndPacing": {
+    "hook": {
+      "overallEffectivenessScore": "number",
+      "attentionGrabbingComment": "string",
+      "clarityAndSimplicityComment": "string",
+      "viewerBenefitCommunicationComment": "string",
+      "visualHookAnalysis": "string",
+      "auditoryHookAnalysis": "string",
+      "spokenHookAnalysis": "string",
+      "authenticityFeelComment": "string",
+      "patternDisruptionComment": "string",
+      "strengths": "string",
+      "weaknesses": "string",
+      "recommendations": "string"
+    },
+    "buildUpAndPacingComment": "string",
+    "buildUpAndPacingRecommendations": "string",
+    "valueDelivery": {
+      "qualityScore": "number",
+      "mainFunction": "string",
+      "comment": "string",
+      "recommendations": "string"
+    },
+    "ctaAndEnding": {
+      "comment": "string",
+      "recommendations": "string"
+    }
+  },
+  "platformNativeElements": {
+    "identifiedElements": "string",
+    "integrationEffectivenessComment": "string",
+    "recommendations": "string"
+  },
+  "engagementOptimization": {
+    "watchTimePotentialComment": "string",
+    "interactionHierarchyComment": "string",
+    "viralityFactorsComment": "string",
+    "recommendations": "string"
+  },
+  "seoAndDiscoverability": {
+    "keywordIdentificationComment": "string",
+    "thematicClarityComment": "string",
+    "onScreenTextSEOAanalysis": "string",
+    "copySEOAnalysis": "string",
+    "hashtagsSEOAnalysis": "string",
+    "coverThumbnailPotentialComment": "string",
+    "advancedDiscoveryFeaturesComment": "string",
+    "searchBarPotentialComment": "string",
+    "suggestedOptimizedCopy": "string",
+    "suggestedOptimizedOnScreenText": "string",
+    "recommendations": "string"
+  },
+  "contentTypeStrategy": {
+    "classification": "string",
+    "trendAdaptationCritique": "string",
+    "seriesClarityAndHookComment": "string",
+    "recommendations": "string"
+  },
+  "finalEvaluation": {
+    "overallScore": "number",
+    "finalRecommendations": ["string", "string", "string"]
+  }
 }
 
-// Create context prompt
-function contextPrompt(title: string, description: string, mainMessage: string, missions: string[], userMissionData: any) {
-  let contextPrompt = `Analiza este video siguiendo exactamente esta estructura JSON. Tu respuesta debe ser un objeto JSON válido con exactamente estos campos:`;
+**INSTRUCCIONES CRÍTICAS:**
+- Rellena TODOS los campos con análisis específicos del video
+- Usa puntuaciones del 1-10 donde se requiera
+- Las recomendaciones deben ser ultra-específicas y accionables
+- Considera el contexto del perfil de la cuenta en cada evaluación
+- NO incluyas texto fuera del JSON
+- Asegúrate de que el JSON sea válido y parseable`;
 
-  const analysisStructure = {
-    executiveSummary: "Un resumen ejecutivo del análisis",
-    finalEvaluation_overallScore: "Puntuación del 1 al 10",
-    finalEvaluation_finalRecommendations: "Array de 3 recomendaciones principales",
-    contentTypeStrategy_classification: "Clasificación del tipo de contenido",
-    contentTypeStrategy_trendAdaptationCritique: "Análisis de adaptación a tendencias",
-    contentTypeStrategy_seriesClarityAndHookComment: "Comentario sobre claridad de serie y gancho",
-    contentTypeStrategy_recommendations: "Recomendaciones de estrategia de contenido",
-    strategicAlignment_targetAudienceClarityComment: "Comentario sobre claridad de audiencia objetivo",
-    strategicAlignment_valuePropositionClarityComment: "Comentario sobre claridad de propuesta de valor",
-    strategicAlignment_creatorConsistencyComment: "Comentario sobre consistencia del creador",
-    strategicAlignment_recommendations: "Recomendaciones de alineación estratégica",
-    seoAndDiscoverability_keywordIdentificationComment: "Comentario sobre identificación de palabras clave",
-    seoAndDiscoverability_thematicClarityComment: "Comentario sobre claridad temática",
-    seoAndDiscoverability_hashtagsSEOAnalysis: "Análisis SEO de hashtags",
-    seoAndDiscoverability_searchBarPotentialComment: "Comentario sobre potencial en barra de búsqueda",
-    seoAndDiscoverability_recommendations: "Recomendaciones de SEO y descubrimiento",
-    seoAndDiscoverability_suggestedOptimizedCopy: "Copy optimizado sugerido",
-    seoAndDiscoverability_suggestedOptimizedOnScreenText: "Texto en pantalla optimizado sugerido",
-    seoAndDiscoverability_onScreenTextSEOAanalysis: "Análisis SEO del texto en pantalla",
-    seoAndDiscoverability_coverThumbnailPotentialComment: "Comentario sobre potencial de portada/thumbnail",
-    seoAndDiscoverability_copySEOAnalysis: "Análisis SEO del copy",
-    seoAndDiscoverability_advancedDiscoveryFeaturesComment: "Comentario sobre funciones avanzadas de descubrimiento",
-    engagementOptimization_interactionHierarchyComment: "Comentario sobre jerarquía de interacciones",
-    engagementOptimization_watchTimePotentialComment: "Comentario sobre potencial de tiempo de visualización",
-    engagementOptimization_viralityFactorsComment: "Comentario sobre factores de viralidad",
-    engagementOptimization_recommendations: "Recomendaciones de optimización de engagement",
-    platformNativeElements_identifiedElements: "Elementos nativos identificados",
-    platformNativeElements_integrationEffectivenessComment: "Comentario sobre efectividad de integración",
-    platformNativeElements_recommendations: "Recomendaciones de elementos nativos",
-    videoStructureAndPacing_hook_attentionGrabbingComment: "Comentario sobre captación de atención del gancho",
-    videoStructureAndPacing_hook_auditoryHookAnalysis: "Análisis del gancho auditivo",
-    videoStructureAndPacing_hook_visualHookAnalysis: "Análisis del gancho visual",
-    videoStructureAndPacing_hook_clarityAndSimplicityComment: "Comentario sobre claridad y simplicidad del gancho",
-    videoStructureAndPacing_hook_authenticityFeelComment: "Comentario sobre sensación de autenticidad del gancho",
-    videoStructureAndPacing_hook_viewerBenefitCommunicationComment: "Comentario sobre comunicación de beneficio al espectador",
-    videoStructureAndPacing_hook_patternDisruptionComment: "Comentario sobre disrupción de patrones",
-    videoStructureAndPacing_hook_strengths: "Fortalezas del gancho",
-    videoStructureAndPacing_hook_weaknesses: "Debilidades del gancho",
-    videoStructureAndPacing_hook_recommendations: "Recomendaciones para el gancho",
-    videoStructureAndPacing_hook_spokenHookAnalysis: "Análisis del gancho hablado",
-    videoStructureAndPacing_hook_overallEffectivenessScore: "Puntuación de efectividad general del gancho (1-10)",
-    videoStructureAndPacing_buildUpAndPacingComment: "Comentario sobre desarrollo y ritmo",
-    videoStructureAndPacing_buildUpAndPacingRecommendations: "Recomendaciones de desarrollo y ritmo",
-    videoStructureAndPacing_valueDelivery_comment: "Comentario sobre entrega de valor",
-    videoStructureAndPacing_valueDelivery_mainFunction: "Función principal de entrega de valor",
-    videoStructureAndPacing_valueDelivery_recommendations: "Recomendaciones de entrega de valor",
-    videoStructureAndPacing_valueDelivery_qualityScore: "Puntuación de calidad de entrega de valor (1-10)",
-    videoStructureAndPacing_ctaAndEnding_comment: "Comentario sobre CTA y final",
-    videoStructureAndPacing_ctaAndEnding_recommendations: "Recomendaciones de CTA y final"
-  };
-
-  contextPrompt += `\n\n${JSON.stringify(analysisStructure, null, 2)}`;
-
-  if (userMissionData) {
-    contextPrompt += `\n\nEstrategia del usuario: Misión: ${userMissionData.mission}, Audiencia: ${userMissionData.target_audience}`;
-  }
-
-  contextPrompt += `\n\nTítulo: ${title}, Descripción: ${description}, Mensaje: ${mainMessage}, Misiones: ${missions.join(', ')}`;
-
-  return contextPrompt;
+  return prompt;
 }
