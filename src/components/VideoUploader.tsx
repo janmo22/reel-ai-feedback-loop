@@ -41,7 +41,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   
-  const MAX_FILE_SIZE = 500 * 1024 * 1024;
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // Updated to 100MB
   const WEBHOOK_URL = "https://hazloconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
   const handleDrag = (e: React.DragEvent) => {
@@ -96,7 +96,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
     if (file.size > MAX_FILE_SIZE) {
       toast({
         title: "Error",
-        description: "El archivo es demasiado grande. Por favor, sube un archivo menor a 500MB.",
+        description: "El archivo es demasiado grande. Por favor, sube un archivo menor a 100MB.",
         variant: "destructive"
       });
       return;
@@ -334,7 +334,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
                   <span className="electric-text font-semibold">Haz clic para subir</span> o arrastra y suelta
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Formatos: MP4, WebM, MOV (máx. 500MB)
+                  Formatos: MP4, WebM, MOV (máx. 100MB)
                 </p>
               </div>
             </div>

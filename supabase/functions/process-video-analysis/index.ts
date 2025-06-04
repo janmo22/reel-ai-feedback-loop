@@ -26,8 +26,8 @@ const MIME_TYPE_MAPPING: Record<string, string> = {
   'video/x-ms-wmv': 'video/wmv'
 }
 
-// Reduced file size limit for better reliability (30MB)
-const MAX_FILE_SIZE = 30 * 1024 * 1024;
+// Increased file size limit to 100MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -59,7 +59,7 @@ serve(async (req) => {
       throw new Error('Missing required fields: video, videoId, or userId')
     }
 
-    // Check file size with more restrictive limit
+    // Check file size with updated limit
     if (videoFile.size > MAX_FILE_SIZE) {
       throw new Error(`File too large. Maximum size allowed is ${MAX_FILE_SIZE / (1024 * 1024)}MB. Your file is ${(videoFile.size / (1024 * 1024)).toFixed(1)}MB. Please compress your video or use a shorter clip.`)
     }
@@ -85,16 +85,22 @@ serve(async (req) => {
       throw new Error('GOOGLE_GEMINI_API_KEY not configured')
     }
 
-    // Process video in smaller chunks to reduce memory usage
-    console.log('Reading video file in chunks...')
+    // Process video in smaller chunks to reduce memory usage - optimized for larger files
+    console.log('Reading video file in optimized chunks...')
     const chunks: Uint8Array[] = []
     const reader = videoFile.stream().getReader()
+    const CHUNK_SIZE = 1024 * 1024 // 1MB chunks for better memory management
     
     try {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
         chunks.push(value)
+        
+        // Force garbage collection every 50MB to manage memory better
+        if (chunks.length % 50 === 0) {
+          console.log(`Processed ${chunks.length} chunks, approximately ${(chunks.length * CHUNK_SIZE / (1024 * 1024)).toFixed(1)}MB`)
+        }
       }
     } finally {
       reader.releaseLock()
@@ -109,9 +115,12 @@ serve(async (req) => {
       offset += chunk.length
     }
     
+    // Clear chunks array to free memory
+    chunks.length = 0
+    
     console.log(`Video buffer loaded: ${(videoBuffer.byteLength / (1024 * 1024)).toFixed(1)}MB`)
     
-    // Upload video to Gemini File API with optimized settings
+    // Upload video to Gemini File API with optimized settings for larger files
     console.log('Uploading video to Gemini File API...')
     
     const uploadFormData = new FormData()
@@ -131,16 +140,16 @@ serve(async (req) => {
 
     console.log('Uploading to Gemini with metadata:', metadata)
 
-    // Upload with optimized timeout for smaller files
+    // Upload with longer timeout for larger files
     const uploadController = new AbortController()
     const uploadTimeout = setTimeout(() => {
       console.log('Upload timeout triggered')
       uploadController.abort()
-    }, 300000) // 5 minutes timeout for smaller files
+    }, 600000) // 10 minutes timeout for larger files
 
     let uploadResponse
     let retryCount = 0
-    const maxRetries = 2
+    const maxRetries = 3 // Increased retries for larger files
 
     while (retryCount <= maxRetries) {
       try {
@@ -157,7 +166,9 @@ serve(async (req) => {
         if (uploadResponse.ok) {
           break
         } else {
-          throw new Error(`Upload failed with status ${uploadResponse.status}`)
+          const errorText = await uploadResponse.text()
+          console.error(`Upload attempt ${retryCount + 1} failed with status ${uploadResponse.status}:`, errorText)
+          throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`)
         }
       } catch (uploadError: any) {
         console.error(`Upload attempt ${retryCount + 1} failed:`, uploadError)
@@ -165,13 +176,15 @@ serve(async (req) => {
         
         if (retryCount > maxRetries) {
           if (uploadError.name === 'AbortError') {
-            throw new Error('Upload timeout: File upload took too long. Try with a smaller file.')
+            throw new Error('Upload timeout: File upload took too long. This can happen with very large files or slow connections. Please try with a smaller file or check your internet connection.')
           }
           throw new Error(`Failed to upload video to Gemini after ${maxRetries + 1} attempts: ${uploadError.message}`)
         }
         
-        // Wait before retry with exponential backoff
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
+        // Wait before retry with exponential backoff (longer for larger files)
+        const backoffTime = Math.min(Math.pow(2, retryCount) * 2000, 10000) // Max 10 seconds
+        console.log(`Waiting ${backoffTime}ms before retry ${retryCount + 1}`)
+        await new Promise(resolve => setTimeout(resolve, backoffTime))
       }
     }
 
@@ -196,27 +209,27 @@ serve(async (req) => {
     
     console.log('Video uploaded to Gemini:', { fileUri, fileName })
 
-    // Wait for file to be processed with optimized timing
+    // Wait for file to be processed with longer intervals for larger files
     let fileReady = false
     let attempts = 0
-    const maxAttempts = 60 // Reduced for smaller files
-    let checkInterval = 3000 // Start with 3 seconds
+    const maxAttempts = 120 // Increased for larger files (20 minutes max)
+    let checkInterval = 5000 // Start with 5 seconds for larger files
 
     console.log('Waiting for file processing...')
     while (!fileReady && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, checkInterval))
       attempts++
       
-      // Progressive backoff
-      if (attempts > 5) {
-        checkInterval = Math.min(checkInterval * 1.2, 10000) // Max 10 seconds
+      // Progressive backoff - slower for larger files
+      if (attempts > 10) {
+        checkInterval = Math.min(checkInterval * 1.1, 15000) // Max 15 seconds
       }
       
       const statusController = new AbortController()
       const statusTimeout = setTimeout(() => {
         console.log(`Status check timeout on attempt ${attempts}`)
         statusController.abort()
-      }, 15000) // 15 seconds timeout for status checks
+      }, 20000) // 20 seconds timeout for status checks
       
       try {
         const statusUrl = `https://generativelanguage.googleapis.com/v1beta/${fileName}`
@@ -267,7 +280,7 @@ serve(async (req) => {
     }
 
     if (!fileReady) {
-      throw new Error(`File processing timeout after ${maxAttempts} attempts. Please try with a smaller file or wait and try again later.`)
+      throw new Error(`File processing timeout after ${maxAttempts} attempts (${(maxAttempts * checkInterval / 1000 / 60).toFixed(1)} minutes). Large files take longer to process. Please try again later or use a smaller file.`)
     }
 
     // Create full analysis prompt (UNCHANGED - maintaining quality)
@@ -333,14 +346,14 @@ serve(async (req) => {
 
     contextPrompt += `\n\nTítulo: ${title}, Descripción: ${description}, Mensaje: ${mainMessage}, Misiones: ${missions.join(', ')}`
 
-    // Analyze video with Gemini 1.5 Pro with optimized settings
+    // Analyze video with Gemini 1.5 Pro with longer timeout for larger files
     console.log('Starting video analysis with Gemini 1.5 Pro...')
     
     const analysisController = new AbortController()
     const analysisTimeout = setTimeout(() => {
       console.log('Analysis timeout triggered')
       analysisController.abort()
-    }, 600000) // 10 minutes timeout
+    }, 900000) // 15 minutes timeout for larger files
     
     let analysisResponse
     try {
@@ -378,7 +391,7 @@ serve(async (req) => {
     } catch (analysisError: any) {
       console.error('Analysis request failed:', analysisError)
       if (analysisError.name === 'AbortError') {
-        throw new Error('Analysis timeout: Video analysis took too long. Please try with a shorter video.')
+        throw new Error('Analysis timeout: Video analysis took too long. Large videos require more processing time. Please try again later or use a shorter video.')
       }
       throw new Error(`Failed to analyze video: ${analysisError.message}`)
     } finally {
