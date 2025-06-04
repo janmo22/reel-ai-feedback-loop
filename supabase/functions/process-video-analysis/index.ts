@@ -87,7 +87,7 @@ serve(async (req) => {
     
     const uploadFormData = new FormData()
     
-    // Add metadata
+    // Add metadata first
     const metadata = {
       file: {
         displayName: `video-${videoId}`,
@@ -107,7 +107,7 @@ serve(async (req) => {
     const uploadTimeout = setTimeout(() => {
       console.log('Upload timeout triggered')
       uploadController.abort()
-    }, 180000) // 3 minutes timeout
+    }, 300000) // 5 minutes timeout
 
     let uploadResponse
     try {
@@ -122,6 +122,9 @@ serve(async (req) => {
       })
     } catch (uploadError: any) {
       console.error('Upload request failed:', uploadError)
+      if (uploadError.name === 'AbortError') {
+        throw new Error('Upload timeout: File upload took too long')
+      }
       throw new Error(`Failed to upload video to Gemini: ${uploadError.message}`)
     } finally {
       clearTimeout(uploadTimeout)
@@ -146,11 +149,11 @@ serve(async (req) => {
     
     console.log('Video uploaded to Gemini:', { fileUri, fileName })
 
-    // Wait for file to be processed
+    // Wait for file to be processed with more robust checking
     let fileReady = false
     let attempts = 0
-    const maxAttempts = 60 // Increased from 30 to 60
-    const checkInterval = 3000 // 3 seconds
+    const maxAttempts = 120 // 10 minutes total
+    const checkInterval = 5000 // 5 seconds
 
     console.log('Waiting for file processing...')
     while (!fileReady && attempts < maxAttempts) {
@@ -161,14 +164,15 @@ serve(async (req) => {
       const statusTimeout = setTimeout(() => {
         console.log(`Status check timeout on attempt ${attempts}`)
         statusController.abort()
-      }, 15000) // 15 seconds timeout for status checks
+      }, 20000) // 20 seconds timeout for status checks
       
       try {
-        // Use the exact file name from the upload response
+        // Correct status check URL
         const statusUrl = `https://generativelanguage.googleapis.com/v1beta/${fileName}`
         console.log(`Status check ${attempts}/${maxAttempts}: ${statusUrl}`)
         
         const statusResponse = await fetch(statusUrl, {
+          method: 'GET',
           headers: {
             'X-Goog-Api-Key': GOOGLE_GEMINI_API_KEY,
           },
@@ -180,7 +184,16 @@ serve(async (req) => {
         if (!statusResponse.ok) {
           const errorText = await statusResponse.text()
           console.error(`Status check error (${statusResponse.status}):`, errorText)
-          continue // Continue to next attempt instead of breaking
+          
+          // If we get 404, the file might not exist or the name is wrong
+          if (statusResponse.status === 404) {
+            console.error('File not found, this might be a file name issue')
+            // Continue to next attempt, maybe file isn't ready yet
+            continue
+          }
+          
+          // For other errors, continue trying
+          continue
         }
         
         const statusResult = await statusResponse.json()
@@ -202,12 +215,12 @@ serve(async (req) => {
         } else {
           console.error(`Status check error on attempt ${attempts}:`, statusError.message)
         }
-        // Continue to next attempt
+        // Continue to next attempt for network errors
       }
     }
 
     if (!fileReady) {
-      throw new Error(`File processing timeout after ${maxAttempts} attempts (${(maxAttempts * checkInterval) / 1000} seconds)`)
+      throw new Error(`File processing timeout after ${maxAttempts} attempts (${(maxAttempts * checkInterval) / 1000} seconds). The file may be too large or there may be an issue with Gemini's processing.`)
     }
 
     // Create analysis prompt
@@ -283,7 +296,7 @@ serve(async (req) => {
     const analysisTimeout = setTimeout(() => {
       console.log('Analysis timeout triggered')
       analysisController.abort()
-    }, 300000) // 5 minutes timeout
+    }, 600000) // 10 minutes timeout
     
     let analysisResponse
     try {
@@ -320,6 +333,9 @@ serve(async (req) => {
       })
     } catch (analysisError: any) {
       console.error('Analysis request failed:', analysisError)
+      if (analysisError.name === 'AbortError') {
+        throw new Error('Analysis timeout: Video analysis took too long')
+      }
       throw new Error(`Failed to analyze video: ${analysisError.message}`)
     } finally {
       clearTimeout(analysisTimeout)
@@ -363,7 +379,7 @@ serve(async (req) => {
       .from('feedback')
       .insert({
         video_id: videoId,
-        overall_score: feedbackData.finalEvaluation_overallScore || 5,
+        overall_score: parseInt(feedbackData.finalEvaluation_overallScore) || 5,
         feedback_data: feedbackData
       })
 
