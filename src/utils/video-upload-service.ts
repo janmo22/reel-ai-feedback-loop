@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { VideoUploadResponse } from "@/types";
 
@@ -72,7 +73,7 @@ export async function createVideoRecord(userId: string, title: string, descripti
           title,
           description,
           user_id: userId,
-          video_url: "placeholder-url", // Will be updated later
+          video_url: "processing", // Temporal mientras se procesa
           status: 'processing',
         }
       ])
@@ -113,6 +114,8 @@ export const uploadVideoToWebhook = async (params: {
   // Get MIME type from the file
   const mimeType = params.videoFile.type;
   console.log(`Tipo de archivo (MIME Type): ${mimeType}`);
+  console.log(`Tamaño del archivo: ${params.videoFile.size} bytes`);
+  console.log(`Nombre del archivo: ${params.videoFile.name}`);
   
   // Fetch user mission data if available
   const userMissionData = await fetchUserMissionData(params.userId);
@@ -146,26 +149,53 @@ export const uploadVideoToWebhook = async (params: {
     console.log("No se encontraron datos de estrategia para este usuario");
   }
   
-  // Add the video file to FormData
-  formData.append("video", params.videoFile);
+  // Add the video file to FormData - CLAVE: usar el nombre correcto del campo
+  formData.append("video", params.videoFile, params.videoFile.name);
   
   console.log(`Enviando video: Nombre=${params.videoFile.name}, Tamaño=${params.videoFile.size} bytes, Tipo=${mimeType}`);
+  console.log("FormData preparado con los siguientes campos:");
+  for (let [key, value] of formData.entries()) {
+    if (value instanceof File) {
+      console.log(`- ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+    } else {
+      console.log(`- ${key}: ${typeof value === 'string' ? value.substring(0, 100) : value}`);
+    }
+  }
   
   try {
     // Update video status to processing before sending to webhook
     await updateVideoStatus(params.videoId, 'processing');
     
-    // Send to Railway webhook with proper error handling
+    console.log("Enviando petición al webhook de Railway...");
+    
+    // Send to Railway webhook with timeout and proper error handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
+    
     const response = await fetch(WEBHOOK_URL, {
       method: "POST",
       body: formData,
+      signal: controller.signal,
       headers: {
-        "X-Content-Type": mimeType,
+        // No establecer Content-Type manualmente cuando usamos FormData
+        // El browser lo hace automáticamente con el boundary correcto
       }
     });
     
+    clearTimeout(timeoutId);
+    
+    console.log(`Respuesta del webhook: ${response.status} ${response.statusText}`);
+    
     if (response.ok) {
       console.log("Datos enviados correctamente al webhook de Railway");
+      
+      let responseText = '';
+      try {
+        responseText = await response.text();
+        console.log("Respuesta del webhook:", responseText);
+      } catch (textError) {
+        console.log("No se pudo leer la respuesta del webhook, pero el status es OK");
+      }
       
       return { 
         status: "processing", 
@@ -173,32 +203,31 @@ export const uploadVideoToWebhook = async (params: {
         message: "Video enviado para procesamiento. Revisa los resultados más tarde."
       };
     } else {
+      // Leer el error del webhook si está disponible
+      let errorText = '';
+      try {
+        errorText = await response.text();
+        console.error("Error del webhook:", errorText);
+      } catch (textError) {
+        console.error("No se pudo leer el error del webhook");
+      }
+      
       console.error("Error en la respuesta del webhook:", response.status, response.statusText);
       
-      // Try with no-cors as fallback
-      console.log("Intentando con modo no-cors como respaldo...");
-      await fetch(WEBHOOK_URL, {
-        method: "POST",
-        body: formData,
-        mode: "no-cors",
-        headers: {
-          "X-Content-Type": mimeType,
-        }
-      });
+      // Update video status to error
+      await updateVideoStatus(params.videoId, 'error');
       
-      console.log("Datos enviados al webhook usando modo no-cors");
-      
-      return { 
-        status: "processing", 
-        videoId: params.videoId,
-        message: "Video enviado para procesamiento. Revisa los resultados más tarde."
-      };
+      throw new Error(`Error del webhook (${response.status}): ${errorText || response.statusText}`);
     }
   } catch (fetchError) {
     console.error("Error al enviar al webhook:", fetchError);
     
     // Update video status to error
     await updateVideoStatus(params.videoId, 'error');
+    
+    if (fetchError.name === 'AbortError') {
+      throw new Error("Timeout: El webhook tardó demasiado en responder. Inténtalo de nuevo.");
+    }
     
     throw new Error(`Error al enviar el video: ${fetchError.message}`);
   }

@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import EmptyState from "@/components/EmptyState";
-import { Loader, ArrowLeft, Clock, Bell } from "lucide-react";
+import { Loader, ArrowLeft, Clock, Bell, AlertTriangle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,9 @@ const LoadingResults = () => {
   const [searchParams] = useSearchParams();
   const videoId = searchParams.get('videoId');
   const [hasUserStrategy, setHasUserStrategy] = useState(false);
+  const [videoStatus, setVideoStatus] = useState<string | null>(null);
+  const [checkAttempts, setCheckAttempts] = useState(0);
+  const MAX_CHECK_ATTEMPTS = 60; // 5 minutos máximo (5 segundos * 60)
   
   useEffect(() => {
     // If no videoId is provided, we can't check for results
@@ -38,39 +41,92 @@ const LoadingResults = () => {
     
     checkUserStrategy();
     
-    // Check initially if feedback already exists
-    const checkFeedbackExists = async () => {
+    // Check video status and feedback periodically
+    const checkVideoStatus = async () => {
       try {
-        const { data, error } = await supabase
+        // Check video status first
+        const { data: videoData, error: videoError } = await supabase
+          .from('videos')
+          .select('status')
+          .eq('id', videoId)
+          .single();
+          
+        if (videoError) {
+          console.error("Error checking video status:", videoError);
+          return;
+        }
+        
+        setVideoStatus(videoData.status);
+        
+        // If video is in error state, show error
+        if (videoData.status === 'error') {
+          toast({
+            title: "Error en el análisis",
+            description: "Hubo un problema procesando tu video. Puedes intentar de nuevo más tarde.",
+            variant: "destructive"
+          });
+          navigate('/history');
+          return;
+        }
+        
+        // Check if feedback exists
+        const { data: feedbackData, error: feedbackError } = await supabase
           .from('feedback')
           .select('id')
           .eq('video_id', videoId)
           .limit(1);
           
-        if (error) throw error;
+        if (feedbackError) {
+          console.error("Error checking feedback:", feedbackError);
+          return;
+        }
         
         // If feedback exists, redirect to results
-        if (data && data.length > 0) {
+        if (feedbackData && feedbackData.length > 0) {
           toast({
             title: "¡Análisis completado!",
             description: "Tu reel ha sido analizado correctamente.",
           });
           navigate(`/results?videoId=${videoId}`, { replace: true });
+          return;
         }
+        
+        // Increment attempts counter
+        setCheckAttempts(prev => {
+          const newAttempts = prev + 1;
+          
+          // If we've reached max attempts, show timeout error
+          if (newAttempts >= MAX_CHECK_ATTEMPTS) {
+            toast({
+              title: "Timeout del análisis",
+              description: "El análisis está tardando más de lo esperado. Por favor, revisa tu historial más tarde.",
+              variant: "destructive"
+            });
+            navigate('/history');
+          }
+          
+          return newAttempts;
+        });
+        
       } catch (err) {
-        console.error("Error checking feedback:", err);
+        console.error("Error checking video status:", err);
       }
     };
     
-    checkFeedbackExists();
+    // Check initially
+    checkVideoStatus();
     
-    // Set up real-time subscription to feedback table
+    // Set up interval to check every 5 seconds
+    const interval = setInterval(checkVideoStatus, 5000);
+    
+    // Set up real-time subscription to feedback table as backup
     const channel = supabase
       .channel('processing-updates')
       .on('postgres_changes', 
           { event: 'INSERT', schema: 'public', table: 'feedback', filter: `video_id=eq.${videoId}` },
           (payload) => {
-            console.log('New feedback detected:', payload);
+            console.log('New feedback detected via realtime:', payload);
+            clearInterval(interval);
             toast({
               title: "¡Análisis completado!",
               description: "Tu reel ha sido analizado correctamente.",
@@ -81,11 +137,28 @@ const LoadingResults = () => {
       )
       .subscribe();
       
-    // Cleanup subscription on component unmount
+    // Cleanup subscription and interval on component unmount
     return () => {
+      clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, [videoId, navigate, toast, user]);
+  
+  // Show error state if video is in error status
+  if (videoStatus === 'error') {
+    return (
+      <div className="w-full h-full flex items-center justify-center py-16">
+        <EmptyState 
+          icon={<AlertTriangle className="h-12 w-12 text-red-500" />}
+          title="Error en el análisis"
+          description="Hubo un problema procesando tu video. Puedes intentar de nuevo más tarde."
+          actionText="Volver al historial"
+          onAction={() => navigate('/history')}
+          actionIcon={<ArrowLeft className="mr-2 h-4 w-4" />}
+        />
+      </div>
+    );
+  }
   
   return (
     <div className="w-full h-full flex items-center justify-center py-16">
@@ -106,8 +179,16 @@ const LoadingResults = () => {
             )}
             <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg">
               <Clock className="h-5 w-5" />
-              <p className="font-medium">La página se actualizará automáticamente cuando esté listo.</p>
+              <p className="font-medium">
+                Verificando progreso... (Intento {checkAttempts}/{MAX_CHECK_ATTEMPTS})
+              </p>
             </div>
+            {checkAttempts > 30 && (
+              <div className="flex items-center justify-center gap-2 text-orange-600 bg-orange-50 p-3 rounded-lg">
+                <AlertTriangle className="h-5 w-5" />
+                <p className="font-medium">El análisis está tardando más de lo esperado, pero sigue en proceso...</p>
+              </div>
+            )}
           </div>
         }
         actionText="Ver historial de videos"
