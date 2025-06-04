@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,37 +8,19 @@
     <meta name="description" content="Analiza tus reels con inteligencia artificial" />
     <meta name="author" content="FLOW" />
 
-    <!-- Open Graph/fb -->
     <meta property="og:title" content="Analiza con FLOW" />
     <meta property="og:description" content="Analiza tus reels con inteligencia artificial" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
-    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-    <!-- Favicon actualizado con logo FLOW azul -->
-    <link rel="icon" href="/lovable-uploads/c94770f5-0cf2-4b3c-b7ae-968e6537664e.png" type="image/png" />
-
-    <!-- Eliminar referencias visibles a lovable.dev en CSS -->
-    <style>
-      .lovable-badge,
-      #lovable-badge,
-      [data-lovable-badge],
-      [id*="lovable"],
-      [class*="lovable"] {
-        display: none !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-      }
-    </style>
   </head>
+
   <body>
     <div id="root"></div>
-    <!-- Script requerido para funcionalidades Lovable -->
+    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

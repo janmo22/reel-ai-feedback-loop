@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 
-// Maximum allowed file size increased to 100MB
-export const MAX_FILE_SIZE = 100 * 1024 * 1024;
+// Maximum allowed file size (500MB)
+export const MAX_FILE_SIZE = 500 * 1024 * 1024;
 
 export function useVideoFile() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -23,7 +23,7 @@ export function useVideoFile() {
     if (file.size > MAX_FILE_SIZE) {
       toast({
         title: "Error",
-        description: "El archivo es demasiado grande. Por favor, sube un archivo menor a 100MB.",
+        description: "El archivo es demasiado grande. Por favor, sube un archivo menor a 500MB.",
         variant: "destructive"
       });
       return;

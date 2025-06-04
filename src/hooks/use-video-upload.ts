@@ -101,24 +101,40 @@ export function useVideoUpload(onUploadComplete: (data: {
     }
     
     setIsUploading(true);
-    startSimulation();
+    startSimulation(); // Start a progress simulation
     
     try {
-      console.log("Iniciando proceso de upload y análisis...");
-      
-      // Step 1: Create video record in Supabase
+      // Step 1: First create a video record in Supabase videos table
       const videoData = await createVideoRecord(
         user.id,
         title,
         description,
-        missions,
+        missions, // We still pass missions even though it's not stored directly in the videos table
         mainMessage
       );
       
       const videoId = videoData.id;
-      console.log("Video record created with ID:", videoId);
       
-      // Step 2: Call onUploadComplete immediately with basic data
+      // Step 2: Only after creating the video record, send data to webhook
+      console.log("Enviando video al webhook con videoId:", videoId);
+      const response = await uploadVideoToWebhook({
+        videoId,
+        userId: user.id,
+        videoFile,
+        title,
+        description,
+        missions,
+        mainMessage
+      });
+      
+      stopSimulation(100);
+      toast({
+        title: "¡Video enviado!",
+        description: "Tu reel ha sido enviado para análisis. Te notificaremos cuando esté listo.",
+      });
+      
+      // Call onUploadComplete BEFORE setting isUploading to false
+      // This ensures the parent component receives the data before any state updates
       onUploadComplete({
         video: videoFile,
         title,
@@ -128,47 +144,13 @@ export function useVideoUpload(onUploadComplete: (data: {
         response: {
           success: true,
           videoId,
-          message: "Video enviado para análisis. El procesamiento comenzará inmediatamente."
+          message: "Video enviado para procesamiento"
         },
       });
       
-      // Step 3: Continue with analysis in the background
-      try {
-        console.log("Enviando video para análisis con Edge Function...");
-        
-        await uploadVideoToWebhook({
-          videoId,
-          userId: user.id,
-          videoFile,
-          title,
-          description,
-          missions,
-          mainMessage
-        });
-        
-        console.log("Video enviado exitosamente para análisis");
-        stopSimulation(100);
-        
-        toast({
-          title: "¡Análisis completado! 🎬",
-          description: "Tu reel ha sido analizado exitosamente. Revisa los resultados.",
-        });
-        
-      } catch (analysisError: any) {
-        console.error("Error en el análisis:", analysisError);
-        stopSimulation(0);
-        
-        toast({
-          title: "Error en el análisis",
-          description: "Hubo un problema procesando tu video. Puedes intentar de nuevo más tarde.",
-          variant: "destructive"
-        });
-      }
-      
       setIsUploading(false);
-      
     } catch (error: any) {
-      console.error("Error en el proceso completo:", error);
+      console.error("Error en el proceso:", error);
       stopSimulation(0);
       toast({
         title: "Error",

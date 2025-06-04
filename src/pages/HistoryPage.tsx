@@ -1,41 +1,31 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Video, Feedback } from '@/types';
 import { toast } from "@/components/ui/use-toast";
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from "@/contexts/AuthContext";
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Smartphone, ChevronLeft, Star } from 'lucide-react'; // Fixed icon import capitalization
-import HistoryHeader from "@/components/history/HistoryHeader";
-import VideoHistoryTable from "@/components/history/VideoHistoryTable";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FileVideo, Eye, Star, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import EmptyState from '@/components/EmptyState';
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import Header from "@/components/Header";
 
 interface VideoWithFeedback extends Omit<Video, 'feedback'> {
   feedback?: Feedback[];
 }
-
-// --- New ResponsiveHeader for the history page to match settings/account ---
-const ResponsiveHistoryHeader = ({ onNavigateToUpload }) => {
-  const isMobile = useIsMobile();
-  return (
-    <div className="w-full flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4 px-1">
-      <div className="flex items-center gap-2">
-        {/* Title */}
-        <span className="text-flow-blue font-semibold text-xl md:text-2xl flex items-center gap-2">
-          <span className="sr-only md:not-sr-only">Historial de Videos</span>
-        </span>
-      </div>
-      <Button 
-        onClick={onNavigateToUpload}
-        className="w-full md:w-auto flex items-center gap-2"
-      >
-        <span>Subir video</span>
-      </Button>
-    </div>
-  );
-};
 
 const HistoryPage: React.FC = () => {
   const [videos, setVideos] = useState<VideoWithFeedback[]>([]);
@@ -46,7 +36,6 @@ const HistoryPage: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (location.state?.error) {
@@ -173,6 +162,11 @@ const HistoryPage: React.FC = () => {
     navigate('/upload');
   };
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Fecha desconocida";
+    return format(parseISO(dateString), "d 'de' MMMM, yyyy", { locale: es });
+  };
+
   useEffect(() => {
     if (!user && !loading) {
       navigate('/auth', { replace: true });
@@ -185,51 +179,120 @@ const HistoryPage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="container mx-auto py-8 flex items-center justify-center">
-        <p>Por favor, inicia sesión para ver tu historial.</p>
+      <div className="min-h-screen flex flex-col w-full">
+        <div className="container mx-auto py-8 flex items-center justify-center">
+          <p>Por favor, inicia sesión para ver tu historial.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container p-2 md:p-8 max-w-3xl md:max-w-7xl mx-auto">
-      <div className="bg-white rounded-lg shadow-sm p-2 md:p-6">
-        <ResponsiveHistoryHeader onNavigateToUpload={handleNavigateToUpload} />
-
-        {error && (
-          <div className="mb-6">
-            <div className="bg-red-100 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
-          </div>
-        )}
-
-        <div className="mb-4 md:mb-6">
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "all" | "favorites")}>
-            <TabsList className="grid w-full grid-cols-2 max-w-xs">
-              <TabsTrigger value="all">Todos</TabsTrigger>
-              <TabsTrigger value="favorites" className="flex items-center gap-1">
-                <Star className="h-4 w-4" />
-                <span className="sr-only md:not-sr-only">Favoritos</span>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+    <div className="min-h-screen flex flex-col w-full">
+      <Header />
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-tt-travels font-bold text-gray-900">Historial de Videos</h1>
+          <Button onClick={handleNavigateToUpload}>Subir nuevo video</Button>
         </div>
         
-        <VideoHistoryTable
-          loading={loading}
-          videos={filteredVideos}
-          activeTab={activeTab}
-          updatingFavorite={updatingFavorite}
-          onToggleFavorite={toggleFavorite}
-          onView={(videoId, status) => navigate(`/results?videoId=${videoId}`)}
-          onDelete={deleteVideo}
-          onAction={handleNavigateToUpload}
-        />
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        <Tabs defaultValue="all" className="mb-6" onValueChange={(value) => setActiveTab(value as "all" | "favorites")}>
+          <TabsList>
+            <TabsTrigger value="all">Todos</TabsTrigger>
+            <TabsTrigger value="favorites">Favoritos</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        {loading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : filteredVideos.length === 0 ? (
+          <EmptyState 
+            icon={<FileVideo />}
+            title={activeTab === "favorites" ? "No hay videos favoritos" : "No hay videos en tu historial"}
+            description={activeTab === "favorites" ? "No has marcado ningún video como favorito" : "Sube un video para comenzar a recibir análisis"}
+            actionText="Subir video"
+            onAction={handleNavigateToUpload}
+          />
+        ) : (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Favorito</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredVideos.map((video) => (
+                  <TableRow key={video.id}>
+                    <TableCell className="font-medium">{video.title}</TableCell>
+                    <TableCell>
+                      <div className={`
+                        px-3 py-1 rounded-full text-xs font-medium inline-flex items-center
+                        ${video.status === "completed" ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"}
+                      `}>
+                        {video.status === "completed" ? "Completado" : "Procesando"}
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatDate(video.created_at)}</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0" 
+                        onClick={() => toggleFavorite(video.id, video.is_favorite)}
+                        disabled={updatingFavorite}
+                      >
+                        <Star className={`h-4 w-4 ${video.is_favorite ? "fill-blue-400 text-blue-400" : "text-muted-foreground"}`} />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="inline-flex items-center"
+                        onClick={() => navigate(`/results?videoId=${video.id}`)}
+                        disabled={video.status === "processing"}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="inline-flex items-center text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                        onClick={() => deleteVideo(video.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Eliminar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
 export default HistoryPage;
-
