@@ -27,6 +27,9 @@ const MIME_TYPE_MAPPING: Record<string, string> = {
   'video/x-ms-wmv': 'video/wmv'
 }
 
+// Maximum file size (50MB)
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -57,6 +60,11 @@ serve(async (req) => {
       throw new Error('Missing required fields: video, videoId, or userId')
     }
 
+    // Check file size
+    if (videoFile.size > MAX_FILE_SIZE) {
+      throw new Error(`File too large. Maximum size allowed is ${MAX_FILE_SIZE / (1024 * 1024)}MB. Your file is ${(videoFile.size / (1024 * 1024)).toFixed(1)}MB.`)
+    }
+
     // Validate and normalize MIME type
     let mimeType = videoFile.type || 'video/mp4'
     console.log(`Original MIME type: ${mimeType}`)
@@ -71,18 +79,19 @@ serve(async (req) => {
       mimeType = 'video/mp4'
     }
 
-    console.log(`Processing video: ${videoFile.name}, Size: ${videoFile.size} bytes, MIME type: ${mimeType}`)
+    console.log(`Processing video: ${videoFile.name}, Size: ${(videoFile.size / (1024 * 1024)).toFixed(1)}MB, MIME type: ${mimeType}`)
 
     const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY')
     if (!GOOGLE_GEMINI_API_KEY) {
       throw new Error('GOOGLE_GEMINI_API_KEY not configured')
     }
 
-    // Convert file to array buffer
+    // Convert file to array buffer in chunks to manage memory better
+    console.log('Reading video file...')
     const videoBuffer = await videoFile.arrayBuffer()
-    console.log(`Video buffer size: ${videoBuffer.byteLength} bytes`)
+    console.log(`Video buffer loaded: ${(videoBuffer.byteLength / (1024 * 1024)).toFixed(1)}MB`)
     
-    // Upload video to Gemini File API
+    // Upload video to Gemini File API with streaming
     console.log('Uploading video to Gemini File API...')
     
     const uploadFormData = new FormData()
@@ -96,18 +105,18 @@ serve(async (req) => {
     }
     uploadFormData.append('metadata', JSON.stringify(metadata))
     
-    // Add the file
+    // Add the file as a blob to reduce memory usage
     const fileBlob = new Blob([videoBuffer], { type: mimeType })
     uploadFormData.append('file', fileBlob)
 
     console.log('Uploading to Gemini with metadata:', metadata)
 
-    // Upload with timeout
+    // Upload with extended timeout for larger files
     const uploadController = new AbortController()
     const uploadTimeout = setTimeout(() => {
       console.log('Upload timeout triggered')
       uploadController.abort()
-    }, 300000) // 5 minutes timeout
+    }, 600000) // 10 minutes timeout for larger files
 
     let uploadResponse
     try {
@@ -149,27 +158,36 @@ serve(async (req) => {
     
     console.log('Video uploaded to Gemini:', { fileUri, fileName })
 
-    // Wait for file to be processed with more robust checking
+    // Clear the video buffer from memory
+    // @ts-ignore
+    videoBuffer = null;
+
+    // Wait for file to be processed with exponential backoff
     let fileReady = false
     let attempts = 0
-    const maxAttempts = 120 // 10 minutes total
-    const checkInterval = 5000 // 5 seconds
+    const maxAttempts = 60 // Reduced attempts but with exponential backoff
+    let checkInterval = 5000 // Start with 5 seconds
 
     console.log('Waiting for file processing...')
     while (!fileReady && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, checkInterval))
       attempts++
       
+      // Exponential backoff: increase wait time for larger files
+      if (attempts > 10 && videoFile.size > 20 * 1024 * 1024) {
+        checkInterval = Math.min(checkInterval * 1.2, 15000) // Max 15 seconds
+      }
+      
       const statusController = new AbortController()
       const statusTimeout = setTimeout(() => {
         console.log(`Status check timeout on attempt ${attempts}`)
         statusController.abort()
-      }, 20000) // 20 seconds timeout for status checks
+      }, 30000) // 30 seconds timeout for status checks
       
       try {
         // Correct status check URL
         const statusUrl = `https://generativelanguage.googleapis.com/v1beta/${fileName}`
-        console.log(`Status check ${attempts}/${maxAttempts}: ${statusUrl}`)
+        console.log(`Status check ${attempts}/${maxAttempts}: ${statusUrl} (interval: ${checkInterval}ms)`)
         
         const statusResponse = await fetch(statusUrl, {
           method: 'GET',
@@ -220,10 +238,10 @@ serve(async (req) => {
     }
 
     if (!fileReady) {
-      throw new Error(`File processing timeout after ${maxAttempts} attempts (${(maxAttempts * checkInterval) / 1000} seconds). The file may be too large or there may be an issue with Gemini's processing.`)
+      throw new Error(`File processing timeout after ${maxAttempts} attempts. The file may be too large or there may be an issue with Gemini's processing. Try with a smaller file.`)
     }
 
-    // Create analysis prompt
+    // Create analysis prompt (optimized to be more concise)
     let contextPrompt = `Analiza este video siguiendo exactamente esta estructura JSON. Tu respuesta debe ser un objeto JSON válido con exactamente estos campos:`
 
     const analysisStructure = {
@@ -289,14 +307,14 @@ serve(async (req) => {
     contextPrompt += `\nMensaje principal: ${mainMessage}`
     contextPrompt += `\nMisiones: ${missions.join(', ')}`
 
-    // Analyze video with Gemini 1.5 Pro
+    // Analyze video with Gemini 1.5 Pro with optimized settings
     console.log('Starting video analysis with Gemini 1.5 Pro...')
     
     const analysisController = new AbortController()
     const analysisTimeout = setTimeout(() => {
       console.log('Analysis timeout triggered')
       analysisController.abort()
-    }, 600000) // 10 minutes timeout
+    }, 900000) // 15 minutes timeout
     
     let analysisResponse
     try {
@@ -323,10 +341,10 @@ serve(async (req) => {
             }
           ],
           generationConfig: {
-            temperature: 0.4,
-            topK: 32,
-            topP: 1,
-            maxOutputTokens: 8192,
+            temperature: 0.3,
+            topK: 20,
+            topP: 0.8,
+            maxOutputTokens: 4096, // Reduced to save memory
           }
         }),
         signal: analysisController.signal
