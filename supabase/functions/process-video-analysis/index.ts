@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -85,44 +86,10 @@ serve(async (req) => {
       throw new Error('GOOGLE_GEMINI_API_KEY not configured')
     }
 
-    // Process video in smaller chunks to reduce memory usage - optimized for larger files
-    console.log('Reading video file in optimized chunks...')
-    const chunks: Uint8Array[] = []
-    const reader = videoFile.stream().getReader()
-    const CHUNK_SIZE = 1024 * 1024 // 1MB chunks for better memory management
+    // Process video using stream to avoid loading entire file into memory
+    console.log('Processing video file with streaming...')
     
-    try {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        chunks.push(value)
-        
-        // Force garbage collection every 50MB to manage memory better
-        if (chunks.length % 50 === 0) {
-          console.log(`Processed ${chunks.length} chunks, approximately ${(chunks.length * CHUNK_SIZE / (1024 * 1024)).toFixed(1)}MB`)
-        }
-      }
-    } finally {
-      reader.releaseLock()
-    }
-    
-    // Combine chunks efficiently
-    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
-    const videoBuffer = new Uint8Array(totalLength)
-    let offset = 0
-    for (const chunk of chunks) {
-      videoBuffer.set(chunk, offset)
-      offset += chunk.length
-    }
-    
-    // Clear chunks array to free memory
-    chunks.length = 0
-    
-    console.log(`Video buffer loaded: ${(videoBuffer.byteLength / (1024 * 1024)).toFixed(1)}MB`)
-    
-    // Upload video to Gemini File API with optimized settings for larger files
-    console.log('Uploading video to Gemini File API...')
-    
+    // Create upload form data using streaming approach
     const uploadFormData = new FormData()
     
     // Add metadata first
@@ -134,9 +101,8 @@ serve(async (req) => {
     }
     uploadFormData.append('metadata', JSON.stringify(metadata))
     
-    // Add the file as a blob
-    const fileBlob = new Blob([videoBuffer], { type: mimeType })
-    uploadFormData.append('file', fileBlob)
+    // Add the file directly without intermediate buffer
+    uploadFormData.append('file', videoFile)
 
     console.log('Uploading to Gemini with metadata:', metadata)
 
@@ -145,11 +111,11 @@ serve(async (req) => {
     const uploadTimeout = setTimeout(() => {
       console.log('Upload timeout triggered')
       uploadController.abort()
-    }, 600000) // 10 minutes timeout for larger files
+    }, 900000) // 15 minutes timeout for 100MB files
 
     let uploadResponse
     let retryCount = 0
-    const maxRetries = 3 // Increased retries for larger files
+    const maxRetries = 2 // Reduced retries to avoid memory buildup
 
     while (retryCount <= maxRetries) {
       try {
@@ -181,8 +147,8 @@ serve(async (req) => {
           throw new Error(`Failed to upload video to Gemini after ${maxRetries + 1} attempts: ${uploadError.message}`)
         }
         
-        // Wait before retry with exponential backoff (longer for larger files)
-        const backoffTime = Math.min(Math.pow(2, retryCount) * 2000, 10000) // Max 10 seconds
+        // Wait before retry with exponential backoff
+        const backoffTime = Math.min(Math.pow(2, retryCount) * 3000, 15000) // Max 15 seconds
         console.log(`Waiting ${backoffTime}ms before retry ${retryCount + 1}`)
         await new Promise(resolve => setTimeout(resolve, backoffTime))
       }
@@ -209,11 +175,11 @@ serve(async (req) => {
     
     console.log('Video uploaded to Gemini:', { fileUri, fileName })
 
-    // Wait for file to be processed with longer intervals for larger files
+    // Wait for file to be processed with progressive intervals
     let fileReady = false
     let attempts = 0
-    const maxAttempts = 120 // Increased for larger files (20 minutes max)
-    let checkInterval = 5000 // Start with 5 seconds for larger files
+    const maxAttempts = 180 // 30 minutes max wait time
+    let checkInterval = 3000 // Start with 3 seconds
 
     console.log('Waiting for file processing...')
     while (!fileReady && attempts < maxAttempts) {
@@ -221,15 +187,15 @@ serve(async (req) => {
       attempts++
       
       // Progressive backoff - slower for larger files
-      if (attempts > 10) {
-        checkInterval = Math.min(checkInterval * 1.1, 15000) // Max 15 seconds
+      if (attempts > 20) {
+        checkInterval = Math.min(checkInterval * 1.05, 10000) // Max 10 seconds
       }
       
       const statusController = new AbortController()
       const statusTimeout = setTimeout(() => {
         console.log(`Status check timeout on attempt ${attempts}`)
         statusController.abort()
-      }, 20000) // 20 seconds timeout for status checks
+      }, 30000) // 30 seconds timeout for status checks
       
       try {
         const statusUrl = `https://generativelanguage.googleapis.com/v1beta/${fileName}`
@@ -283,7 +249,7 @@ serve(async (req) => {
       throw new Error(`File processing timeout after ${maxAttempts} attempts (${(maxAttempts * checkInterval / 1000 / 60).toFixed(1)} minutes). Large files take longer to process. Please try again later or use a smaller file.`)
     }
 
-    // Create full analysis prompt (UNCHANGED - maintaining quality)
+    // Create full analysis prompt
     let contextPrompt = `Analiza este video siguiendo exactamente esta estructura JSON. Tu respuesta debe ser un objeto JSON válido con exactamente estos campos:`
 
     const analysisStructure = {
@@ -346,14 +312,14 @@ serve(async (req) => {
 
     contextPrompt += `\n\nTítulo: ${title}, Descripción: ${description}, Mensaje: ${mainMessage}, Misiones: ${missions.join(', ')}`
 
-    // Analyze video with Gemini 1.5 Pro with longer timeout for larger files
+    // Analyze video with Gemini 1.5 Pro with extended timeout
     console.log('Starting video analysis with Gemini 1.5 Pro...')
     
     const analysisController = new AbortController()
     const analysisTimeout = setTimeout(() => {
       console.log('Analysis timeout triggered')
       analysisController.abort()
-    }, 900000) // 15 minutes timeout for larger files
+    }, 1200000) // 20 minutes timeout for larger files
     
     let analysisResponse
     try {
@@ -383,7 +349,7 @@ serve(async (req) => {
             temperature: 0.2,
             topK: 10,
             topP: 0.8,
-            maxOutputTokens: 4096, // Sufficient for complete analysis
+            maxOutputTokens: 4096,
           }
         }),
         signal: analysisController.signal
@@ -427,7 +393,7 @@ serve(async (req) => {
       console.error('Failed to parse JSON response:', parseError)
       console.error('Raw analysis text:', analysisText.substring(0, 1000) + '...')
       
-      // Create fallback feedback data with better structure
+      // Create fallback feedback data
       feedbackData = {
         executiveSummary: "El análisis se completó pero hubo un problema al procesar los resultados detallados. El video fue procesado correctamente.",
         finalEvaluation_overallScore: "7",
