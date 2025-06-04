@@ -27,7 +27,7 @@ const MIME_TYPE_MAPPING: Record<string, string> = {
   'video/x-ms-wmv': 'video/wmv'
 }
 
-// Increased file size limit to 100MB
+// File size limit increased to 100MB
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
 serve(async (req) => {
@@ -115,7 +115,7 @@ serve(async (req) => {
 
     let uploadResponse
     let retryCount = 0
-    const maxRetries = 2 // Reduced retries to avoid memory buildup
+    const maxRetries = 3 // Increased retries for reliability
 
     while (retryCount <= maxRetries) {
       try {
@@ -134,6 +134,16 @@ serve(async (req) => {
         } else {
           const errorText = await uploadResponse.text()
           console.error(`Upload attempt ${retryCount + 1} failed with status ${uploadResponse.status}:`, errorText)
+          
+          if (uploadResponse.status === 429) {
+            // Rate limit - wait longer before retry
+            const backoffTime = Math.min(Math.pow(2, retryCount + 2) * 5000, 30000) // 20s, 40s, 60s
+            console.log(`Rate limited. Waiting ${backoffTime}ms before retry ${retryCount + 1}`)
+            await new Promise(resolve => setTimeout(resolve, backoffTime))
+            retryCount++
+            continue
+          }
+          
           throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`)
         }
       } catch (uploadError: any) {
@@ -175,11 +185,11 @@ serve(async (req) => {
     
     console.log('Video uploaded to Gemini:', { fileUri, fileName })
 
-    // Wait for file to be processed with progressive intervals
+    // Wait for file to be processed with more robust checking
     let fileReady = false
     let attempts = 0
-    const maxAttempts = 180 // 30 minutes max wait time
-    let checkInterval = 3000 // Start with 3 seconds
+    const maxAttempts = 240 // 40 minutes max wait time for large files
+    let checkInterval = 5000 // Start with 5 seconds
 
     console.log('Waiting for file processing...')
     while (!fileReady && attempts < maxAttempts) {
@@ -187,15 +197,15 @@ serve(async (req) => {
       attempts++
       
       // Progressive backoff - slower for larger files
-      if (attempts > 20) {
-        checkInterval = Math.min(checkInterval * 1.05, 10000) // Max 10 seconds
+      if (attempts > 10) {
+        checkInterval = Math.min(checkInterval * 1.02, 15000) // Max 15 seconds
       }
       
       const statusController = new AbortController()
       const statusTimeout = setTimeout(() => {
         console.log(`Status check timeout on attempt ${attempts}`)
         statusController.abort()
-      }, 30000) // 30 seconds timeout for status checks
+      }, 45000) // 45 seconds timeout for status checks
       
       try {
         const statusUrl = `https://generativelanguage.googleapis.com/v1beta/${fileName}`
@@ -216,7 +226,18 @@ serve(async (req) => {
           console.error(`Status check error (${statusResponse.status}):`, errorText)
           
           if (statusResponse.status === 404) {
-            console.error('File not found, continuing to next attempt')
+            console.error('File not found - file may have been deleted or expired')
+            // For 404 errors after many attempts, throw error
+            if (attempts > 20) {
+              throw new Error('File not found in Gemini API after extended wait. The file may have expired or been deleted.')
+            }
+            continue
+          }
+          
+          if (statusResponse.status === 429) {
+            // Rate limit - increase interval
+            checkInterval = Math.min(checkInterval * 2, 30000)
+            console.log(`Rate limited on status check, increasing interval to ${checkInterval}ms`)
             continue
           }
           
@@ -239,6 +260,8 @@ serve(async (req) => {
         clearTimeout(statusTimeout)
         if (statusError.name === 'AbortError') {
           console.error(`Status check timeout on attempt ${attempts}`)
+        } else if (statusError.message.includes('File not found')) {
+          throw statusError // Re-throw file not found errors
         } else {
           console.error(`Status check error on attempt ${attempts}:`, statusError.message)
         }
@@ -248,6 +271,28 @@ serve(async (req) => {
     if (!fileReady) {
       throw new Error(`File processing timeout after ${maxAttempts} attempts (${(maxAttempts * checkInterval / 1000 / 60).toFixed(1)} minutes). Large files take longer to process. Please try again later or use a smaller file.`)
     }
+
+    // Double-check file exists before analysis with a fresh request
+    console.log('Double-checking file existence before analysis...')
+    const finalCheckResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/${fileName}`, {
+      method: 'GET',
+      headers: {
+        'X-Goog-Api-Key': GOOGLE_GEMINI_API_KEY,
+      }
+    })
+
+    if (!finalCheckResponse.ok) {
+      const errorText = await finalCheckResponse.text()
+      console.error('Final file check failed:', errorText)
+      throw new Error(`File verification failed before analysis: ${errorText}`)
+    }
+
+    const finalCheckResult = await finalCheckResponse.json()
+    if (finalCheckResult.state !== 'ACTIVE') {
+      throw new Error(`File is not in ACTIVE state before analysis: ${finalCheckResult.state}`)
+    }
+
+    console.log('File verified as ACTIVE, proceeding with analysis')
 
     // Create full analysis prompt
     let contextPrompt = `Analiza este video siguiendo exactamente esta estructura JSON. Tu respuesta debe ser un objeto JSON válido con exactamente estos campos:`
@@ -319,7 +364,7 @@ serve(async (req) => {
     const analysisTimeout = setTimeout(() => {
       console.log('Analysis timeout triggered')
       analysisController.abort()
-    }, 1200000) // 20 minutes timeout for larger files
+    }, 1500000) // 25 minutes timeout for larger files
     
     let analysisResponse
     try {
@@ -367,6 +412,12 @@ serve(async (req) => {
     if (!analysisResponse.ok) {
       const errorText = await analysisResponse.text()
       console.error('Gemini analysis error:', analysisResponse.status, errorText)
+      
+      // Special handling for file not found during analysis
+      if (errorText.includes('not exist in the Gemini API')) {
+        throw new Error('Video file became unavailable during analysis. This can happen with very large files. Please try uploading again or use a smaller file.')
+      }
+      
       throw new Error(`Gemini API error (${analysisResponse.status}): ${errorText}`)
     }
 
