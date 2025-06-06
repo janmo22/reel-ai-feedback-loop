@@ -13,6 +13,7 @@ import HistoryPage from "./pages/HistoryPage";
 import ResultsPage from "./pages/ResultsPage";
 import SettingsPage from "./pages/SettingsPage";
 import StrategyPage from "./pages/StrategyPage";
+import CompetitorsPage from "./pages/CompetitorsPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -80,6 +81,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <UploadPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/competitors" 
+            element={
+              <ProtectedRoute>
+                <CompetitorsPage />
               </ProtectedRoute>
             } 
           />

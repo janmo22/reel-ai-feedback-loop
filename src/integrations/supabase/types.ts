@@ -9,6 +9,151 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      competitor_analysis: {
+        Row: {
+          analysis_status: string
+          competitor_video_id: string
+          created_at: string
+          feedback_data: Json
+          id: string
+          overall_score: number
+          updated_at: string
+        }
+        Insert: {
+          analysis_status?: string
+          competitor_video_id: string
+          created_at?: string
+          feedback_data: Json
+          id?: string
+          overall_score: number
+          updated_at?: string
+        }
+        Update: {
+          analysis_status?: string
+          competitor_video_id?: string
+          created_at?: string
+          feedback_data?: Json
+          id?: string
+          overall_score?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_analysis_competitor_video_id_fkey"
+            columns: ["competitor_video_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitor_videos: {
+        Row: {
+          caption: string | null
+          comments_count: number | null
+          competitor_id: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          instagram_id: string
+          is_selected_for_analysis: boolean | null
+          likes_count: number | null
+          posted_at: string | null
+          thumbnail_url: string | null
+          updated_at: string
+          video_url: string
+          views_count: number | null
+        }
+        Insert: {
+          caption?: string | null
+          comments_count?: number | null
+          competitor_id: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          instagram_id: string
+          is_selected_for_analysis?: boolean | null
+          likes_count?: number | null
+          posted_at?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_url: string
+          views_count?: number | null
+        }
+        Update: {
+          caption?: string | null
+          comments_count?: number | null
+          competitor_id?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          instagram_id?: string
+          is_selected_for_analysis?: boolean | null
+          likes_count?: number | null
+          posted_at?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_url?: string
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_videos_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitors: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          follower_count: number | null
+          following_count: number | null
+          id: string
+          instagram_username: string
+          is_verified: boolean | null
+          last_scraped_at: string | null
+          posts_count: number | null
+          profile_picture_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          follower_count?: number | null
+          following_count?: number | null
+          id?: string
+          instagram_username: string
+          is_verified?: boolean | null
+          last_scraped_at?: string | null
+          posts_count?: number | null
+          profile_picture_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          follower_count?: number | null
+          following_count?: number | null
+          id?: string
+          instagram_username?: string
+          is_verified?: boolean | null
+          last_scraped_at?: string | null
+          posts_count?: number | null
+          profile_picture_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           created_at: string | null

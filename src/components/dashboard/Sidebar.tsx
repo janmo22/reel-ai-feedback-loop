@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Target, History, Settings, Upload, LogOut, ChevronDown, ChevronUp } from "lucide-react";
+import { LayoutDashboard, Target, History, Settings, Upload, LogOut, ChevronDown, ChevronUp, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -69,6 +69,11 @@ const DashboardSidebar = () => {
     label: "Subir Reel",
     path: "/upload",
     description: "Carga nuevos videos"
+  }, {
+    icon: Users,
+    label: "Competencia",
+    path: "/competitors",
+    description: "Analiza competidores"
   }, {
     icon: History,
     label: "Historial",
