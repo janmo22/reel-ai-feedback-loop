@@ -54,7 +54,7 @@ serve(async (req) => {
       
       const runInput = {
         username: [username],
-        resultsLimit: 50, // Límite de videos a extraer
+        resultsLimit: 50,
         addParentData: true
       };
 
@@ -79,10 +79,10 @@ serve(async (req) => {
       // Wait for the run to finish (poll every 5 seconds, max 5 minutes)
       let runStatus = 'RUNNING';
       let attempts = 0;
-      const maxAttempts = 60; // 5 minutes
+      const maxAttempts = 60;
 
       while (runStatus === 'RUNNING' && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         const statusResponse = await fetch(`https://api.apify.com/v2/acts/apify~instagram-reel-scraper/runs/${runId}?token=${apifyApiKey}`);
         const statusData = await statusResponse.json();
@@ -113,7 +113,7 @@ serve(async (req) => {
       const competitorData = {
         user_id: userId,
         instagram_username: username,
-        display_name: profileData.fullName || null,
+        display_name: profileData.ownerFullName || profileData.fullName || null,
         profile_picture_url: profileData.profilePicUrl || null,
         follower_count: profileData.followersCount || null,
         following_count: profileData.followsCount || null,
@@ -124,7 +124,6 @@ serve(async (req) => {
       };
 
       if (competitorId) {
-        // Update existing competitor
         const { error: updateError } = await supabase
           .from('competitors')
           .update(competitorData)
@@ -132,7 +131,6 @@ serve(async (req) => {
           
         if (updateError) throw updateError;
       } else {
-        // Create new competitor
         const { data: newCompetitor, error: insertError } = await supabase
           .from('competitors')
           .insert(competitorData)
@@ -143,22 +141,35 @@ serve(async (req) => {
         competitorId = newCompetitor.id;
       }
 
-      // Process videos
-      const videos = results.filter(item => item.type === 'Video' && item.videoUrl);
+      // Process videos - filter for actual video content
+      const videos = results.filter(item => 
+        (item.type === 'Video' || item.type === 'ReelVideo') && 
+        (item.videoUrl || item.videoViewCount !== undefined)
+      );
+      
+      console.log(`Processing ${videos.length} videos...`);
       
       for (const video of videos) {
+        // Parse duration safely
+        let durationSeconds = null;
+        if (video.videoDuration !== undefined && video.videoDuration !== null) {
+          durationSeconds = Math.round(parseFloat(video.videoDuration.toString()));
+        }
+
         const videoData = {
           competitor_id: competitorId,
-          instagram_id: video.id,
-          video_url: video.videoUrl,
-          thumbnail_url: video.displayUrl || null,
+          instagram_id: video.id?.toString() || video.shortCode || `${Date.now()}_${Math.random()}`,
+          video_url: video.videoUrl || `https://www.instagram.com/reel/${video.shortCode}/`,
+          thumbnail_url: video.images?.[0] || video.displayUrl || null,
           caption: video.caption || null,
-          likes_count: video.likesCount || 0,
-          comments_count: video.commentsCount || 0,
-          views_count: video.videoViewCount || 0,
+          likes_count: parseInt(video.likesCount?.toString() || '0') || 0,
+          comments_count: parseInt(video.commentsCount?.toString() || '0') || 0,
+          views_count: parseInt(video.videoViewCount?.toString() || '0') || 0,
           posted_at: video.timestamp ? new Date(video.timestamp).toISOString() : null,
-          duration_seconds: video.videoDuration || null
+          duration_seconds: durationSeconds
         };
+
+        console.log(`Inserting video: ${videoData.instagram_id} with ${videoData.views_count} views`);
 
         // Insert or update video (using upsert)
         const { error: videoError } = await supabase
