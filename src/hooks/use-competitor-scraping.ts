@@ -144,11 +144,78 @@ export const useCompetitorScraping = () => {
     }
   };
 
+  const deleteVideo = async (videoId: string) => {
+    try {
+      const { error } = await supabase
+        .from('competitor_videos')
+        .delete()
+        .eq('id', videoId);
+
+      if (error) throw error;
+
+      // Update local state
+      setCompetitors(prev => 
+        prev.map(competitor => ({
+          ...competitor,
+          competitor_videos: competitor.competitor_videos.filter(video => video.id !== videoId)
+        }))
+      );
+      
+      toast({
+        title: "Video eliminado",
+        description: "El video ha sido eliminado correctamente",
+      });
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el video",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const refreshCompetitor = async (competitorId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('competitors')
+        .select(`
+          *,
+          competitor_videos (
+            *,
+            competitor_analysis (*)
+          )
+        `)
+        .eq('id', competitorId)
+        .single();
+
+      if (error) throw error;
+
+      setCompetitors(prev => 
+        prev.map(competitor => 
+          competitor.id === competitorId ? data : competitor
+        )
+      );
+
+      return data;
+    } catch (error) {
+      console.error('Error refreshing competitor:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la información del competidor",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
   return {
     isLoading,
     competitors,
     scrapeCompetitor,
     fetchCompetitors,
-    deleteCompetitor
+    deleteCompetitor,
+    deleteVideo,
+    refreshCompetitor
   };
 };

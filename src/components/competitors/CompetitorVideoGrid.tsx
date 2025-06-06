@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Sparkles, Users, Eye, Heart, MessageCircle } from 'lucide-react';
-import { CompetitorData } from '@/hooks/use-competitor-scraping';
+import { ArrowLeft, Sparkles, Users, Eye, Heart, MessageCircle, RefreshCw } from 'lucide-react';
+import { CompetitorData, useCompetitorScraping } from '@/hooks/use-competitor-scraping';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import CompetitorVideoTable from './CompetitorVideoTable';
@@ -14,10 +13,13 @@ interface CompetitorVideoGridProps {
   onBack: () => void;
 }
 
-const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor, onBack }) => {
+const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: initialCompetitor, onBack }) => {
+  const [competitor, setCompetitor] = useState(initialCompetitor);
   const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
+  const { deleteVideo, refreshCompetitor } = useCompetitorScraping();
 
   const formatNumber = (num: number | null) => {
     if (!num) return '0';
@@ -72,6 +74,35 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor, o
     }
   };
 
+  const handleDeleteVideo = async (videoId: string) => {
+    await deleteVideo(videoId);
+    // Update local state
+    setCompetitor(prev => ({
+      ...prev,
+      competitor_videos: prev.competitor_videos.filter(video => video.id !== videoId)
+    }));
+    // Remove from selected videos if it was selected
+    setSelectedVideos(prev => prev.filter(id => id !== videoId));
+  };
+
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      const updatedCompetitor = await refreshCompetitor(competitor.id);
+      if (updatedCompetitor) {
+        setCompetitor(updatedCompetitor);
+        toast({
+          title: "Datos actualizados",
+          description: "La información del competidor ha sido actualizada",
+        });
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const videos = competitor.competitor_videos || [];
   
   // Calculate stats
@@ -117,12 +148,23 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor, o
           </div>
         </div>
         
-        {selectedVideos.length > 0 && (
-          <Button onClick={handleAnalyzeSelected} disabled={isAnalyzing}>
-            <Sparkles className="h-4 w-4 mr-2" />
-            Analizar Seleccionados ({selectedVideos.length})
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRefreshData}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Actualizar
           </Button>
-        )}
+          
+          {selectedVideos.length > 0 && (
+            <Button onClick={handleAnalyzeSelected} disabled={isAnalyzing}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Analizar Seleccionados ({selectedVideos.length})
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -203,6 +245,7 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor, o
             videos={videos}
             selectedVideos={selectedVideos}
             onVideoSelection={handleVideoSelection}
+            onDeleteVideo={handleDeleteVideo}
           />
         </CardContent>
       </Card>

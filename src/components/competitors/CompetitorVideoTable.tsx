@@ -4,19 +4,32 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Heart, MessageCircle, Eye, Clock, ExternalLink, Play } from 'lucide-react';
+import { Heart, MessageCircle, Eye, Clock, ExternalLink, Play, Trash2 } from 'lucide-react';
 import { CompetitorVideo } from '@/hooks/use-competitor-scraping';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface CompetitorVideoTableProps {
   videos: CompetitorVideo[];
   selectedVideos: string[];
   onVideoSelection: (videoId: string, checked: boolean) => void;
+  onDeleteVideo?: (videoId: string) => void;
 }
 
 const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({ 
   videos, 
   selectedVideos, 
-  onVideoSelection 
+  onVideoSelection,
+  onDeleteVideo 
 }) => {
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -92,7 +105,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
             </TableHead>
             <TableHead className="w-24">Fecha</TableHead>
             <TableHead className="w-20">Estado</TableHead>
-            <TableHead className="w-24">Acciones</TableHead>
+            <TableHead className="w-32">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -183,14 +196,46 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
               </TableCell>
               
               <TableCell>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(video.video_url, '_blank')}
-                  className="h-8 w-8 p-0"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(video.video_url, '_blank')}
+                    className="h-8 w-8 p-0"
+                    title="Ver en Instagram"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                  
+                  {onDeleteVideo && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          title="Eliminar video"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>¿Eliminar video?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta acción no se puede deshacer. El video será eliminado permanentemente de tu análisis.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => onDeleteVideo(video.id)}>
+                            Eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}

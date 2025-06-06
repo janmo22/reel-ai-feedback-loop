@@ -106,10 +106,10 @@ serve(async (req) => {
         throw new Error('No data found for this Instagram user');
       }
 
-      // Extract profile data from first result
-      const profileData = results[0];
+      // Extract profile data from first result that has owner data
+      const profileData = results.find(item => item.ownerFullName || item.ownerUsername) || results[0];
       
-      // Create or update competitor
+      // Create or update competitor with enhanced data mapping
       const competitorData = {
         user_id: userId,
         instagram_username: username,
@@ -124,6 +124,12 @@ serve(async (req) => {
       };
 
       if (competitorId) {
+        // Delete existing videos to avoid duplicates
+        await supabase
+          .from('competitor_videos')
+          .delete()
+          .eq('competitor_id', competitorId);
+
         const { error: updateError } = await supabase
           .from('competitors')
           .update(competitorData)
@@ -141,10 +147,10 @@ serve(async (req) => {
         competitorId = newCompetitor.id;
       }
 
-      // Process videos - filter for actual video content
+      // Process videos with enhanced data mapping
       const videos = results.filter(item => 
         (item.type === 'Video' || item.type === 'ReelVideo') && 
-        (item.videoUrl || item.videoViewCount !== undefined)
+        (item.videoUrl || item.videoViewCount !== undefined || item.shortCode)
       );
       
       console.log(`Processing ${videos.length} videos...`);
@@ -156,11 +162,27 @@ serve(async (req) => {
           durationSeconds = Math.round(parseFloat(video.videoDuration.toString()));
         }
 
+        // Get the best thumbnail URL
+        let thumbnailUrl = null;
+        if (video.images && video.images.length > 0) {
+          thumbnailUrl = video.images[0];
+        } else if (video.displayUrl) {
+          thumbnailUrl = video.displayUrl;
+        }
+
+        // Create video URL
+        let videoUrl = video.videoUrl;
+        if (!videoUrl && video.shortCode) {
+          videoUrl = `https://www.instagram.com/reel/${video.shortCode}/`;
+        } else if (!videoUrl && video.url) {
+          videoUrl = video.url;
+        }
+
         const videoData = {
           competitor_id: competitorId,
           instagram_id: video.id?.toString() || video.shortCode || `${Date.now()}_${Math.random()}`,
-          video_url: video.videoUrl || `https://www.instagram.com/reel/${video.shortCode}/`,
-          thumbnail_url: video.images?.[0] || video.displayUrl || null,
+          video_url: videoUrl || `https://www.instagram.com/reel/${video.shortCode || 'unknown'}/`,
+          thumbnail_url: thumbnailUrl,
           caption: video.caption || null,
           likes_count: parseInt(video.likesCount?.toString() || '0') || 0,
           comments_count: parseInt(video.commentsCount?.toString() || '0') || 0,
@@ -169,15 +191,12 @@ serve(async (req) => {
           duration_seconds: durationSeconds
         };
 
-        console.log(`Inserting video: ${videoData.instagram_id} with ${videoData.views_count} views`);
+        console.log(`Inserting video: ${videoData.instagram_id} with ${videoData.views_count} views, ${videoData.likes_count} likes, ${videoData.comments_count} comments`);
 
-        // Insert or update video (using upsert)
+        // Insert video
         const { error: videoError } = await supabase
           .from('competitor_videos')
-          .upsert(videoData, { 
-            onConflict: 'instagram_id',
-            ignoreDuplicates: false 
-          });
+          .insert(videoData);
           
         if (videoError) {
           console.error('Error inserting video:', videoError);
