@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { username, userId } = await req.json();
+    const { username, userId, isMyProfile = false } = await req.json();
     
     if (!username || !userId) {
       return new Response(
@@ -23,7 +23,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Starting scraping for Instagram user: ${username}`);
+    console.log(`Starting scraping for Instagram user: ${username} ${isMyProfile ? '(My Profile)' : '(Competitor)'}`);
 
     // Initialize Supabase client
     const supabase = createClient(
@@ -31,20 +31,23 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Check if competitor already exists
-    const { data: existingCompetitor } = await supabase
-      .from('competitors')
+    const tableName = isMyProfile ? 'my_profile' : 'competitors';
+    const videosTableName = isMyProfile ? 'my_profile_videos' : 'competitor_videos';
+
+    // Check if profile already exists
+    const { data: existingProfile } = await supabase
+      .from(tableName)
       .select('id, last_scraped_at')
       .eq('user_id', userId)
       .eq('instagram_username', username)
       .single();
 
-    let competitorId = existingCompetitor?.id;
+    let profileId = existingProfile?.id;
 
-    // If competitor doesn't exist or was last scraped more than 24 hours ago
-    const shouldScrape = !existingCompetitor || 
-      !existingCompetitor.last_scraped_at ||
-      new Date(existingCompetitor.last_scraped_at).getTime() < Date.now() - 24 * 60 * 60 * 1000;
+    // If profile doesn't exist or was last scraped more than 24 hours ago
+    const shouldScrape = !existingProfile || 
+      !existingProfile.last_scraped_at ||
+      new Date(existingProfile.last_scraped_at).getTime() < Date.now() - 24 * 60 * 60 * 1000;
 
     if (shouldScrape) {
       console.log('Starting Apify scraping...');
@@ -109,8 +112,8 @@ serve(async (req) => {
       // Extract profile data from first result that has owner data
       const profileData = results.find(item => item.ownerFullName || item.ownerUsername) || results[0];
       
-      // Create or update competitor with enhanced data mapping
-      const competitorData = {
+      // Create or update profile with enhanced data mapping
+      const profileRecord = {
         user_id: userId,
         instagram_username: username,
         display_name: profileData.ownerFullName || profileData.fullName || null,
@@ -123,34 +126,34 @@ serve(async (req) => {
         last_scraped_at: new Date().toISOString()
       };
 
-      if (competitorId) {
+      if (profileId) {
         // Delete existing videos to avoid duplicates
         await supabase
-          .from('competitor_videos')
+          .from(videosTableName)
           .delete()
-          .eq('competitor_id', competitorId);
+          .eq(isMyProfile ? 'my_profile_id' : 'competitor_id', profileId);
 
         const { error: updateError } = await supabase
-          .from('competitors')
-          .update(competitorData)
-          .eq('id', competitorId);
+          .from(tableName)
+          .update(profileRecord)
+          .eq('id', profileId);
           
         if (updateError) throw updateError;
       } else {
-        const { data: newCompetitor, error: insertError } = await supabase
-          .from('competitors')
-          .insert(competitorData)
+        const { data: newProfile, error: insertError } = await supabase
+          .from(tableName)
+          .insert(profileRecord)
           .select('id')
           .single();
           
         if (insertError) throw insertError;
-        competitorId = newCompetitor.id;
+        profileId = newProfile.id;
       }
 
       // Process videos with enhanced data mapping
       const videos = results.filter(item => 
         (item.type === 'Video' || item.type === 'ReelVideo') && 
-        (item.videoUrl || item.videoViewCount !== undefined || item.shortCode)
+        (item.videoUrl || item.videoPlayCount !== undefined || item.shortCode)
       );
       
       console.log(`Processing ${videos.length} videos...`);
@@ -163,11 +166,9 @@ serve(async (req) => {
         }
 
         // Get the best thumbnail URL
-        let thumbnailUrl = null;
-        if (video.images && video.images.length > 0) {
+        let thumbnailUrl = video.displayUrl || null;
+        if (!thumbnailUrl && video.images && video.images.length > 0) {
           thumbnailUrl = video.images[0];
-        } else if (video.displayUrl) {
-          thumbnailUrl = video.displayUrl;
         }
 
         // Create video URL
@@ -178,24 +179,28 @@ serve(async (req) => {
           videoUrl = video.url;
         }
 
+        // Count hashtags
+        const hashtagsCount = Array.isArray(video.hashtags) ? video.hashtags.length : 0;
+
         const videoData = {
-          competitor_id: competitorId,
+          [isMyProfile ? 'my_profile_id' : 'competitor_id']: profileId,
           instagram_id: video.id?.toString() || video.shortCode || `${Date.now()}_${Math.random()}`,
           video_url: videoUrl || `https://www.instagram.com/reel/${video.shortCode || 'unknown'}/`,
           thumbnail_url: thumbnailUrl,
           caption: video.caption || null,
           likes_count: parseInt(video.likesCount?.toString() || '0') || 0,
           comments_count: parseInt(video.commentsCount?.toString() || '0') || 0,
-          views_count: parseInt(video.videoViewCount?.toString() || '0') || 0,
+          views_count: parseInt(video.videoPlayCount?.toString() || '0') || 0,
           posted_at: video.timestamp ? new Date(video.timestamp).toISOString() : null,
-          duration_seconds: durationSeconds
+          duration_seconds: durationSeconds,
+          hashtags_count: hashtagsCount
         };
 
         console.log(`Inserting video: ${videoData.instagram_id} with ${videoData.views_count} views, ${videoData.likes_count} likes, ${videoData.comments_count} comments`);
 
         // Insert video
         const { error: videoError } = await supabase
-          .from('competitor_videos')
+          .from(videosTableName)
           .insert(videoData);
           
         if (videoError) {
@@ -206,25 +211,28 @@ serve(async (req) => {
       console.log(`Successfully processed ${videos.length} videos for ${username}`);
     }
 
-    // Return competitor data with videos
-    const { data: competitor, error: competitorError } = await supabase
-      .from('competitors')
+    // Return profile data with videos
+    const videosRelation = isMyProfile ? 'my_profile_videos' : 'competitor_videos';
+    const analysisRelation = isMyProfile ? 'my_profile_analysis' : 'competitor_analysis';
+    
+    const { data: profile, error: profileError } = await supabase
+      .from(tableName)
       .select(`
         *,
-        competitor_videos (
+        ${videosRelation} (
           *,
-          competitor_analysis (*)
+          ${analysisRelation} (*)
         )
       `)
-      .eq('id', competitorId)
+      .eq('id', profileId)
       .single();
 
-    if (competitorError) throw competitorError;
+    if (profileError) throw profileError;
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        competitor,
+        [isMyProfile ? 'profile' : 'competitor']: profile,
         message: shouldScrape ? 'Scraping completed successfully' : 'Using cached data'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

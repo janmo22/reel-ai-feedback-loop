@@ -1,12 +1,11 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Heart, MessageCircle, Eye, Clock, ExternalLink, Play, Trash2, Hash, Sparkles, MoreHorizontal } from 'lucide-react';
-import { CompetitorVideo } from '@/hooks/use-competitor-scraping';
-import VideoAnalysisModal from './VideoAnalysisModal';
+import { Heart, MessageCircle, Eye, Clock, ExternalLink, Play, Trash2, Hash, Sparkles } from 'lucide-react';
+import { MyProfileVideo } from '@/hooks/use-my-profile-scraping';
+import MyProfileVideoAnalysisModal from './MyProfileVideoAnalysisModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,22 +25,22 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-interface CompetitorVideoTableProps {
-  videos: CompetitorVideo[];
+interface MyProfileVideoTableProps {
+  videos: MyProfileVideo[];
   selectedVideos: string[];
   onVideoSelection: (videoId: string, checked: boolean) => void;
   onDeleteVideo?: (videoId: string) => void;
-  competitorUsername: string;
+  profileUsername: string;
 }
 
-const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({ 
+const MyProfileVideoTable: React.FC<MyProfileVideoTableProps> = ({ 
   videos, 
   selectedVideos, 
   onVideoSelection,
   onDeleteVideo,
-  competitorUsername
+  profileUsername
 }) => {
-  const [selectedVideo, setSelectedVideo] = useState<CompetitorVideo | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<MyProfileVideo | null>(null);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
   const formatNumber = (num: number) => {
@@ -71,7 +70,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
 
-  const handleAnalyzeVideo = (video: CompetitorVideo) => {
+  const handleAnalyzeVideo = (video: MyProfileVideo) => {
     setSelectedVideo(video);
     setShowAnalysisModal(true);
   };
@@ -224,7 +223,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                 </TableCell>
                 
                 <TableCell>
-                  {video.competitor_analysis && video.competitor_analysis.length > 0 ? (
+                  {video.my_profile_analysis && video.my_profile_analysis.length > 0 ? (
                     <Badge variant="secondary" className="bg-green-100 text-green-800">
                       Analizado
                     </Badge>
@@ -299,22 +298,22 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
         
         {videos.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            No se encontraron videos para este competidor
+            No se encontraron videos en tu perfil
           </div>
         )}
       </div>
 
-      <VideoAnalysisModal
+      <MyProfileVideoAnalysisModal
         video={selectedVideo}
         isOpen={showAnalysisModal}
         onClose={() => {
           setShowAnalysisModal(false);
           setSelectedVideo(null);
         }}
-        competitorUsername={competitorUsername}
+        profileUsername={profileUsername}
       />
     </>
   );
 };
 
-export default CompetitorVideoTable;
+export default MyProfileVideoTable;

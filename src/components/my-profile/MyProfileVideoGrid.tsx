@@ -4,23 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Sparkles, Users, Eye, Heart, MessageCircle, RefreshCw, Hash } from 'lucide-react';
-import { CompetitorData, useCompetitorScraping } from '@/hooks/use-competitor-scraping';
-import { supabase } from '@/integrations/supabase/client';
+import { MyProfileData, useMyProfileScraping } from '@/hooks/use-my-profile-scraping';
 import { useToast } from '@/hooks/use-toast';
-import CompetitorVideoTable from './CompetitorVideoTable';
+import MyProfileVideoTable from './MyProfileVideoTable';
 
-interface CompetitorVideoGridProps {
-  competitor: CompetitorData;
+interface MyProfileVideoGridProps {
+  profile: MyProfileData;
   onBack: () => void;
 }
 
-const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: initialCompetitor, onBack }) => {
-  const [competitor, setCompetitor] = useState(initialCompetitor);
+const MyProfileVideoGrid: React.FC<MyProfileVideoGridProps> = ({ profile: initialProfile, onBack }) => {
+  const [profile, setProfile] = useState(initialProfile);
   const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
-  const { deleteVideo, refreshCompetitor } = useCompetitorScraping();
+  const { deleteVideo, refreshProfile } = useMyProfileScraping();
 
   const formatNumber = (num: number | null) => {
     if (!num) return '0';
@@ -37,50 +35,12 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
     );
   };
 
-  const handleAnalyzeSelected = async () => {
-    if (selectedVideos.length === 0) {
-      toast({
-        title: "Selecciona videos",
-        description: "Debes seleccionar al menos un video para analizar",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsAnalyzing(true);
-
-    try {
-      const { error } = await supabase
-        .from('competitor_videos')
-        .update({ is_selected_for_analysis: true })
-        .in('id', selectedVideos);
-
-      if (error) throw error;
-
-      toast({
-        title: "Videos seleccionados",
-        description: `${selectedVideos.length} videos marcados para análisis. Usa el botón "Analizar" en cada video para enviarlos al webhook.`,
-      });
-
-      setSelectedVideos([]);
-    } catch (error) {
-      console.error('Error selecting videos for analysis:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron seleccionar los videos para análisis",
-        variant: "destructive"
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
   const handleDeleteVideo = async (videoId: string) => {
     await deleteVideo(videoId);
     // Update local state
-    setCompetitor(prev => ({
+    setProfile(prev => ({
       ...prev,
-      competitor_videos: prev.competitor_videos.filter(video => video.id !== videoId)
+      my_profile_videos: prev.my_profile_videos.filter(video => video.id !== videoId)
     }));
     // Remove from selected videos if it was selected
     setSelectedVideos(prev => prev.filter(id => id !== videoId));
@@ -89,12 +49,12 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
   const handleRefreshData = async () => {
     setIsRefreshing(true);
     try {
-      const updatedCompetitor = await refreshCompetitor(competitor.id);
-      if (updatedCompetitor) {
-        setCompetitor(updatedCompetitor);
+      const updatedProfile = await refreshProfile(profile.id);
+      if (updatedProfile) {
+        setProfile(updatedProfile);
         toast({
           title: "Datos actualizados",
-          description: "La información del competidor ha sido actualizada",
+          description: "La información del perfil ha sido actualizada",
         });
       }
     } catch (error) {
@@ -104,7 +64,7 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
     }
   };
 
-  const videos = competitor.competitor_videos || [];
+  const videos = profile.my_profile_videos || [];
   
   // Calculate stats
   const totalViews = videos.reduce((sum, video) => sum + (video.views_count || 0), 0);
@@ -124,24 +84,24 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
             Volver
           </Button>
           <div className="flex items-center gap-4">
-            {competitor.profile_picture_url && (
+            {profile.profile_picture_url && (
               <img
-                src={competitor.profile_picture_url}
-                alt={competitor.display_name || competitor.instagram_username}
+                src={profile.profile_picture_url}
+                alt={profile.display_name || profile.instagram_username}
                 className="w-16 h-16 rounded-full object-cover"
               />
             )}
             <div>
-              <h2 className="text-2xl font-bold">@{competitor.instagram_username}</h2>
-              {competitor.display_name && (
-                <p className="text-lg text-muted-foreground">{competitor.display_name}</p>
+              <h2 className="text-2xl font-bold">@{profile.instagram_username}</h2>
+              {profile.display_name && (
+                <p className="text-lg text-muted-foreground">{profile.display_name}</p>
               )}
               <div className="flex items-center gap-4 mt-1">
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
                   <Users className="h-3 w-3" />
-                  {formatNumber(competitor.follower_count)} seguidores
+                  {formatNumber(profile.follower_count)} seguidores
                 </span>
-                {competitor.is_verified && (
+                {profile.is_verified && (
                   <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                     Verificado
                   </Badge>
@@ -160,13 +120,6 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
             <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             Actualizar
           </Button>
-          
-          {selectedVideos.length > 0 && (
-            <Button onClick={handleAnalyzeSelected} disabled={isAnalyzing}>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Marcar Seleccionados ({selectedVideos.length})
-            </Button>
-          )}
         </div>
       </div>
 
@@ -234,13 +187,13 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
       </div>
 
       {/* Bio */}
-      {competitor.bio && (
+      {profile.bio && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Biografía</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">{competitor.bio}</p>
+            <p className="text-muted-foreground">{profile.bio}</p>
           </CardContent>
         </Card>
       )}
@@ -249,19 +202,19 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Videos ({videos.length})</span>
+            <span>Mis Videos ({videos.length})</span>
             <div className="text-sm font-normal text-muted-foreground">
               {selectedVideos.length > 0 && `${selectedVideos.length} seleccionados`}
             </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <CompetitorVideoTable
+          <MyProfileVideoTable
             videos={videos}
             selectedVideos={selectedVideos}
             onVideoSelection={handleVideoSelection}
             onDeleteVideo={handleDeleteVideo}
-            competitorUsername={competitor.instagram_username}
+            profileUsername={profile.instagram_username}
           />
         </CardContent>
       </Card>
@@ -269,4 +222,4 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
   );
 };
 
-export default CompetitorVideoGrid;
+export default MyProfileVideoGrid;
