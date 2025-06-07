@@ -32,7 +32,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Call Apify actor - using the correct Instagram Reel Scraper with username field
+    // Call Apify actor - using the correct Instagram Reel Scraper with username as array
     const apifyToken = Deno.env.get('APIFY_API_KEY')
     if (!apifyToken) {
       throw new Error('APIFY_API_KEY not configured')
@@ -44,7 +44,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        username: username,
+        username: [username], // Username debe ser un array
         resultsLimit: 50
       })
     })
