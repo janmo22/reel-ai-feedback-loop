@@ -32,23 +32,20 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Call Apify actor
+    // Call Apify actor - using the correct Instagram Reel Scraper
     const apifyToken = Deno.env.get('APIFY_API_KEY')
     if (!apifyToken) {
       throw new Error('APIFY_API_KEY not configured')
     }
 
-    const apifyResponse = await fetch(`https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${apifyToken}`, {
+    const apifyResponse = await fetch(`https://api.apify.com/v2/acts/apify~instagram-reel-scraper/run-sync-get-dataset-items?token=${apifyToken}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         usernames: [username],
-        resultsType: 'posts',
-        resultsLimit: 50,
-        searchType: 'hashtag',
-        searchLimit: 1
+        resultsLimit: 50
       })
     })
 
@@ -65,10 +62,19 @@ serve(async (req) => {
       throw new Error('No data returned from Instagram scraper')
     }
 
-    // Process profile data
-    const profileData = apifyData[0]
+    // Process profile data from the first item
+    const firstItem = apifyData[0]
+    const profileData = {
+      fullName: firstItem.ownerFullName || null,
+      profilePicUrl: firstItem.ownerProfilePicUrl || null,
+      followersCount: firstItem.ownerFollowersCount || 0,
+      followsCount: firstItem.ownerFollowsCount || 0,
+      postsCount: firstItem.ownerPostsCount || 0,
+      biography: firstItem.ownerBiography || null,
+      verified: firstItem.ownerIsVerified || false
+    }
     
-    // Determine table name based on profile type
+    // Determine table names based on profile type
     const profileTableName = isMyProfile ? 'my_profile' : 'competitors'
     const videosTableName = isMyProfile ? 'my_profile_videos' : 'competitor_videos'
 
@@ -89,13 +95,13 @@ serve(async (req) => {
         .insert({
           user_id: userId,
           instagram_username: username,
-          display_name: profileData.fullName || null,
-          profile_picture_url: profileData.profilePicUrl || null,
-          follower_count: profileData.followersCount || 0,
-          following_count: profileData.followsCount || 0,
-          posts_count: profileData.postsCount || 0,
-          bio: profileData.biography || null,
-          is_verified: profileData.verified || false,
+          display_name: profileData.fullName,
+          profile_picture_url: profileData.profilePicUrl,
+          follower_count: profileData.followersCount,
+          following_count: profileData.followsCount,
+          posts_count: profileData.postsCount,
+          bio: profileData.biography,
+          is_verified: profileData.verified,
           last_scraped_at: new Date().toISOString()
         })
         .select()
@@ -113,13 +119,13 @@ serve(async (req) => {
       await supabase
         .from(profileTableName)
         .update({
-          display_name: profileData.fullName || null,
-          profile_picture_url: profileData.profilePicUrl || null,
-          follower_count: profileData.followersCount || 0,
-          following_count: profileData.followsCount || 0,
-          posts_count: profileData.postsCount || 0,
-          bio: profileData.biography || null,
-          is_verified: profileData.verified || false,
+          display_name: profileData.fullName,
+          profile_picture_url: profileData.profilePicUrl,
+          follower_count: profileData.followersCount,
+          following_count: profileData.followsCount,
+          posts_count: profileData.postsCount,
+          bio: profileData.biography,
+          is_verified: profileData.verified,
           last_scraped_at: new Date().toISOString()
         })
         .eq('id', profileId)
@@ -127,14 +133,13 @@ serve(async (req) => {
       console.log(`Updated existing profile with ID: ${profileId}`)
     }
 
-    // Process videos
-    const videos = apifyData.filter((item: any) => item.type === 'Video')
-    console.log(`Processing ${videos.length} videos...`)
+    // Process videos (reels)
+    console.log(`Processing ${apifyData.length} reels...`)
 
-    for (const video of videos) {
+    for (const reel of apifyData) {
       try {
         // Count hashtags from caption
-        const hashtagCount = video.caption ? (video.caption.match(/#\w+/g) || []).length : 0
+        const hashtagCount = reel.caption ? (reel.caption.match(/#\w+/g) || []).length : 0
         
         const foreignKeyField = isMyProfile ? 'my_profile_id' : 'competitor_id'
         
@@ -143,7 +148,7 @@ serve(async (req) => {
           .from(videosTableName)
           .select('id')
           .eq(foreignKeyField, profileId)
-          .eq('instagram_id', video.id)
+          .eq('instagram_id', reel.id)
           .single()
 
         if (!existingVideo) {
@@ -152,31 +157,31 @@ serve(async (req) => {
             .from(videosTableName)
             .insert({
               [foreignKeyField]: profileId,
-              instagram_id: video.id,
-              video_url: video.url,
-              thumbnail_url: video.displayUrl || null,
-              caption: video.caption || null,
-              likes_count: video.likesCount || 0,
-              comments_count: video.commentsCount || 0,
-              views_count: video.videoPlayCount || 0,
-              posted_at: video.timestamp ? new Date(video.timestamp).toISOString() : null,
-              duration_seconds: video.videoLength || null,
+              instagram_id: reel.id,
+              video_url: reel.videoUrl,
+              thumbnail_url: reel.displayUrl || null,
+              caption: reel.caption || null,
+              likes_count: reel.likesCount || 0,
+              comments_count: reel.commentsCount || 0,
+              views_count: reel.videoViewCount || 0,
+              posted_at: reel.timestamp ? new Date(reel.timestamp).toISOString() : null,
+              duration_seconds: reel.videoDurationSecs || null,
               hashtags_count: hashtagCount
             })
 
           if (videoError) {
             console.error('Error inserting video:', videoError)
           } else {
-            console.log(`Inserted video: ${video.id}`)
+            console.log(`Inserted video: ${reel.id}`)
           }
         } else {
           // Update existing video
           const { error: updateError } = await supabase
             .from(videosTableName)
             .update({
-              likes_count: video.likesCount || 0,
-              comments_count: video.commentsCount || 0,
-              views_count: video.videoPlayCount || 0,
+              likes_count: reel.likesCount || 0,
+              comments_count: reel.commentsCount || 0,
+              views_count: reel.videoViewCount || 0,
               hashtags_count: hashtagCount
             })
             .eq('id', existingVideo.id)
@@ -184,11 +189,11 @@ serve(async (req) => {
           if (updateError) {
             console.error('Error updating video:', updateError)
           } else {
-            console.log(`Updated video: ${video.id}`)
+            console.log(`Updated video: ${reel.id}`)
           }
         }
       } catch (videoError) {
-        console.error('Error processing video:', video.id, videoError)
+        console.error('Error processing video:', reel.id, videoError)
       }
     }
 
