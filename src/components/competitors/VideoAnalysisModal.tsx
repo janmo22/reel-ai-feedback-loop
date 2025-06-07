@@ -67,7 +67,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
         comments_count: video.comments_count,
         views_count: video.views_count,
         duration_seconds: video.duration_seconds,
-        hashtags_count: video.hashtags_count,
+        hashtags_count: video.hashtags_count || 0,
         posted_at: video.posted_at,
         thumbnail_url: video.thumbnail_url,
         analysis_notes: analysisNotes,

@@ -29,6 +29,7 @@ export interface CompetitorVideo {
   views_count: number;
   posted_at: string | null;
   duration_seconds: number | null;
+  hashtags_count: number | null;
   is_selected_for_analysis: boolean;
   competitor_analysis: any[];
 }
@@ -52,12 +53,13 @@ export const useCompetitorScraping = () => {
     setIsLoading(true);
     
     try {
-      console.log(`Starting scraping for username: ${username}`);
+      console.log(`Starting scraping for competitor: ${username}`);
       
       const { data, error } = await supabase.functions.invoke('scrape-competitor', {
         body: { 
           username: username.replace('@', ''), 
-          userId: user.id 
+          userId: user.id,
+          isMyProfile: false
         }
       });
 

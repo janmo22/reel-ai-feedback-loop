@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -66,7 +67,7 @@ const MyProfileVideoAnalysisModal: React.FC<MyProfileVideoAnalysisModalProps> = 
         comments_count: video.comments_count,
         views_count: video.views_count,
         duration_seconds: video.duration_seconds,
-        hashtags_count: video.hashtags_count,
+        hashtags_count: video.hashtags_count || 0,
         posted_at: video.posted_at,
         thumbnail_url: video.thumbnail_url,
         analysis_notes: analysisNotes,

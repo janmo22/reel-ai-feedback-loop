@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Heart, MessageCircle, Eye, Clock, ExternalLink, Play, Trash2, Hash, Sparkles, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Eye, Clock, ExternalLink, Play, Trash2, Hash, Sparkles } from 'lucide-react';
 import { CompetitorVideo } from '@/hooks/use-competitor-scraping';
 import VideoAnalysisModal from './VideoAnalysisModal';
 import {

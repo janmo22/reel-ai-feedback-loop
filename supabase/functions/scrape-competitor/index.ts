@@ -8,241 +8,229 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { username, userId, isMyProfile = false } = await req.json();
+    const { username, userId, isMyProfile = false } = await req.json()
     
     if (!username || !userId) {
       return new Response(
-        JSON.stringify({ error: 'Username and userId are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        JSON.stringify({ success: false, error: 'Username and userId are required' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      )
     }
 
-    console.log(`Starting scraping for Instagram user: ${username} ${isMyProfile ? '(My Profile)' : '(Competitor)'}`);
+    console.log(`Starting scraping for ${isMyProfile ? 'my profile' : 'competitor'}: ${username}`)
 
-    // Initialize Supabase client
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    )
 
-    const tableName = isMyProfile ? 'my_profile' : 'competitors';
-    const videosTableName = isMyProfile ? 'my_profile_videos' : 'competitor_videos';
+    // Call Apify actor
+    const apifyToken = Deno.env.get('APIFY_API_KEY')
+    if (!apifyToken) {
+      throw new Error('APIFY_API_KEY not configured')
+    }
+
+    const apifyResponse = await fetch(`https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${apifyToken}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        usernames: [username],
+        resultsType: 'posts',
+        resultsLimit: 50,
+        searchType: 'hashtag',
+        searchLimit: 1
+      })
+    })
+
+    if (!apifyResponse.ok) {
+      const errorText = await apifyResponse.text()
+      console.error('Apify API error:', errorText)
+      throw new Error(`Apify API error: ${apifyResponse.status}`)
+    }
+
+    const apifyData = await apifyResponse.json()
+    console.log('Apify response received, processing data...')
+
+    if (!apifyData || apifyData.length === 0) {
+      throw new Error('No data returned from Instagram scraper')
+    }
+
+    // Process profile data
+    const profileData = apifyData[0]
+    
+    // Determine table name based on profile type
+    const profileTableName = isMyProfile ? 'my_profile' : 'competitors'
+    const videosTableName = isMyProfile ? 'my_profile_videos' : 'competitor_videos'
 
     // Check if profile already exists
     const { data: existingProfile } = await supabase
-      .from(tableName)
-      .select('id, last_scraped_at')
+      .from(profileTableName)
+      .select('id')
       .eq('user_id', userId)
       .eq('instagram_username', username)
-      .single();
+      .single()
 
-    let profileId = existingProfile?.id;
+    let profileId = existingProfile?.id
 
-    // If profile doesn't exist or was last scraped more than 24 hours ago
-    const shouldScrape = !existingProfile || 
-      !existingProfile.last_scraped_at ||
-      new Date(existingProfile.last_scraped_at).getTime() < Date.now() - 24 * 60 * 60 * 1000;
+    if (!profileId) {
+      // Create new profile
+      const { data: newProfile, error: profileError } = await supabase
+        .from(profileTableName)
+        .insert({
+          user_id: userId,
+          instagram_username: username,
+          display_name: profileData.fullName || null,
+          profile_picture_url: profileData.profilePicUrl || null,
+          follower_count: profileData.followersCount || 0,
+          following_count: profileData.followsCount || 0,
+          posts_count: profileData.postsCount || 0,
+          bio: profileData.biography || null,
+          is_verified: profileData.verified || false,
+          last_scraped_at: new Date().toISOString()
+        })
+        .select()
+        .single()
 
-    if (shouldScrape) {
-      console.log('Starting Apify scraping...');
-      
-      // Run Apify actor
-      const apifyApiKey = Deno.env.get('APIFY_API_KEY');
-      
-      const runInput = {
-        username: [username],
-        resultsLimit: 50,
-        addParentData: true
-      };
-
-      // Start the actor run
-      const startResponse = await fetch(`https://api.apify.com/v2/acts/apify~instagram-reel-scraper/runs?token=${apifyApiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(runInput),
-      });
-
-      if (!startResponse.ok) {
-        throw new Error(`Failed to start Apify actor: ${startResponse.statusText}`);
+      if (profileError) {
+        console.error('Error creating profile:', profileError)
+        throw new Error(`Error creating profile: ${profileError.message}`)
       }
 
-      const runData = await startResponse.json();
-      const runId = runData.data.id;
-      
-      console.log(`Apify run started with ID: ${runId}`);
+      profileId = newProfile.id
+      console.log(`Created new profile with ID: ${profileId}`)
+    } else {
+      // Update existing profile
+      await supabase
+        .from(profileTableName)
+        .update({
+          display_name: profileData.fullName || null,
+          profile_picture_url: profileData.profilePicUrl || null,
+          follower_count: profileData.followersCount || 0,
+          following_count: profileData.followsCount || 0,
+          posts_count: profileData.postsCount || 0,
+          bio: profileData.biography || null,
+          is_verified: profileData.verified || false,
+          last_scraped_at: new Date().toISOString()
+        })
+        .eq('id', profileId)
 
-      // Wait for the run to finish (poll every 5 seconds, max 5 minutes)
-      let runStatus = 'RUNNING';
-      let attempts = 0;
-      const maxAttempts = 60;
-
-      while (runStatus === 'RUNNING' && attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
-        const statusResponse = await fetch(`https://api.apify.com/v2/acts/apify~instagram-reel-scraper/runs/${runId}?token=${apifyApiKey}`);
-        const statusData = await statusResponse.json();
-        runStatus = statusData.data.status;
-        attempts++;
-        
-        console.log(`Attempt ${attempts}: Run status is ${runStatus}`);
-      }
-
-      if (runStatus !== 'SUCCEEDED') {
-        throw new Error(`Apify run failed or timed out. Status: ${runStatus}`);
-      }
-
-      // Get the results
-      const resultsResponse = await fetch(`https://api.apify.com/v2/datasets/${runData.data.defaultDatasetId}/items?token=${apifyApiKey}`);
-      const results = await resultsResponse.json();
-      
-      console.log(`Received ${results.length} items from Apify`);
-
-      if (results.length === 0) {
-        throw new Error('No data found for this Instagram user');
-      }
-
-      // Extract profile data from first result that has owner data
-      const profileData = results.find(item => item.ownerFullName || item.ownerUsername) || results[0];
-      
-      // Create or update profile with enhanced data mapping
-      const profileRecord = {
-        user_id: userId,
-        instagram_username: username,
-        display_name: profileData.ownerFullName || profileData.fullName || null,
-        profile_picture_url: profileData.profilePicUrl || null,
-        follower_count: profileData.followersCount || null,
-        following_count: profileData.followsCount || null,
-        posts_count: profileData.postsCount || null,
-        bio: profileData.biography || null,
-        is_verified: profileData.verified || false,
-        last_scraped_at: new Date().toISOString()
-      };
-
-      if (profileId) {
-        // Delete existing videos to avoid duplicates
-        await supabase
-          .from(videosTableName)
-          .delete()
-          .eq(isMyProfile ? 'my_profile_id' : 'competitor_id', profileId);
-
-        const { error: updateError } = await supabase
-          .from(tableName)
-          .update(profileRecord)
-          .eq('id', profileId);
-          
-        if (updateError) throw updateError;
-      } else {
-        const { data: newProfile, error: insertError } = await supabase
-          .from(tableName)
-          .insert(profileRecord)
-          .select('id')
-          .single();
-          
-        if (insertError) throw insertError;
-        profileId = newProfile.id;
-      }
-
-      // Process videos with enhanced data mapping
-      const videos = results.filter(item => 
-        (item.type === 'Video' || item.type === 'ReelVideo') && 
-        (item.videoUrl || item.videoPlayCount !== undefined || item.shortCode)
-      );
-      
-      console.log(`Processing ${videos.length} videos...`);
-      
-      for (const video of videos) {
-        // Parse duration safely
-        let durationSeconds = null;
-        if (video.videoDuration !== undefined && video.videoDuration !== null) {
-          durationSeconds = Math.round(parseFloat(video.videoDuration.toString()));
-        }
-
-        // Get the best thumbnail URL
-        let thumbnailUrl = video.displayUrl || null;
-        if (!thumbnailUrl && video.images && video.images.length > 0) {
-          thumbnailUrl = video.images[0];
-        }
-
-        // Create video URL
-        let videoUrl = video.videoUrl;
-        if (!videoUrl && video.shortCode) {
-          videoUrl = `https://www.instagram.com/reel/${video.shortCode}/`;
-        } else if (!videoUrl && video.url) {
-          videoUrl = video.url;
-        }
-
-        // Count hashtags
-        const hashtagsCount = Array.isArray(video.hashtags) ? video.hashtags.length : 0;
-
-        const videoData = {
-          [isMyProfile ? 'my_profile_id' : 'competitor_id']: profileId,
-          instagram_id: video.id?.toString() || video.shortCode || `${Date.now()}_${Math.random()}`,
-          video_url: videoUrl || `https://www.instagram.com/reel/${video.shortCode || 'unknown'}/`,
-          thumbnail_url: thumbnailUrl,
-          caption: video.caption || null,
-          likes_count: parseInt(video.likesCount?.toString() || '0') || 0,
-          comments_count: parseInt(video.commentsCount?.toString() || '0') || 0,
-          views_count: parseInt(video.videoPlayCount?.toString() || '0') || 0,
-          posted_at: video.timestamp ? new Date(video.timestamp).toISOString() : null,
-          duration_seconds: durationSeconds,
-          hashtags_count: hashtagsCount
-        };
-
-        console.log(`Inserting video: ${videoData.instagram_id} with ${videoData.views_count} views, ${videoData.likes_count} likes, ${videoData.comments_count} comments`);
-
-        // Insert video
-        const { error: videoError } = await supabase
-          .from(videosTableName)
-          .insert(videoData);
-          
-        if (videoError) {
-          console.error('Error inserting video:', videoError);
-        }
-      }
-
-      console.log(`Successfully processed ${videos.length} videos for ${username}`);
+      console.log(`Updated existing profile with ID: ${profileId}`)
     }
 
-    // Return profile data with videos
-    const videosRelation = isMyProfile ? 'my_profile_videos' : 'competitor_videos';
-    const analysisRelation = isMyProfile ? 'my_profile_analysis' : 'competitor_analysis';
-    
-    const { data: profile, error: profileError } = await supabase
-      .from(tableName)
+    // Process videos
+    const videos = apifyData.filter((item: any) => item.type === 'Video')
+    console.log(`Processing ${videos.length} videos...`)
+
+    for (const video of videos) {
+      try {
+        // Count hashtags from caption
+        const hashtagCount = video.caption ? (video.caption.match(/#\w+/g) || []).length : 0
+        
+        const foreignKeyField = isMyProfile ? 'my_profile_id' : 'competitor_id'
+        
+        // Check if video already exists
+        const { data: existingVideo } = await supabase
+          .from(videosTableName)
+          .select('id')
+          .eq(foreignKeyField, profileId)
+          .eq('instagram_id', video.id)
+          .single()
+
+        if (!existingVideo) {
+          // Insert new video
+          const { error: videoError } = await supabase
+            .from(videosTableName)
+            .insert({
+              [foreignKeyField]: profileId,
+              instagram_id: video.id,
+              video_url: video.url,
+              thumbnail_url: video.displayUrl || null,
+              caption: video.caption || null,
+              likes_count: video.likesCount || 0,
+              comments_count: video.commentsCount || 0,
+              views_count: video.videoPlayCount || 0,
+              posted_at: video.timestamp ? new Date(video.timestamp).toISOString() : null,
+              duration_seconds: video.videoLength || null,
+              hashtags_count: hashtagCount
+            })
+
+          if (videoError) {
+            console.error('Error inserting video:', videoError)
+          } else {
+            console.log(`Inserted video: ${video.id}`)
+          }
+        } else {
+          // Update existing video
+          const { error: updateError } = await supabase
+            .from(videosTableName)
+            .update({
+              likes_count: video.likesCount || 0,
+              comments_count: video.commentsCount || 0,
+              views_count: video.videoPlayCount || 0,
+              hashtags_count: hashtagCount
+            })
+            .eq('id', existingVideo.id)
+
+          if (updateError) {
+            console.error('Error updating video:', updateError)
+          } else {
+            console.log(`Updated video: ${video.id}`)
+          }
+        }
+      } catch (videoError) {
+        console.error('Error processing video:', video.id, videoError)
+      }
+    }
+
+    // Fetch the complete profile data with videos
+    const { data: completeProfile, error: fetchError } = await supabase
+      .from(profileTableName)
       .select(`
         *,
-        ${videosRelation} (
-          *,
-          ${analysisRelation} (*)
-        )
+        ${videosTableName} (*)
       `)
       .eq('id', profileId)
-      .single();
+      .single()
 
-    if (profileError) throw profileError;
+    if (fetchError) {
+      console.error('Error fetching complete profile:', fetchError)
+      throw new Error(`Error fetching profile data: ${fetchError.message}`)
+    }
 
+    const responseKey = isMyProfile ? 'profile' : 'competitor'
+    
     return new Response(
       JSON.stringify({ 
         success: true, 
-        [isMyProfile ? 'profile' : 'competitor']: profile,
-        message: shouldScrape ? 'Scraping completed successfully' : 'Using cached data'
+        [responseKey]: completeProfile 
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
 
   } catch (error) {
-    console.error('Error in scrape-competitor function:', error);
+    console.error('Error in scrape-competitor function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      JSON.stringify({ 
+        success: false, 
+        error: error.message 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    )
   }
-});
+})
