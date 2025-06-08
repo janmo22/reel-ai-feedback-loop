@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +15,7 @@ export interface CompetitorData {
   is_verified: boolean;
   last_scraped_at: string | null;
   competitor_videos: CompetitorVideo[];
+  isLoading?: boolean; // Add loading state
 }
 
 export interface CompetitorVideo {
@@ -52,6 +52,25 @@ export const useCompetitorScraping = () => {
 
     setIsLoading(true);
     
+    // Create a temporary competitor with loading state
+    const tempCompetitor: CompetitorData = {
+      id: `temp-${Date.now()}`,
+      instagram_username: username.replace('@', ''),
+      display_name: null,
+      profile_picture_url: null,
+      follower_count: null,
+      following_count: null,
+      posts_count: null,
+      bio: null,
+      is_verified: false,
+      last_scraped_at: null,
+      competitor_videos: [],
+      isLoading: true
+    };
+
+    // Add temporary competitor to show loading state
+    setCompetitors(prev => [tempCompetitor, ...prev]);
+
     try {
       console.log(`Starting scraping for competitor: ${username}`);
       
@@ -72,6 +91,10 @@ export const useCompetitorScraping = () => {
         throw new Error(data.error || 'Error desconocido en el scraping');
       }
 
+      // Remove temporary competitor and add real one
+      setCompetitors(prev => prev.filter(c => c.id !== tempCompetitor.id));
+      setCompetitors(prev => [data.competitor, ...prev]);
+
       toast({
         title: "¡Competidor agregado!",
         description: `Se han extraído los datos de @${username} correctamente`,
@@ -81,6 +104,10 @@ export const useCompetitorScraping = () => {
       
     } catch (error) {
       console.error('Error scraping competitor:', error);
+      
+      // Remove temporary competitor on error
+      setCompetitors(prev => prev.filter(c => c.id !== tempCompetitor.id));
+      
       toast({
         title: "Error al agregar competidor",
         description: error.message || "No se pudo extraer la información del competidor",

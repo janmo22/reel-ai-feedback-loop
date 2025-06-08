@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, Heart, MessageCircle, Play, Trash2, ExternalLink } from 'lucide-react';
 import { CompetitorData } from '@/hooks/use-competitor-scraping';
+import LoadingCompetitorCard from './LoadingCompetitorCard';
 
 interface CompetitorCardProps {
   competitor: CompetitorData;
@@ -18,6 +19,11 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
   onDelete, 
   onViewVideos 
 }) => {
+  // Show loading state if competitor is being scraped
+  if (competitor.isLoading) {
+    return <LoadingCompetitorCard username={competitor.instagram_username} />;
+  }
+
   const formatNumber = (num: number | null) => {
     if (!num) return '0';
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
