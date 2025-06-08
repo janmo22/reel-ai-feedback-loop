@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,7 +16,7 @@ export interface CompetitorData {
   is_verified: boolean;
   last_scraped_at: string | null;
   competitor_videos: CompetitorVideo[];
-  isLoading?: boolean; // Add loading state
+  isLoading?: boolean;
 }
 
 export interface CompetitorVideo {
@@ -93,7 +94,27 @@ export const useCompetitorScraping = () => {
 
       // Remove temporary competitor and add real one
       setCompetitors(prev => prev.filter(c => c.id !== tempCompetitor.id));
-      setCompetitors(prev => [data.competitor, ...prev]);
+      
+      // Fetch the complete competitor data with analysis
+      const { data: completeCompetitor, error: fetchError } = await supabase
+        .from('competitors')
+        .select(`
+          *,
+          competitor_videos!inner (
+            *,
+            competitor_analysis (*)
+          )
+        `)
+        .eq('id', data.competitor.id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching complete competitor:', fetchError);
+        // If fetch fails, still add the basic competitor data
+        setCompetitors(prev => [data.competitor, ...prev]);
+      } else {
+        setCompetitors(prev => [completeCompetitor, ...prev]);
+      }
 
       toast({
         title: "¡Competidor agregado!",
@@ -123,8 +144,6 @@ export const useCompetitorScraping = () => {
     if (!user) return;
 
     try {
-      console.log('Fetching competitors with analysis data...');
-      
       const { data, error } = await supabase
         .from('competitors')
         .select(`
@@ -139,7 +158,6 @@ export const useCompetitorScraping = () => {
 
       if (error) throw error;
       
-      console.log('Fetched competitors data:', data);
       setCompetitors(data || []);
     } catch (error) {
       console.error('Error fetching competitors:', error);
