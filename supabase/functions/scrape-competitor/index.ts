@@ -32,7 +32,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Call Apify actor - using the correct Instagram Reel Scraper with username as array
+    // Call Apify actor
     const apifyToken = Deno.env.get('APIFY_API_KEY')
     if (!apifyToken) {
       throw new Error('APIFY_API_KEY not configured')
@@ -152,20 +152,20 @@ serve(async (req) => {
           .single()
 
         if (!existingVideo) {
-          // Insert new video
+          // Insert new video - using correct field mapping
           const { error: videoError } = await supabase
             .from(videosTableName)
             .insert({
               [foreignKeyField]: profileId,
               instagram_id: reel.id,
-              video_url: reel.videoUrl,
+              video_url: reel.videoUrl || reel.url,
               thumbnail_url: reel.displayUrl || null,
               caption: reel.caption || null,
               likes_count: reel.likesCount || 0,
               comments_count: reel.commentsCount || 0,
-              views_count: reel.videoViewCount || 0,
+              views_count: reel.videoPlayCount || reel.videoViewCount || 0, // Correct mapping for views
               posted_at: reel.timestamp ? new Date(reel.timestamp).toISOString() : null,
-              duration_seconds: reel.videoDurationSecs || null,
+              duration_seconds: reel.videoDuration || null,
               hashtags_count: hashtagCount
             })
 
@@ -175,13 +175,13 @@ serve(async (req) => {
             console.log(`Inserted video: ${reel.id}`)
           }
         } else {
-          // Update existing video
+          // Update existing video with correct field mapping
           const { error: updateError } = await supabase
             .from(videosTableName)
             .update({
               likes_count: reel.likesCount || 0,
               comments_count: reel.commentsCount || 0,
-              views_count: reel.videoViewCount || 0,
+              views_count: reel.videoPlayCount || reel.videoViewCount || 0, // Correct mapping for views
               hashtags_count: hashtagCount
             })
             .eq('id', existingVideo.id)

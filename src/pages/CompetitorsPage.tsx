@@ -4,7 +4,8 @@ import { useCompetitorScraping, CompetitorData } from '@/hooks/use-competitor-sc
 import AddCompetitorForm from '@/components/competitors/AddCompetitorForm';
 import CompetitorCard from '@/components/competitors/CompetitorCard';
 import CompetitorVideoGrid from '@/components/competitors/CompetitorVideoGrid';
-import { Users, Target } from 'lucide-react';
+import { Target, TrendingUp, Users2, Info } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 const CompetitorsPage: React.FC = () => {
   const { competitors, fetchCompetitors, deleteCompetitor } = useCompetitorScraping();
@@ -24,75 +25,173 @@ const CompetitorsPage: React.FC = () => {
 
   const handleBackToList = () => {
     setSelectedCompetitor(null);
-    fetchCompetitors(); // Refresh data when going back
+    fetchCompetitors();
   };
 
   if (selectedCompetitor) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
-        <CompetitorVideoGrid 
-          competitor={selectedCompetitor} 
-          onBack={handleBackToList}
-        />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="container mx-auto px-6 py-8 max-w-7xl">
+          <CompetitorVideoGrid 
+            competitor={selectedCompetitor} 
+            onBack={handleBackToList}
+          />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Target className="h-8 w-8 text-flow-electric" />
-          <h1 className="text-3xl font-bold">Análisis de Competencia</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
+        {/* Header Section */}
+        <div className="mb-10">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
+              <Target className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                Análisis de Competencia
+              </h1>
+              <p className="text-lg text-gray-600 mt-1">
+                Descubre estrategias ganadoras analizando el contenido de tus competidores
+              </p>
+            </div>
+          </div>
         </div>
-        <p className="text-muted-foreground">
-          Analiza el contenido de tus competidores en Instagram para mejorar tu estrategia
-        </p>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-1">
-          <AddCompetitorForm onCompetitorAdded={handleCompetitorAdded} />
+        {/* Stats Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Competidores</p>
+                  <p className="text-3xl font-bold text-gray-900">{competitors.length}</p>
+                </div>
+                <Users2 className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Videos Analizados</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {competitors.reduce((sum, comp) => sum + (comp.competitor_videos?.length || 0), 0)}
+                  </p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Insights Generados</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {competitors.reduce((sum, comp) => 
+                      sum + comp.competitor_videos?.reduce((videoSum, video) => 
+                        videoSum + (video.competitor_analysis?.length || 0), 0
+                      ), 0)}
+                  </p>
+                </div>
+                <Target className="h-8 w-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        
-        <div className="lg:col-span-2">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg border">
-            <h3 className="font-semibold text-lg mb-2">¿Cómo funciona?</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• Agrega el username de Instagram de tu competidor</li>
-              <li>• Extraemos automáticamente sus últimos reels y datos del perfil</li>
-              <li>• Selecciona los videos que quieres analizar con IA</li>
-              <li>• Obtén insights sobre su estrategia de contenido</li>
-            </ul>
+
+        {/* Main Content */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Add Competitor Form */}
+          <div className="xl:col-span-1">
+            <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm sticky top-6">
+              <CardContent className="p-6">
+                <AddCompetitorForm onCompetitorAdded={handleCompetitorAdded} />
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* How it Works */}
+          <div className="xl:col-span-2">
+            <Card className="border-0 shadow-xl bg-gradient-to-r from-blue-50 to-purple-50 mb-8">
+              <CardContent className="p-8">
+                <div className="flex items-start gap-4">
+                  <Info className="h-6 w-6 text-blue-600 mt-1 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-bold text-xl text-gray-900 mb-4">¿Cómo funciona?</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                          <p className="text-gray-700">Agrega el username de Instagram</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                          <p className="text-gray-700">Extracción automática de reels</p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                          <p className="text-gray-700">Selecciona videos para analizar</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                          <p className="text-gray-700">Obtén insights con IA</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Competitors Grid */}
+            {competitors.length > 0 ? (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                  <Users2 className="h-6 w-6 text-blue-600" />
+                  Tus Competidores ({competitors.length})
+                </h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {competitors.map((competitor) => (
+                    <CompetitorCard
+                      key={competitor.id}
+                      competitor={competitor}
+                      onDelete={deleteCompetitor}
+                      onViewVideos={handleViewVideos}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+                <CardContent className="p-12 text-center">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Users2 className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Aún no tienes competidores</h3>
+                  <p className="text-gray-600 mb-6">
+                    Agrega tu primer competidor para comenzar a analizar su estrategia de contenido
+                  </p>
+                  <div className="w-full max-w-md mx-auto">
+                    <p className="text-sm text-gray-500">
+                      💡 Tip: Busca cuentas similares a la tuya en tu nicho para obtener mejores insights
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
-
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Competidores ({competitors.length})
-        </h2>
-      </div>
-
-      {competitors.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {competitors.map((competitor) => (
-            <CompetitorCard
-              key={competitor.id}
-              competitor={competitor}
-              onDelete={deleteCompetitor}
-              onViewVideos={handleViewVideos}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No hay competidores</h3>
-          <p className="text-gray-500">Agrega tu primer competidor para comenzar el análisis</p>
-        </div>
-      )}
     </div>
   );
 };
