@@ -57,6 +57,7 @@ serve(async (req) => {
 
     const apifyData = await apifyResponse.json()
     console.log('Apify response received, processing data...')
+    console.log('Sample data structure:', JSON.stringify(apifyData[0], null, 2))
 
     if (!apifyData || apifyData.length === 0) {
       throw new Error('No data returned from Instagram scraper')
@@ -143,6 +144,17 @@ serve(async (req) => {
         
         const foreignKeyField = isMyProfile ? 'my_profile_id' : 'competitor_id'
         
+        // Parse duration properly - convert string to number if needed
+        let durationSeconds = null
+        if (reel.videoDuration) {
+          if (typeof reel.videoDuration === 'string') {
+            const parsed = parseFloat(reel.videoDuration)
+            durationSeconds = isNaN(parsed) ? null : Math.round(parsed)
+          } else if (typeof reel.videoDuration === 'number') {
+            durationSeconds = Math.round(reel.videoDuration)
+          }
+        }
+        
         // Check if video already exists
         const { data: existingVideo } = await supabase
           .from(videosTableName)
@@ -152,7 +164,7 @@ serve(async (req) => {
           .single()
 
         if (!existingVideo) {
-          // Insert new video - using correct field mapping
+          // Insert new video with proper field mapping
           const { error: videoError } = await supabase
             .from(videosTableName)
             .insert({
@@ -163,14 +175,14 @@ serve(async (req) => {
               caption: reel.caption || null,
               likes_count: reel.likesCount || 0,
               comments_count: reel.commentsCount || 0,
-              views_count: reel.videoPlayCount || reel.videoViewCount || 0, // Correct mapping for views
+              views_count: reel.videoPlayCount || reel.videoViewCount || reel.viewsCount || 0,
               posted_at: reel.timestamp ? new Date(reel.timestamp).toISOString() : null,
-              duration_seconds: reel.videoDuration || null,
+              duration_seconds: durationSeconds,
               hashtags_count: hashtagCount
             })
 
           if (videoError) {
-            console.error('Error inserting video:', videoError)
+            console.error('Error inserting video:', reel.id, videoError)
           } else {
             console.log(`Inserted video: ${reel.id}`)
           }
@@ -181,13 +193,14 @@ serve(async (req) => {
             .update({
               likes_count: reel.likesCount || 0,
               comments_count: reel.commentsCount || 0,
-              views_count: reel.videoPlayCount || reel.videoViewCount || 0, // Correct mapping for views
-              hashtags_count: hashtagCount
+              views_count: reel.videoPlayCount || reel.videoViewCount || reel.viewsCount || 0,
+              hashtags_count: hashtagCount,
+              duration_seconds: durationSeconds
             })
             .eq('id', existingVideo.id)
 
           if (updateError) {
-            console.error('Error updating video:', updateError)
+            console.error('Error updating video:', reel.id, updateError)
           } else {
             console.log(`Updated video: ${reel.id}`)
           }

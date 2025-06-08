@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Heart, MessageCircle, Eye, Clock, ExternalLink, Play, Trash2, Hash, Sparkles } from 'lucide-react';
+import { Heart, MessageCircle, Eye, Clock, ExternalLink, Play, Trash2, Hash, Sparkles, ArrowDown, ArrowUp } from 'lucide-react';
 import { CompetitorVideo } from '@/hooks/use-competitor-scraping';
 import VideoAnalysisModal from './VideoAnalysisModal';
 import {
@@ -34,6 +34,9 @@ interface CompetitorVideoTableProps {
   competitorUsername: string;
 }
 
+type SortField = 'views_count' | 'likes_count' | 'posted_at' | 'comments_count';
+type SortDirection = 'asc' | 'desc';
+
 const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({ 
   videos, 
   selectedVideos, 
@@ -43,6 +46,8 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
 }) => {
   const [selectedVideo, setSelectedVideo] = useState<CompetitorVideo | null>(null);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('views_count');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -76,6 +81,41 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     setShowAnalysisModal(true);
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedVideos = [...videos].sort((a, b) => {
+    let aValue: any = a[sortField];
+    let bValue: any = b[sortField];
+
+    // Handle null values
+    if (aValue === null || aValue === undefined) aValue = 0;
+    if (bValue === null || bValue === undefined) bValue = 0;
+
+    // Handle date sorting
+    if (sortField === 'posted_at') {
+      aValue = new Date(aValue).getTime();
+      bValue = new Date(bValue).getTime();
+    }
+
+    if (sortDirection === 'asc') {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
+  });
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return null;
+    return sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };
+
   return (
     <>
       <div className="rounded-md border">
@@ -99,22 +139,40 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
               <TableHead className="w-20">Miniatura</TableHead>
               <TableHead>Contenido</TableHead>
               <TableHead className="w-24">
-                <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSort('likes_count')}
+                  className="h-auto p-0 text-left flex items-center gap-1 hover:bg-transparent"
+                >
                   <Heart className="h-4 w-4" />
                   Likes
-                </div>
+                  {getSortIcon('likes_count')}
+                </Button>
               </TableHead>
               <TableHead className="w-24">
-                <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSort('views_count')}
+                  className="h-auto p-0 text-left flex items-center gap-1 hover:bg-transparent"
+                >
                   <Eye className="h-4 w-4" />
                   Views
-                </div>
+                  {getSortIcon('views_count')}
+                </Button>
               </TableHead>
               <TableHead className="w-24">
-                <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSort('comments_count')}
+                  className="h-auto p-0 text-left flex items-center gap-1 hover:bg-transparent"
+                >
                   <MessageCircle className="h-4 w-4" />
                   Comentarios
-                </div>
+                  {getSortIcon('comments_count')}
+                </Button>
               </TableHead>
               <TableHead className="w-20">
                 <div className="flex items-center gap-1">
@@ -128,13 +186,23 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                   Duración
                 </div>
               </TableHead>
-              <TableHead className="w-24">Fecha</TableHead>
+              <TableHead className="w-24">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSort('posted_at')}
+                  className="h-auto p-0 text-left flex items-center gap-1 hover:bg-transparent"
+                >
+                  Fecha
+                  {getSortIcon('posted_at')}
+                </Button>
+              </TableHead>
               <TableHead className="w-20">Estado</TableHead>
               <TableHead className="w-40">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {videos.map((video) => (
+            {sortedVideos.map((video) => (
               <TableRow key={video.id} className="hover:bg-muted/50">
                 <TableCell>
                   <Checkbox
