@@ -123,6 +123,8 @@ export const useCompetitorScraping = () => {
     if (!user) return;
 
     try {
+      console.log('Fetching competitors with analysis data...');
+      
       const { data, error } = await supabase
         .from('competitors')
         .select(`
@@ -137,6 +139,7 @@ export const useCompetitorScraping = () => {
 
       if (error) throw error;
       
+      console.log('Fetched competitors data:', data);
       setCompetitors(data || []);
     } catch (error) {
       console.error('Error fetching competitors:', error);

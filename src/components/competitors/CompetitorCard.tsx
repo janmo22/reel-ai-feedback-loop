@@ -31,9 +31,13 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
     return num.toString();
   };
 
+  // Count videos with analysis - check competitor_analysis array
   const videosWithAnalysis = competitor.competitor_videos?.filter(
-    video => video.competitor_analysis?.length > 0
+    video => video.competitor_analysis && video.competitor_analysis.length > 0
   ).length || 0;
+
+  console.log('Competitor videos:', competitor.competitor_videos);
+  console.log('Videos with analysis:', videosWithAnalysis);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
