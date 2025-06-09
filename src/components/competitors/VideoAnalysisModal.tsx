@@ -69,7 +69,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
         duration_seconds: video.duration_seconds,
         hashtags_count: video.hashtags_count || 0,
         posted_at: video.posted_at,
-        thumbnail_url: video.thumbnail_url,
+        thumbnail_url: video.thumbnail_url, // Incluir la portada
         analysis_notes: analysisNotes,
         timestamp: new Date().toISOString()
       };
@@ -91,13 +91,15 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
         });
         onClose();
       } else {
-        throw new Error(`Error del webhook: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Error del webhook: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('Error enviando para análisis:', error);
       toast({
         title: "Error",
-        description: "No se pudo enviar el video para análisis. Inténtalo de nuevo.",
+        description: error instanceof Error ? error.message : "No se pudo enviar el video para análisis. Inténtalo de nuevo.",
         variant: "destructive"
       });
     } finally {
@@ -118,52 +120,59 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
         <div className="space-y-6">
           {/* Video Preview */}
           <div className="flex gap-4">
-            <div className="w-32 h-48 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+            <div className="w-40 h-56 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
               {video.thumbnail_url ? (
                 <img
                   src={video.thumbnail_url}
-                  alt="Video thumbnail"
+                  alt="Portada del video"
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }}
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                  Sin imagen
+              ) : null}
+              <div className={`w-full h-full flex items-center justify-center text-gray-400 ${video.thumbnail_url ? 'hidden' : ''}`}>
+                <div className="text-center">
+                  <Sparkles className="h-8 w-8 mx-auto mb-2" />
+                  <p className="text-sm">Sin portada</p>
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="flex-1 space-y-3">
               {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="flex items-center gap-2 p-2 bg-red-50 rounded-lg">
+                <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg border border-red-100">
                   <Heart className="h-4 w-4 text-red-500" />
                   <div>
                     <p className="text-xs text-gray-600">Likes</p>
-                    <p className="font-semibold">{formatNumber(video.likes_count)}</p>
+                    <p className="font-semibold text-lg">{formatNumber(video.likes_count)}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+                <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
                   <Eye className="h-4 w-4 text-blue-500" />
                   <div>
                     <p className="text-xs text-gray-600">Views</p>
-                    <p className="font-semibold">{formatNumber(video.views_count)}</p>
+                    <p className="font-semibold text-lg">{formatNumber(video.views_count)}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
+                <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-100">
                   <MessageCircle className="h-4 w-4 text-green-500" />
                   <div>
                     <p className="text-xs text-gray-600">Comentarios</p>
-                    <p className="font-semibold">{formatNumber(video.comments_count)}</p>
+                    <p className="font-semibold text-lg">{formatNumber(video.comments_count)}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg">
+                <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg border border-purple-100">
                   <Hash className="h-4 w-4 text-purple-500" />
                   <div>
                     <p className="text-xs text-gray-600">Hashtags</p>
-                    <p className="font-semibold">{video.hashtags_count || 0}</p>
+                    <p className="font-semibold text-lg">{video.hashtags_count || 0}</p>
                   </div>
                 </div>
               </div>
@@ -186,7 +195,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
           {video.caption && (
             <div>
               <h4 className="font-semibold mb-2">Caption completo:</h4>
-              <div className="p-3 bg-gray-50 rounded-lg max-h-32 overflow-y-auto">
+              <div className="p-4 bg-gray-50 rounded-lg max-h-40 overflow-y-auto border">
                 <p className="text-sm whitespace-pre-wrap">{video.caption}</p>
               </div>
             </div>
@@ -199,7 +208,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
               value={analysisNotes}
               onChange={(e) => setAnalysisNotes(e.target.value)}
               placeholder="Añade contexto específico o preguntas sobre este video para el análisis con IA..."
-              className="min-h-[80px]"
+              className="min-h-[100px] resize-none"
             />
           </div>
 

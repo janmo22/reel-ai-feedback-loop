@@ -136,7 +136,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                   }}
                 />
               </TableHead>
-              <TableHead className="w-20">Miniatura</TableHead>
+              <TableHead className="w-24">Portada</TableHead>
               <TableHead>Contenido</TableHead>
               <TableHead className="w-24">
                 <Button
@@ -212,18 +212,25 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                 </TableCell>
                 
                 <TableCell>
-                  <div className="relative w-12 h-16 bg-gray-100 rounded overflow-hidden">
+                  <div className="relative w-16 h-20 bg-gray-100 rounded-lg overflow-hidden shadow-sm">
                     {video.thumbnail_url ? (
                       <img
                         src={video.thumbnail_url}
-                        alt="Thumbnail"
+                        alt="Portada del reel"
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
                       />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Play className="h-4 w-4 text-gray-400" />
-                      </div>
-                    )}
+                    ) : null}
+                    <div className={`absolute inset-0 flex items-center justify-center ${video.thumbnail_url ? 'hidden' : ''}`}>
+                      <Play className="h-6 w-6 text-gray-400" />
+                    </div>
+                    <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                      <Play className="h-4 w-4 text-white" />
+                    </div>
                   </div>
                 </TableCell>
                 

@@ -164,14 +164,14 @@ serve(async (req) => {
           .single()
 
         if (!existingVideo) {
-          // Insert new video with proper field mapping
+          // Insert new video with proper field mapping and displayUrl as thumbnail
           const { error: videoError } = await supabase
             .from(videosTableName)
             .insert({
               [foreignKeyField]: profileId,
               instagram_id: reel.id,
               video_url: reel.videoUrl || reel.url,
-              thumbnail_url: reel.displayUrl || null,
+              thumbnail_url: reel.displayUrl || null, // Use displayUrl as thumbnail
               caption: reel.caption || null,
               likes_count: reel.likesCount || 0,
               comments_count: reel.commentsCount || 0,
@@ -191,6 +191,7 @@ serve(async (req) => {
           const { error: updateError } = await supabase
             .from(videosTableName)
             .update({
+              thumbnail_url: reel.displayUrl || null, // Update thumbnail with displayUrl
               likes_count: reel.likesCount || 0,
               comments_count: reel.commentsCount || 0,
               views_count: reel.videoPlayCount || reel.videoViewCount || reel.viewsCount || 0,
