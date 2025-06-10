@@ -27,8 +27,7 @@ const navigation = [
     icon: PenTool,
     subItems: [
       { name: 'Estrategia de Videos', href: '/strategy', icon: Target },
-      { name: 'Crear Video', href: '/create-video', icon: Video },
-      { name: 'Videos Creados', href: '/created-videos', icon: FileVideo },
+      { name: 'Videos', href: '/videos', icon: FileVideo },
       { name: 'Subir Video', href: '/upload', icon: Upload },
       { name: 'Historial', href: '/history', icon: History },
     ]

@@ -16,7 +16,7 @@ import StrategyPage from "./pages/StrategyPage";
 import CompetitorsPage from "./pages/CompetitorsPage";
 import MyProfilePage from "./pages/MyProfilePage";
 import CreateVideoPage from "./pages/CreateVideoPage";
-import CreatedVideosPage from "./pages/CreatedVideosPage";
+import VideosPage from "./pages/VideosPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,7 +33,7 @@ const App = () => (
             <Route path="/" element={<AppLayout><Outlet /></AppLayout>}>
               <Route index element={<Index />} />
               <Route path="create-video" element={<CreateVideoPage />} />
-              <Route path="created-videos" element={<CreatedVideosPage />} />
+              <Route path="videos" element={<VideosPage />} />
               <Route path="upload" element={<UploadPage />} />
               <Route path="results/:videoId" element={<ResultsPage />} />
               <Route path="history" element={<HistoryPage />} />
