@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback } from 'react';
 
 export interface TextSegment {
@@ -76,6 +77,7 @@ export const useTextEditor = () => {
   });
   const [showShotMenu, setShowShotMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [showRecordedShots, setShowRecordedShots] = useState(true);
   
   const editorRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
@@ -157,6 +159,16 @@ export const useTextEditor = () => {
     ));
   }, []);
 
+  // Verificar si hay overlap con segmentos existentes
+  const hasOverlap = useCallback((sectionId: string, startIndex: number, endIndex: number) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return false;
+
+    return section.segments.some(segment => 
+      !(endIndex <= segment.startIndex || startIndex >= segment.endIndex)
+    );
+  }, [sections]);
+
   const assignShotToText = useCallback((shotId: string) => {
     if (!selectedText.range || !selectedText.text || !selectedText.sectionId) return;
     
@@ -168,6 +180,14 @@ export const useTextEditor = () => {
 
     const startIndex = section.content.indexOf(selectedText.text);
     const endIndex = startIndex + selectedText.text.length;
+
+    // Verificar si hay overlap
+    if (hasOverlap(selectedText.sectionId, startIndex, endIndex)) {
+      alert('Esta parte del texto ya tiene una toma asignada. Por favor, selecciona un texto diferente.');
+      setShowShotMenu(false);
+      setSelectedText({ text: '', range: null, sectionId: null });
+      return;
+    }
 
     const newSegment: TextSegment = {
       id: `segment-${Date.now()}`,
@@ -186,7 +206,7 @@ export const useTextEditor = () => {
 
     setShowShotMenu(false);
     setSelectedText({ text: '', range: null, sectionId: null });
-  }, [selectedText, shots, sections]);
+  }, [selectedText, shots, sections, hasOverlap]);
 
   const applySegmentStyling = useCallback((sectionId: string) => {
     const editor = editorRefs.current[sectionId];
@@ -232,6 +252,10 @@ export const useTextEditor = () => {
     );
   }, [sections]);
 
+  const toggleRecordedShotsVisibility = useCallback(() => {
+    setShowRecordedShots(prev => !prev);
+  }, []);
+
   return {
     sections,
     shots,
@@ -240,6 +264,7 @@ export const useTextEditor = () => {
     showShotMenu,
     menuPosition,
     editorRefs,
+    showRecordedShots,
     handleTextSelection,
     addShot,
     assignShotToText,
@@ -253,6 +278,7 @@ export const useTextEditor = () => {
     getAllContent,
     getAllSegments,
     toggleSectionCollapse,
-    toggleShotRecorded
+    toggleShotRecorded,
+    toggleRecordedShotsVisibility
   };
 };

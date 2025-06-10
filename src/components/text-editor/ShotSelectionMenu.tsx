@@ -15,20 +15,14 @@ interface ShotSelectionMenuProps {
   onClose: () => void;
 }
 
-// Paleta de colores estándar y profesional
+// Paleta de colores más corta y estándar
 const PRESET_COLORS = [
   '#3B82F6', // Blue
   '#EF4444', // Red
   '#10B981', // Green
   '#F59E0B', // Amber
   '#8B5CF6', // Purple
-  '#EC4899', // Pink
-  '#06B6D4', // Cyan
-  '#84CC16', // Lime
-  '#F97316', // Orange
-  '#6366F1', // Indigo
-  '#14B8A6', // Teal
-  '#A855F7'  // Violet
+  '#EC4899'  // Pink
 ];
 
 const ShotSelectionMenu: React.FC<ShotSelectionMenuProps> = ({
@@ -97,6 +91,9 @@ const ShotSelectionMenu: React.FC<ShotSelectionMenuProps> = ({
                       style={{ backgroundColor: shot.color }}
                     />
                     <span className="text-sm">{shot.name}</span>
+                    {shot.recorded && (
+                      <span className="text-xs text-green-600 font-medium">✓</span>
+                    )}
                   </div>
                 </Button>
               ))}
@@ -129,7 +126,7 @@ const ShotSelectionMenu: React.FC<ShotSelectionMenuProps> = ({
                 autoFocus
               />
               
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {PRESET_COLORS.map((color) => (
                   <button
                     key={color}

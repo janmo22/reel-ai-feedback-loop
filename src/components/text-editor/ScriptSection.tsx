@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, Plus, X, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, X, Check, Eye, EyeOff } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScriptSection as ScriptSectionType, SECTION_TYPES, TextSegment } from '@/hooks/use-text-editor';
 
@@ -18,6 +18,8 @@ interface ScriptSectionProps {
   onRemoveSegment: (segmentId: string) => void;
   shots: any[];
   editorRef: React.RefObject<HTMLDivElement>;
+  showRecordedShots: boolean;
+  onToggleRecordedShotsVisibility: () => void;
 }
 
 const ScriptSection: React.FC<ScriptSectionProps> = ({
@@ -29,7 +31,9 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   onAddSegmentInfo,
   onRemoveSegment,
   shots,
-  editorRef
+  editorRef,
+  showRecordedShots,
+  onToggleRecordedShotsVisibility
 }) => {
   const sectionConfig = SECTION_TYPES[section.type];
   const contentRef = useRef<HTMLDivElement>(null);
@@ -41,7 +45,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     if (contentRef.current && section.segments.length > 0) {
       renderStyledContent();
     }
-  }, [section.segments, section.content, hoveredSegment]);
+  }, [section.segments, section.content, hoveredSegment, showRecordedShots]);
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -51,6 +55,11 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const getShotName = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
     return shot?.name || 'Sin toma';
+  };
+
+  const isShotRecorded = (shotId?: string) => {
+    const shot = shots.find(s => s.id === shotId);
+    return shot?.recorded || false;
   };
 
   const renderStyledContent = () => {
@@ -97,22 +106,29 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
         const segment = element.segment;
         const shotColor = getShotColor(segment.shotId);
         const shotName = getShotName(segment.shotId);
+        const isRecorded = isShotRecorded(segment.shotId);
         
-        html += `<span 
-          class="segment-highlight relative cursor-pointer transition-all duration-200" 
-          style="
-            background: linear-gradient(to top, ${shotColor}40 0%, ${shotColor}40 2px, transparent 2px, transparent 100%);
-            border-bottom: 2px solid ${shotColor};
-            padding: 1px 2px;
-            margin: 0 1px;
-            position: relative;
-          "
-          data-segment-id="${segment.id}"
-          data-shot-name="${shotName}"
-          data-segment-info="${segment.information || ''}"
-          onmouseenter="this.style.backgroundColor = '${shotColor}20'"
-          onmouseleave="this.style.backgroundColor = 'transparent'"
-        >${segment.text}</span>`;
+        // Determinar si debe mostrarse según el estado de grabación
+        const shouldShow = showRecordedShots || !isRecorded;
+        
+        if (shouldShow) {
+          html += `<span 
+            class="segment-highlight relative cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm border-b-2 ${isRecorded ? 'line-through opacity-70' : ''}" 
+            style="
+              background-color: ${shotColor}20;
+              border-bottom-color: ${shotColor};
+              border-bottom-width: 3px;
+            "
+            data-segment-id="${segment.id}"
+            data-shot-name="${shotName}"
+            data-segment-info="${segment.information || ''}"
+            data-recorded="${isRecorded}"
+            onmouseenter="this.style.backgroundColor = '${shotColor}40'"
+            onmouseleave="this.style.backgroundColor = '${shotColor}20'"
+          >${segment.text}</span>`;
+        } else {
+          html += segment.text;
+        }
       }
 
       lastIndex = element.end;
@@ -191,11 +207,34 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 )}
               </div>
             </div>
-            {section.segments.length > 0 && (
-              <Badge variant="outline" className="text-xs">
-                {section.segments.length} {section.segments.length === 1 ? 'toma' : 'tomas'}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {section.segments.length > 0 && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onToggleRecordedShotsVisibility}
+                        className="h-8 w-8 p-0"
+                      >
+                        {showRecordedShots ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {showRecordedShots ? 'Ocultar tomas grabadas' : 'Mostrar tomas grabadas'}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Badge variant="outline" className="text-xs">
+                    {section.segments.length} {section.segments.length === 1 ? 'toma' : 'tomas'}
+                  </Badge>
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         
@@ -244,7 +283,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 <div 
                   className="absolute z-10 bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-auto"
                   style={{
-                    top: '-30px',
+                    top: '-35px',
                     left: '50%',
                     transform: 'translateX(-50%)',
                   }}
@@ -260,6 +299,12 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
+                  {/* Mostrar información existente */}
+                  {section.segments.find(s => s.id === hoveredSegment)?.information && (
+                    <div className="mt-1 text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
+                      {section.segments.find(s => s.id === hoveredSegment)?.information}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -271,14 +316,17 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 {section.segments.map((segment) => {
                   const shotColor = getShotColor(segment.shotId);
                   const shotName = getShotName(segment.shotId);
+                  const isRecorded = isShotRecorded(segment.shotId);
                   
                   return (
                     <div key={segment.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                       <div
-                        className="w-3 h-3 rounded-full"
+                        className="w-3 h-3 rounded-full border"
                         style={{ backgroundColor: shotColor }}
                       />
-                      <span className="text-sm flex-1">{shotName}: "{segment.text.substring(0, 30)}..."</span>
+                      <span className={`text-sm flex-1 ${isRecorded ? 'line-through opacity-60' : ''}`}>
+                        {shotName}: "{segment.text.substring(0, 30)}..."
+                      </span>
                       
                       {editingInfo === segment.id ? (
                         <div className="flex items-center gap-2">
