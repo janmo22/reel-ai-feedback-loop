@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,9 +29,18 @@ const InspirationManager: React.FC<InspirationManagerProps> = ({
   const handleSubmit = () => {
     if (!formData.title.trim()) return;
 
+    // Determine the type based on what content is provided
+    let inspirationType: 'video' | 'image' | 'note' = 'note';
+    if (selectedImage) {
+      inspirationType = 'image';
+    } else if (formData.url.trim()) {
+      inspirationType = 'video';
+    }
+
     const inspirationData: Omit<Inspiration, 'id'> = {
       title: formData.title.trim(),
       notes: formData.notes.trim(),
+      type: inspirationType,
       url: formData.url.trim() || undefined,
       timestamp: formData.timestamp.trim() || undefined,
       imageFile: selectedImage || undefined
@@ -82,7 +90,7 @@ const InspirationManager: React.FC<InspirationManagerProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
             <Lightbulb className="h-5 w-5 text-yellow-500" />
-            Inspiraciones
+            Zona Creativa
           </CardTitle>
           
           {!showForm && (
