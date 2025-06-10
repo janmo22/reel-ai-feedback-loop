@@ -26,9 +26,6 @@ const ContentSeriesModal: React.FC<ContentSeriesModalProps> = ({
   const [newSeriesName, setNewSeriesName] = useState('');
   const [newSeriesDescription, setNewSeriesDescription] = useState('');
 
-  console.log('ContentSeriesModal rendered - selectedSeries:', selectedSeries);
-  console.log('ContentSeriesModal rendered - contentSeries:', contentSeries);
-
   const handleSelectSeries = () => {
     console.log('handleSelectSeries called with selectedSeries:', selectedSeries);
     onSelectSeries(selectedSeries === 'no-series' ? null : selectedSeries);
@@ -82,11 +79,17 @@ const ContentSeriesModal: React.FC<ContentSeriesModalProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="no-series">Sin serie</SelectItem>
-                    {contentSeries.map((series) => {
+                    {contentSeries && contentSeries.length > 0 && contentSeries.map((series) => {
+                      // Ensure series.id is not empty and is a valid string
+                      if (!series.id || series.id.trim() === '') {
+                        console.warn('Skipping series with empty ID:', series);
+                        return null;
+                      }
+                      
                       console.log('Rendering series option:', series);
                       return (
                         <SelectItem key={series.id} value={series.id}>
-                          {series.name}
+                          {series.name || 'Sin nombre'}
                         </SelectItem>
                       );
                     })}
