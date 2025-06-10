@@ -92,6 +92,17 @@ export const useTextEditor = () => {
     ));
   }, []);
 
+  const removeSegment = useCallback((sectionId: string, segmentId: string) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId 
+        ? {
+            ...section,
+            segments: section.segments.filter(segment => segment.id !== segmentId)
+          }
+        : section
+    ));
+  }, []);
+
   const toggleSectionCollapse = useCallback((sectionId: string) => {
     setSections(prev => prev.map(section => 
       section.id === sectionId 
@@ -178,7 +189,6 @@ export const useTextEditor = () => {
   }, [selectedText, shots, sections]);
 
   const applySegmentStyling = useCallback((sectionId: string) => {
-    // Esta función ahora se maneja en el componente ScriptSection
     const editor = editorRefs.current[sectionId];
     const section = sections.find(s => s.id === sectionId);
     
@@ -236,6 +246,7 @@ export const useTextEditor = () => {
     addInspiration,
     updateSegmentInfo,
     addSegmentInfo,
+    removeSegment,
     updateSectionContent,
     setShowShotMenu,
     applySegmentStyling,

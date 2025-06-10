@@ -181,16 +181,38 @@ const TextSegmentInfo: React.FC<TextSegmentInfoProps> = ({
                           </div>
                         </div>
                         
-                        {!isEditing && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleStartEdit(segment)}
-                            className="h-7 px-2 text-xs"
-                          >
-                            <Edit3 className="h-3 w-3" />
-                          </Button>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {/* Botón para marcar como grabado individual */}
+                          {group.shot && (
+                            <Button
+                              variant={group.shot.recorded ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => onToggleRecorded(group.shot!.id)}
+                              className={`h-6 w-6 p-0 ${
+                                group.shot.recorded 
+                                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                  : 'border-gray-300 hover:bg-gray-100'
+                              }`}
+                            >
+                              {group.shot.recorded ? (
+                                <Check className="h-3 w-3" />
+                              ) : (
+                                <Camera className="h-3 w-3" />
+                              )}
+                            </Button>
+                          )}
+                          
+                          {!isEditing && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleStartEdit(segment)}
+                              className="h-6 px-2 text-xs"
+                            >
+                              <Edit3 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
                       {isEditing ? (

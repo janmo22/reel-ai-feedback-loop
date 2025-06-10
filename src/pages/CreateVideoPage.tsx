@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -192,25 +191,14 @@ const CreateVideoPage: React.FC = () => {
 
             <div>
               <Label htmlFor="main-smp">Mensaje Principal (SMP)</Label>
-              <div className="flex gap-2 mt-1">
-                <Textarea
-                  id="main-smp"
-                  placeholder="¿Cuál es el mensaje principal de tu video?"
-                  value={mainSMP.text}
-                  onChange={(e) => updateMainSMPText(e.target.value)}
-                  className={`flex-1 ${mainSMP.completed ? 'line-through opacity-60' : ''}`}
-                  rows={2}
-                />
-                <Button
-                  type="button"
-                  variant={mainSMP.completed ? "default" : "outline"}
-                  size="sm"
-                  onClick={toggleMainSMPCompleted}
-                  className="mt-1 h-8 w-8 p-0"
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-              </div>
+              <Textarea
+                id="main-smp"
+                placeholder="¿Cuál es el mensaje principal de tu video?"
+                value={mainSMP.text}
+                onChange={(e) => updateMainSMPText(e.target.value)}
+                className="mt-1"
+                rows={1}
+              />
             </div>
 
             <div>
@@ -234,7 +222,7 @@ const CreateVideoPage: React.FC = () => {
                     placeholder="Mensaje secundario"
                     value={smp.text}
                     onChange={(e) => updateSecondarySMP(smp.id, e.target.value)}
-                    rows={2}
+                    rows={1}
                     className={`flex-1 ${smp.completed ? 'line-through opacity-60' : ''}`}
                   />
                   <div className="flex flex-col gap-1">

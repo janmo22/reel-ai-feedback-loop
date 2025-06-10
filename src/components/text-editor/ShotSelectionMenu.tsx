@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,28 +15,20 @@ interface ShotSelectionMenuProps {
   onClose: () => void;
 }
 
-// Colores más distintivos y contrastantes
+// Paleta de colores estándar y profesional
 const PRESET_COLORS = [
-  '#FF0000', // Rojo brillante
-  '#00FF00', // Verde brillante
-  '#0000FF', // Azul brillante
-  '#FF8C00', // Naranja oscuro
-  '#FF1493', // Rosa fucsia
-  '#9400D3', // Violeta
-  '#FFD700', // Dorado
-  '#00CED1', // Turquesa oscuro
-  '#DC143C', // Carmesí
-  '#32CD32', // Verde lima
-  '#4169E1', // Azul real
-  '#FF4500', // Rojo naranja
-  '#DA70D6', // Orquídea
-  '#00FA9A', // Verde menta
-  '#FF6347', // Tomate
-  '#8A2BE2', // Azul violeta
-  '#ADFF2F', // Verde amarillo
-  '#FF69B4', // Rosa caliente
-  '#20B2AA', // Verde mar claro
-  '#B22222'  // Ladrillo
+  '#3B82F6', // Blue
+  '#EF4444', // Red
+  '#10B981', // Green
+  '#F59E0B', // Amber
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
+  '#06B6D4', // Cyan
+  '#84CC16', // Lime
+  '#F97316', // Orange
+  '#6366F1', // Indigo
+  '#14B8A6', // Teal
+  '#A855F7'  // Violet
 ];
 
 const ShotSelectionMenu: React.FC<ShotSelectionMenuProps> = ({

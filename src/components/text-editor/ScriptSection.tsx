@@ -1,9 +1,10 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ChevronDown, ChevronRight, Plus, X, Check } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScriptSection as ScriptSectionType, SECTION_TYPES, TextSegment } from '@/hooks/use-text-editor';
 
@@ -14,6 +15,7 @@ interface ScriptSectionProps {
   onApplyStyling: () => void;
   onToggleCollapse: () => void;
   onAddSegmentInfo: (segmentId: string, info: string) => void;
+  onRemoveSegment: (segmentId: string) => void;
   shots: any[];
   editorRef: React.RefObject<HTMLDivElement>;
 }
@@ -25,21 +27,25 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   onApplyStyling,
   onToggleCollapse,
   onAddSegmentInfo,
+  onRemoveSegment,
   shots,
   editorRef
 }) => {
   const sectionConfig = SECTION_TYPES[section.type];
   const contentRef = useRef<HTMLDivElement>(null);
+  const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
+  const [editingInfo, setEditingInfo] = useState<string | null>(null);
+  const [infoText, setInfoText] = useState('');
 
   useEffect(() => {
     if (contentRef.current && section.segments.length > 0) {
       renderStyledContent();
     }
-  }, [section.segments, section.content]);
+  }, [section.segments, section.content, hoveredSegment]);
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
-    return shot?.color || '#gray';
+    return shot?.color || '#3B82F6';
   };
 
   const getShotName = (shotId?: string) => {
@@ -93,12 +99,19 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
         const shotName = getShotName(segment.shotId);
         
         html += `<span 
-          class="segment-highlight" 
-          style="background-color: ${shotColor}20; border-left: 3px solid ${shotColor}; padding: 2px 4px; margin: 0 1px; border-radius: 3px; position: relative; cursor: help;"
+          class="segment-highlight relative cursor-pointer transition-all duration-200" 
+          style="
+            background: linear-gradient(to top, ${shotColor}40 0%, ${shotColor}40 2px, transparent 2px, transparent 100%);
+            border-bottom: 2px solid ${shotColor};
+            padding: 1px 2px;
+            margin: 0 1px;
+            position: relative;
+          "
           data-segment-id="${segment.id}"
           data-shot-name="${shotName}"
           data-segment-info="${segment.information || ''}"
-          title="${shotName}${segment.information ? ' - ' + segment.information : ''}"
+          onmouseenter="this.style.backgroundColor = '${shotColor}20'"
+          onmouseleave="this.style.backgroundColor = 'transparent'"
         >${segment.text}</span>`;
       }
 
@@ -111,6 +124,20 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     }
 
     contentRef.current.innerHTML = html;
+
+    // Añadir event listeners después de renderizar
+    const segmentElements = contentRef.current.querySelectorAll('.segment-highlight');
+    segmentElements.forEach(element => {
+      const segmentId = element.getAttribute('data-segment-id');
+      
+      element.addEventListener('mouseenter', () => {
+        setHoveredSegment(segmentId);
+      });
+      
+      element.addEventListener('mouseleave', () => {
+        setHoveredSegment(null);
+      });
+    });
   };
 
   const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
@@ -118,11 +145,23 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     onContentChange(newContent);
   };
 
-  const handleAddInfo = (segmentId: string) => {
-    const info = prompt('Añadir información adicional:');
-    if (info) {
-      onAddSegmentInfo(segmentId, info);
+  const handleStartEditInfo = (segmentId: string) => {
+    const segment = section.segments.find(s => s.id === segmentId);
+    setEditingInfo(segmentId);
+    setInfoText(segment?.information || '');
+  };
+
+  const handleSaveInfo = () => {
+    if (editingInfo) {
+      onAddSegmentInfo(editingInfo, infoText);
+      setEditingInfo(null);
+      setInfoText('');
     }
+  };
+
+  const handleCancelEditInfo = () => {
+    setEditingInfo(null);
+    setInfoText('');
   };
 
   return (
@@ -199,41 +238,107 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                   {sectionConfig.placeholder}
                 </div>
               )}
+
+              {/* Hover tooltip para añadir información */}
+              {hoveredSegment && (
+                <div 
+                  className="absolute z-10 bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-auto"
+                  style={{
+                    top: '-30px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Añadir información</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleStartEditInfo(hoveredSegment)}
+                      className="h-4 w-4 p-0 text-white hover:bg-gray-700"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Botones para añadir información a segmentos */}
+            {/* Gestión de segmentos */}
             {section.segments.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-4 space-y-2">
+                <div className="text-sm font-medium text-gray-700 mb-2">Tomas en esta sección:</div>
                 {section.segments.map((segment) => {
                   const shotColor = getShotColor(segment.shotId);
                   const shotName = getShotName(segment.shotId);
                   
                   return (
-                    <Tooltip key={segment.id}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleAddInfo(segment.id)}
-                          className="h-7 px-2 text-xs border border-gray-300 hover:bg-gray-50"
-                          style={{ borderLeftColor: shotColor, borderLeftWidth: '3px' }}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Info: {segment.text.substring(0, 20)}...
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="text-sm">
-                          <div className="font-medium">{shotName}</div>
-                          <div className="text-xs text-gray-600">"{segment.text}"</div>
-                          {segment.information && (
-                            <div className="text-xs mt-1 text-blue-600">
-                              <strong>Info:</strong> {segment.information}
-                            </div>
-                          )}
+                    <div key={segment.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: shotColor }}
+                      />
+                      <span className="text-sm flex-1">{shotName}: "{segment.text.substring(0, 30)}..."</span>
+                      
+                      {editingInfo === segment.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={infoText}
+                            onChange={(e) => setInfoText(e.target.value)}
+                            placeholder="Información adicional..."
+                            className="h-6 text-xs w-40"
+                            autoFocus
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleSaveInfo}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCancelEditInfo}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
                         </div>
-                      </TooltipContent>
-                    </Tooltip>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {segment.information && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                  Info
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{segment.information}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleStartEditInfo(segment.id)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Info
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onRemoveSegment(segment.id)}
+                            className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>

@@ -27,6 +27,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     addInspiration,
     updateSegmentInfo,
     addSegmentInfo,
+    removeSegment,
     updateSectionContent,
     setShowShotMenu,
     applySegmentStyling,
@@ -83,6 +84,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
             onApplyStyling={() => applySegmentStyling(section.id)}
             onToggleCollapse={() => toggleSectionCollapse(section.id)}
             onAddSegmentInfo={(segmentId, info) => addSegmentInfo(section.id, segmentId, info)}
+            onRemoveSegment={(segmentId) => removeSegment(section.id, segmentId)}
             shots={shots}
             editorRef={sectionRefs[section.type as keyof typeof sectionRefs]}
           />
@@ -126,3 +128,5 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
 };
 
 export default NotionStyleEditor;
+
+</initial_code>
