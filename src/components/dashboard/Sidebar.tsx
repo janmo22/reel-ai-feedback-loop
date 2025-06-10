@@ -11,30 +11,38 @@ import {
   Users,
   User,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Video,
+  Search,
+  PenTool
 } from 'lucide-react';
 import { useState } from 'react';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
-  { name: 'Subir Video', href: '/upload', icon: Upload },
-  { name: 'Historial', href: '/history', icon: History },
   { 
-    name: 'Estrategia', 
-    href: '/strategy', 
-    icon: Target,
+    name: 'Zona del Creador', 
+    icon: PenTool,
     subItems: [
-      { name: 'Propuesta de Valor', href: '/strategy?tab=value' },
-      { name: '4 Ps', href: '/strategy?tab=4ps' }
+      { name: 'Crear Video', href: '/create-video', icon: Video },
+      { name: 'Estrategia', href: '/strategy', icon: Target },
+      { name: 'Subir Video', href: '/upload', icon: Upload },
+      { name: 'Historial', href: '/history', icon: History },
     ]
   },
-  { name: 'Competencia', href: '/competitors', icon: Users },
-  { name: 'Mi Perfil', href: '/my-profile', icon: User },
+  { 
+    name: 'Zona de Investigar', 
+    icon: Search,
+    subItems: [
+      { name: 'Competencia', href: '/competitors', icon: Users },
+      { name: 'Mi Perfil', href: '/my-profile', icon: User },
+    ]
+  },
   { name: 'Configuración', href: '/settings', icon: Settings },
 ];
 
 const Sidebar: React.FC = () => {
-  const [expandedItems, setExpandedItems] = useState<string[]>(['Estrategia']);
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Zona del Creador']);
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems(prev => 
@@ -95,6 +103,10 @@ const Sidebar: React.FC = () => {
                               )
                             }
                           >
+                            <subItem.icon
+                              className="mr-3 flex-shrink-0 h-4 w-4"
+                              aria-hidden="true"
+                            />
                             {subItem.name}
                           </NavLink>
                         ))}
