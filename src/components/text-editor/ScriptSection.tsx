@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +61,57 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     return shot?.recorded || false;
   };
 
+  // Función para agrupar segmentos consecutivos con la misma toma
+  const mergeConsecutiveSegments = (segments: TextSegment[]) => {
+    if (segments.length === 0) return [];
+
+    const sortedSegments = [...segments].sort((a, b) => a.startIndex - b.startIndex);
+    const mergedGroups: Array<{
+      shotId?: string;
+      startIndex: number;
+      endIndex: number;
+      segments: TextSegment[];
+      text: string;
+    }> = [];
+
+    let currentGroup = {
+      shotId: sortedSegments[0].shotId,
+      startIndex: sortedSegments[0].startIndex,
+      endIndex: sortedSegments[0].endIndex,
+      segments: [sortedSegments[0]],
+      text: sortedSegments[0].text
+    };
+
+    for (let i = 1; i < sortedSegments.length; i++) {
+      const segment = sortedSegments[i];
+      
+      // Si el segmento actual tiene la misma toma y es consecutivo (o muy cercano)
+      if (segment.shotId === currentGroup.shotId && 
+          segment.startIndex <= currentGroup.endIndex + 2) { // Permitir hasta 2 caracteres de separación (espacios)
+        // Extender el grupo actual
+        currentGroup.endIndex = Math.max(currentGroup.endIndex, segment.endIndex);
+        currentGroup.segments.push(segment);
+        // Actualizar el texto del grupo completo
+        currentGroup.text = section.content.slice(currentGroup.startIndex, currentGroup.endIndex);
+      } else {
+        // Iniciar un nuevo grupo
+        mergedGroups.push(currentGroup);
+        currentGroup = {
+          shotId: segment.shotId,
+          startIndex: segment.startIndex,
+          endIndex: segment.endIndex,
+          segments: [segment],
+          text: segment.text
+        };
+      }
+    }
+    
+    // Añadir el último grupo
+    mergedGroups.push(currentGroup);
+    
+    return mergedGroups;
+  };
+
   const renderStyledContent = () => {
     if (!contentRef.current) return;
 
@@ -71,67 +121,52 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
       return;
     }
 
-    // Crear array de elementos con posiciones
-    const elements: Array<{
-      start: number;
-      end: number;
-      type: 'segment' | 'text';
-      segment?: TextSegment;
-      text?: string;
-    }> = [];
-
-    // Añadir segmentos
-    section.segments.forEach(segment => {
-      elements.push({
-        start: segment.startIndex,
-        end: segment.endIndex,
-        type: 'segment',
-        segment
-      });
-    });
-
-    // Ordenar por posición de inicio
-    elements.sort((a, b) => a.start - b.start);
+    // Agrupar segmentos consecutivos con la misma toma
+    const mergedGroups = mergeConsecutiveSegments(section.segments);
 
     let html = '';
     let lastIndex = 0;
 
-    elements.forEach(element => {
-      // Añadir texto antes del segmento
-      if (element.start > lastIndex) {
-        html += content.slice(lastIndex, element.start);
+    mergedGroups.forEach(group => {
+      // Añadir texto antes del grupo
+      if (group.startIndex > lastIndex) {
+        html += content.slice(lastIndex, group.startIndex);
       }
 
-      if (element.type === 'segment' && element.segment) {
-        const segment = element.segment;
-        const shotColor = getShotColor(segment.shotId);
-        const shotName = getShotName(segment.shotId);
-        const isRecorded = isShotRecorded(segment.shotId);
-        
-        // Determinar si debe mostrarse según el estado de grabación
-        const shouldShow = showRecordedShots || !isRecorded;
-        
-        if (shouldShow) {
-          html += `<span 
-            class="segment-highlight relative cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm border-b-2 ${isRecorded ? 'line-through opacity-70' : ''}" 
-            style="
-              background-color: ${shotColor}20;
-              border-bottom-color: ${shotColor};
-              border-bottom-width: 3px;
-            "
-            data-segment-id="${segment.id}"
-            data-shot-name="${shotName}"
-            data-segment-info="${segment.information || ''}"
-            data-recorded="${isRecorded}"
-            onmouseenter="this.style.backgroundColor = '${shotColor}40'"
-            onmouseleave="this.style.backgroundColor = '${shotColor}20'"
-          >${segment.text}</span>`;
-        } else {
-          html += segment.text;
-        }
+      const shotColor = getShotColor(group.shotId);
+      const shotName = getShotName(group.shotId);
+      const isRecorded = isShotRecorded(group.shotId);
+      
+      // Determinar si debe mostrarse según el estado de grabación
+      const shouldShow = showRecordedShots || !isRecorded;
+      
+      if (shouldShow) {
+        // Usar el primer segmento del grupo para los datos
+        const firstSegment = group.segments[0];
+        const allInfo = group.segments
+          .map(s => s.information)
+          .filter(info => info && info.trim())
+          .join(' | ');
+
+        html += `<span 
+          class="segment-highlight relative cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm border-b-2 ${isRecorded ? 'line-through opacity-70' : ''}" 
+          style="
+            background-color: ${shotColor}20;
+            border-bottom-color: ${shotColor};
+            border-bottom-width: 3px;
+          "
+          data-segment-id="${firstSegment.id}"
+          data-shot-name="${shotName}"
+          data-segment-info="${allInfo}"
+          data-recorded="${isRecorded}"
+          onmouseenter="this.style.backgroundColor = '${shotColor}40'"
+          onmouseleave="this.style.backgroundColor = '${shotColor}20'"
+        >${group.text}</span>`;
+      } else {
+        html += group.text;
       }
 
-      lastIndex = element.end;
+      lastIndex = group.endIndex;
     });
 
     // Añadir texto restante
