@@ -26,7 +26,7 @@ const CreativeZone: React.FC<CreativeZoneProps> = ({
     const isUrl = /^https?:\/\//.test(quickText.trim());
     
     onAddInspiration({
-      title: isUrl ? 'Video de referencia' : 'Idea rápida',
+      title: isUrl ? 'Video de referencia' : quickText.trim().substring(0, 50) + (quickText.trim().length > 50 ? '...' : ''),
       notes: isUrl ? '' : quickText.trim(),
       url: isUrl ? quickText.trim() : undefined,
       type: isUrl ? 'video' : 'note'
@@ -43,22 +43,25 @@ const CreativeZone: React.FC<CreativeZoneProps> = ({
     const imageUrl = URL.createObjectURL(file);
     
     onAddInspiration({
-      title: `Imagen - ${file.name}`,
+      title: `Imagen - ${file.name.split('.')[0]}`,
       notes: '',
       imageUrl,
       imageFile: file,
       type: 'image'
     });
+
+    // Reset the input
+    e.target.value = '';
   };
 
   const handleUrlAdd = () => {
     const url = prompt('Introduce la URL del video:');
-    if (!url) return;
+    if (!url?.trim()) return;
 
     onAddInspiration({
       title: 'Video de referencia',
       notes: '',
-      url,
+      url: url.trim(),
       type: 'video'
     });
   };

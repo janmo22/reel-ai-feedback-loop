@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,8 +15,10 @@ interface ShotSelectionMenuProps {
 }
 
 const PRESET_COLORS = [
-  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-  '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+  '#FF4444', '#00C851', '#007BFF', '#FF8800', '#9C27B0',
+  '#FF1744', '#00E676', '#2196F3', '#FF9800', '#E91E63',
+  '#F44336', '#4CAF50', '#3F51B5', '#FF5722', '#795548',
+  '#E53E3E', '#38A169', '#3182CE', '#DD6B20', '#D53F8C'
 ];
 
 const ShotSelectionMenu: React.FC<ShotSelectionMenuProps> = ({

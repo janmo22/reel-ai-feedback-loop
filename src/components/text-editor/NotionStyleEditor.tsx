@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { useTextEditor, SECTION_TYPES } from '@/hooks/use-text-editor';
 import ShotSelectionMenu from './ShotSelectionMenu';
@@ -100,14 +99,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
         />
       )}
 
-      {/* Gestión de Planos/Tomas */}
-      <ShotManager 
-        shots={shots}
-        onAddShot={addShot}
-        onToggleRecorded={toggleShotRecorded}
-      />
-
-      {/* Información de Segmentos */}
+      {/* Gestión de Tomas - ahora incluye el botón de grabado */}
       {getAllSegments().length > 0 && (
         <TextSegmentInfo
           segments={getAllSegments()}
@@ -118,6 +110,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
               updateSegmentInfo(segment.sectionId, segmentId, information);
             }
           }}
+          onToggleRecorded={toggleShotRecorded}
         />
       )}
 

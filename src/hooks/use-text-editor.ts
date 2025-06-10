@@ -128,17 +128,10 @@ export const useTextEditor = () => {
     ));
   }, []);
 
-  const cleanupSegments = useCallback((sectionId: string, newContent: string) => {
-    setSections(prev => prev.map(section => {
-      if (section.id !== sectionId) return section;
-      
-      // Remove segments that no longer exist in the content
-      const validSegments = section.segments.filter(segment => 
-        newContent.includes(segment.text)
-      );
-      
-      return { ...section, segments: validSegments };
-    }));
+  const updateSectionContent = useCallback((sectionId: string, content: string) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId ? { ...section, content } : section
+    ));
   }, []);
 
   const assignShotToText = useCallback((shotId: string) => {
@@ -150,158 +143,42 @@ export const useTextEditor = () => {
     const section = sections.find(s => s.id === selectedText.sectionId);
     if (!section) return;
 
-    // Check if selection overlaps with existing segments
     const startIndex = section.content.indexOf(selectedText.text);
     const endIndex = startIndex + selectedText.text.length;
 
-    // Remove overlapping segments and extend the new one if needed
-    const nonOverlappingSegments = section.segments.filter(segment => 
-      segment.endIndex <= startIndex || segment.startIndex >= endIndex
-    );
-
-    // Check for adjacent segments with the same shot
-    let finalStartIndex = startIndex;
-    let finalEndIndex = endIndex;
-    let finalText = selectedText.text;
-
-    // Extend to include adjacent segments with the same shot
-    section.segments.forEach(segment => {
-      if (segment.shotId === shotId) {
-        if (segment.endIndex === startIndex) {
-          finalStartIndex = segment.startIndex;
-          finalText = segment.text + finalText;
-        } else if (segment.startIndex === endIndex) {
-          finalEndIndex = segment.endIndex;
-          finalText = finalText + segment.text;
-        }
-      }
-    });
-
-    // Remove segments that are now part of the extended selection
-    const filteredSegments = nonOverlappingSegments.filter(segment => 
-      !(segment.shotId === shotId && (
-        (segment.endIndex === startIndex) || 
-        (segment.startIndex === endIndex)
-      ))
-    );
-
     const newSegment: TextSegment = {
       id: `segment-${Date.now()}`,
-      text: finalText,
+      text: selectedText.text,
       shotId,
       color: shot.color,
-      startIndex: finalStartIndex,
-      endIndex: finalEndIndex
+      startIndex,
+      endIndex
     };
 
     setSections(prev => prev.map(section => 
       section.id === selectedText.sectionId 
-        ? { ...section, segments: [...filteredSegments, newSegment] }
+        ? { ...section, segments: [...section.segments, newSegment] }
         : section
     ));
 
     setShowShotMenu(false);
     setSelectedText({ text: '', range: null, sectionId: null });
-
-    // Apply styling after state update
-    setTimeout(() => applySegmentStyling(selectedText.sectionId), 0);
   }, [selectedText, shots, sections]);
 
   const applySegmentStyling = useCallback((sectionId: string) => {
+    // Simplified styling that doesn't interfere with editing
     const editor = editorRefs.current[sectionId];
     const section = sections.find(s => s.id === sectionId);
     
-    if (!editor || !section || section.segments.length === 0) return;
+    if (!editor || !section) return;
 
-    // Remove existing highlights
-    const existingHighlights = editor.querySelectorAll('.text-segment-highlight');
-    existingHighlights.forEach(highlight => {
-      const parent = highlight.parentNode;
-      if (parent) {
-        parent.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
-        parent.normalize();
-      }
-    });
-
-    // Apply new highlights
-    section.segments.forEach(segment => {
-      const shot = shots.find(s => s.id === segment.shotId);
-      if (!shot) return;
-
-      const walker = document.createTreeWalker(
-        editor,
-        NodeFilter.SHOW_TEXT,
-        null
-      );
-
-      let node;
-      while (node = walker.nextNode()) {
-        const textNode = node as Text;
-        const nodeText = textNode.textContent || '';
-        const segmentIndex = nodeText.indexOf(segment.text);
-        
-        if (segmentIndex !== -1) {
-          const range = document.createRange();
-          range.setStart(textNode, segmentIndex);
-          range.setEnd(textNode, segmentIndex + segment.text.length);
-          
-          const span = document.createElement('span');
-          span.className = 'text-segment-highlight';
-          span.style.backgroundColor = shot.color;
-          span.style.color = 'white';
-          span.style.fontWeight = '600';
-          span.style.borderRadius = '4px';
-          span.style.padding = '2px 6px';
-          span.style.margin = '0 1px';
-          span.style.display = 'inline-block';
-          span.style.position = 'relative';
-          
-          // Add indicator for segments with information
-          if (segment.information) {
-            span.style.borderBottom = `2px solid rgba(255,255,255,0.8)`;
-            span.title = segment.information;
-            
-            // Add info button
-            const infoButton = document.createElement('span');
-            infoButton.innerHTML = '+';
-            infoButton.style.position = 'absolute';
-            infoButton.style.top = '-8px';
-            infoButton.style.right = '-8px';
-            infoButton.style.backgroundColor = 'rgba(0,0,0,0.7)';
-            infoButton.style.color = 'white';
-            infoButton.style.borderRadius = '50%';
-            infoButton.style.width = '16px';
-            infoButton.style.height = '16px';
-            infoButton.style.fontSize = '10px';
-            infoButton.style.display = 'flex';
-            infoButton.style.alignItems = 'center';
-            infoButton.style.justifyContent = 'center';
-            infoButton.style.cursor = 'pointer';
-            span.appendChild(infoButton);
-          }
-          
-          try {
-            range.surroundContents(span);
-          } catch (e) {
-            span.textContent = segment.text;
-            range.deleteContents();
-            range.insertNode(span);
-          }
-          
-          break;
-        }
-      }
-    });
-  }, [sections, shots]);
-
-  const updateSectionContent = useCallback((sectionId: string, content: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId ? { ...section, content } : section
-    ));
-    
-    // Clean up segments that no longer exist
-    cleanupSegments(sectionId, content);
-  }, [cleanupSegments]);
+    // Just add a class to the editor to show it has segments
+    if (section.segments.length > 0) {
+      editor.classList.add('has-segments');
+    } else {
+      editor.classList.remove('has-segments');
+    }
+  }, [sections]);
 
   const addInspiration = useCallback((inspiration: Omit<Inspiration, 'id'>) => {
     const newInspiration: Inspiration = {
@@ -322,10 +199,7 @@ export const useTextEditor = () => {
           }
         : section
     ));
-    
-    // Reapply styling to show the information indicator
-    setTimeout(() => applySegmentStyling(sectionId), 0);
-  }, [applySegmentStyling]);
+  }, []);
 
   const getAllContent = useCallback(() => {
     return sections.map(section => section.content).join('\n\n');
