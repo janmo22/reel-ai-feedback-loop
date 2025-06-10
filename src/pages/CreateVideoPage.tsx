@@ -1,14 +1,35 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Plus, Target, Camera, FileText, Megaphone, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus, Target, Camera, FileText, Megaphone, X, Save, Eye } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+
+interface ContentSeries {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+interface UserShot {
+  id: string;
+  name: string;
+  description: string | null;
+}
 
 const CreateVideoPage: React.FC = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const [title, setTitle] = useState('');
   const [mainSMP, setMainSMP] = useState('');
   const [smps, setSMPs] = useState<string[]>(['']);
   const [hook, setHook] = useState('');
@@ -16,6 +37,42 @@ const CreateVideoPage: React.FC = () => {
   const [valueAdd, setValueAdd] = useState('');
   const [callToAction, setCallToAction] = useState('');
   const [shots, setShots] = useState<string[]>([]);
+  const [selectedSeries, setSelectedSeries] = useState<string>('');
+  const [scriptAnnotations, setScriptAnnotations] = useState({});
+
+  // Fetch content series
+  const { data: contentSeries = [] } = useQuery({
+    queryKey: ['content-series', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('content_series')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as ContentSeries[];
+    },
+    enabled: !!user
+  });
+
+  // Fetch user shots
+  const { data: userShots = [] } = useQuery({
+    queryKey: ['user-shots', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('user_shots')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as UserShot[];
+    },
+    enabled: !!user
+  });
 
   const addSMP = () => {
     setSMPs([...smps, '']);
@@ -45,9 +102,68 @@ const CreateVideoPage: React.FC = () => {
     setShots(shots.filter((_, i) => i !== index));
   };
 
+  const addUserShot = (shot: UserShot) => {
+    setShots([...shots, shot.name]);
+  };
+
+  const saveVideo = async (isDraft = true) => {
+    if (!user || !title.trim()) {
+      toast({
+        title: "Error",
+        description: "El título es obligatorio",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('created_videos')
+        .insert({
+          user_id: user.id,
+          title: title.trim(),
+          main_smp: mainSMP.trim() || null,
+          secondary_smps: smps.filter(smp => smp.trim() !== ''),
+          hook: hook.trim() || null,
+          build_up: buildUp.trim() || null,
+          value_add: valueAdd.trim() || null,
+          call_to_action: callToAction.trim() || null,
+          shots: shots.filter(shot => shot.trim() !== ''),
+          content_series_id: selectedSeries || null,
+          script_annotations: scriptAnnotations
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: isDraft ? "Borrador guardado" : "Video guardado",
+        description: `Tu ${isDraft ? 'borrador' : 'video'} ha sido guardado correctamente.`,
+      });
+
+      // Reset form
+      setTitle('');
+      setMainSMP('');
+      setSMPs(['']);
+      setHook('');
+      setBuildUp('');
+      setValueAdd('');
+      setCallToAction('');
+      setShots([]);
+      setSelectedSeries('');
+      setScriptAnnotations({});
+
+    } catch (error: any) {
+      toast({
+        title: "Error al guardar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const predefinedShots = [
     'Plano general',
-    'Plano medio',
+    'Plano medio', 
     'Primer plano',
     'Plano detalle',
     'Plano cenital',
@@ -72,10 +188,40 @@ const CreateVideoPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-flow-blue" />
-                Mensaje Principal (SMP)
+                Configuración del Video
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="title">Título del Video</Label>
+                <Input
+                  id="title"
+                  placeholder="Título descriptivo para tu video"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              {contentSeries.length > 0 && (
+                <div>
+                  <Label htmlFor="series">Content Series (Opcional)</Label>
+                  <Select value={selectedSeries} onValueChange={setSelectedSeries}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecciona una serie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin serie</SelectItem>
+                      {contentSeries.map((series) => (
+                        <SelectItem key={series.id} value={series.id}>
+                          {series.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div>
                 <Label htmlFor="main-smp">SMP Principal</Label>
                 <Textarea
@@ -151,6 +297,24 @@ const CreateVideoPage: React.FC = () => {
                   </Badge>
                 ))}
               </div>
+
+              {userShots.length > 0 && (
+                <div>
+                  <Label>Tus Planos Guardados</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {userShots.map((shot) => (
+                      <Badge
+                        key={shot.id}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-green-100 transition-colors"
+                        onClick={() => addUserShot(shot)}
+                      >
+                        {shot.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {shots.length > 0 && (
                 <div className="space-y-2">
@@ -248,11 +412,20 @@ const CreateVideoPage: React.FC = () => {
           </Card>
 
           <div className="mt-6 flex gap-3">
-            <Button className="flex-1 bg-flow-blue hover:bg-flow-blue/90">
+            <Button 
+              onClick={() => saveVideo(true)}
+              className="flex-1 bg-flow-blue hover:bg-flow-blue/90"
+            >
+              <Save className="h-4 w-4 mr-2" />
               Guardar Borrador
             </Button>
-            <Button variant="outline" className="flex-1">
-              Vista Previa
+            <Button 
+              onClick={() => saveVideo(false)}
+              variant="outline" 
+              className="flex-1"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Guardar Video
             </Button>
           </div>
         </div>

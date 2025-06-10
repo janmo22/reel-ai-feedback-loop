@@ -157,6 +157,92 @@ export type Database = {
         }
         Relationships: []
       }
+      content_series: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      created_videos: {
+        Row: {
+          build_up: string | null
+          call_to_action: string | null
+          content_series_id: string | null
+          created_at: string
+          hook: string | null
+          id: string
+          main_smp: string | null
+          script_annotations: Json | null
+          secondary_smps: string[] | null
+          shots: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+          value_add: string | null
+        }
+        Insert: {
+          build_up?: string | null
+          call_to_action?: string | null
+          content_series_id?: string | null
+          created_at?: string
+          hook?: string | null
+          id?: string
+          main_smp?: string | null
+          script_annotations?: Json | null
+          secondary_smps?: string[] | null
+          shots?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+          value_add?: string | null
+        }
+        Update: {
+          build_up?: string | null
+          call_to_action?: string | null
+          content_series_id?: string | null
+          created_at?: string
+          hook?: string | null
+          id?: string
+          main_smp?: string | null
+          script_annotations?: Json | null
+          secondary_smps?: string[] | null
+          shots?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          value_add?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "created_videos_content_series_id_fkey"
+            columns: ["content_series_id"]
+            isOneToOne: false
+            referencedRelation: "content_series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           created_at: string | null
@@ -397,6 +483,30 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           value_proposition?: string | null
+        }
+        Relationships: []
+      }
+      user_shots: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          user_id?: string
         }
         Relationships: []
       }
