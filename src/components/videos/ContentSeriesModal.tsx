@@ -54,6 +54,14 @@ const ContentSeriesModal: React.FC<ContentSeriesModalProps> = ({
     setSelectedSeries(value);
   };
 
+  // Filter out series with invalid IDs
+  const validSeries = contentSeries?.filter(series => {
+    return series && 
+           series.id && 
+           typeof series.id === 'string' && 
+           series.id.trim() !== '';
+  }) || [];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -79,13 +87,7 @@ const ContentSeriesModal: React.FC<ContentSeriesModalProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="no-series">Sin serie</SelectItem>
-                    {contentSeries && contentSeries.length > 0 && contentSeries.map((series) => {
-                      // Ensure series.id is not empty and is a valid string
-                      if (!series.id || series.id.trim() === '') {
-                        console.warn('Skipping series with empty ID:', series);
-                        return null;
-                      }
-                      
+                    {validSeries.map((series) => {
                       console.log('Rendering series option:', series);
                       return (
                         <SelectItem key={series.id} value={series.id}>
