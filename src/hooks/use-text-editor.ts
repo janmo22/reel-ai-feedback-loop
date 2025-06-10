@@ -68,25 +68,105 @@ export const useTextEditor = () => {
     return newShot;
   }, []);
 
+  const findTextPosition = useCallback((text: string, content: string) => {
+    const startIndex = content.indexOf(text);
+    if (startIndex === -1) return { startIndex: 0, endIndex: 0 };
+    return {
+      startIndex,
+      endIndex: startIndex + text.length
+    };
+  }, []);
+
   const assignShotToText = useCallback((shotId: string) => {
     if (!selectedText.range || !selectedText.text) return;
     
     const shot = shots.find(s => s.id === shotId);
     if (!shot) return;
 
+    const { startIndex, endIndex } = findTextPosition(selectedText.text, content);
+
     const newSegment: TextSegment = {
       id: `segment-${Date.now()}`,
       text: selectedText.text,
       shotId,
       color: shot.color,
-      startIndex: 0, // This would need proper calculation in a real implementation
-      endIndex: selectedText.text.length
+      startIndex,
+      endIndex
     };
 
     setSegments(prev => [...prev, newSegment]);
     setShowShotMenu(false);
     setSelectedText({ text: '', range: null });
-  }, [selectedText, shots]);
+  }, [selectedText, shots, content, findTextPosition]);
+
+  const applySegmentStyling = useCallback(() => {
+    if (!editorRef.current || segments.length === 0) return;
+
+    const editor = editorRef.current;
+    const textContent = editor.textContent || '';
+    
+    // Remove existing highlights
+    const existingHighlights = editor.querySelectorAll('.text-segment-highlight');
+    existingHighlights.forEach(highlight => {
+      const parent = highlight.parentNode;
+      if (parent) {
+        parent.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
+        parent.normalize();
+      }
+    });
+
+    // Apply new highlights
+    segments.forEach(segment => {
+      const shot = shots.find(s => s.id === segment.shotId);
+      if (!shot) return;
+
+      const walker = document.createTreeWalker(
+        editor,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+
+      let node;
+      while (node = walker.nextNode()) {
+        const textNode = node as Text;
+        const nodeText = textNode.textContent || '';
+        const segmentIndex = nodeText.indexOf(segment.text);
+        
+        if (segmentIndex !== -1) {
+          const range = document.createRange();
+          range.setStart(textNode, segmentIndex);
+          range.setEnd(textNode, segmentIndex + segment.text.length);
+          
+          const span = document.createElement('span');
+          span.className = 'text-segment-highlight';
+          span.style.backgroundColor = `${shot.color}20`; // 20% opacity
+          span.style.color = shot.color;
+          span.style.fontWeight = '500';
+          span.style.borderRadius = '3px';
+          span.style.padding = '1px 2px';
+          span.style.position = 'relative';
+          
+          // Add indicator for segments with information
+          if (segment.information) {
+            span.style.borderLeft = `3px solid ${shot.color}`;
+            span.style.paddingLeft = '6px';
+            span.title = 'Este segmento tiene información adicional';
+          }
+          
+          try {
+            range.surroundContents(span);
+          } catch (e) {
+            // If we can't surround contents, create a new span with the text
+            span.textContent = segment.text;
+            range.deleteContents();
+            range.insertNode(span);
+          }
+          
+          break;
+        }
+      }
+    });
+  }, [segments, shots]);
 
   const addInspiration = useCallback((url: string, title: string, notes: string, timestamp?: string) => {
     const newInspiration: Inspiration = {
@@ -120,6 +200,7 @@ export const useTextEditor = () => {
     assignShotToText,
     addInspiration,
     updateSegmentInfo,
-    setShowShotMenu
+    setShowShotMenu,
+    applySegmentStyling
   };
 };

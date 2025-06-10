@@ -31,12 +31,20 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     assignShotToText,
     addInspiration,
     updateSegmentInfo,
-    setShowShotMenu
+    setShowShotMenu,
+    applySegmentStyling
   } = useTextEditor();
 
   useEffect(() => {
     onContentChange?.(content);
   }, [content, onContentChange]);
+
+  useEffect(() => {
+    // Apply styling to segments whenever content or segments change
+    if (editorRef.current) {
+      applySegmentStyling();
+    }
+  }, [content, segments, applySegmentStyling]);
 
   const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
     const newContent = e.currentTarget.textContent || '';
