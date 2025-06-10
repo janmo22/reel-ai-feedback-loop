@@ -21,13 +21,13 @@ const ContentSeriesModal: React.FC<ContentSeriesModalProps> = ({
   onSelectSeries
 }) => {
   const { contentSeries, createSeries } = useContentSeries();
-  const [selectedSeries, setSelectedSeries] = useState<string>('');
+  const [selectedSeries, setSelectedSeries] = useState<string>('no-series');
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [newSeriesName, setNewSeriesName] = useState('');
   const [newSeriesDescription, setNewSeriesDescription] = useState('');
 
   const handleSelectSeries = () => {
-    onSelectSeries(selectedSeries || null);
+    onSelectSeries(selectedSeries === 'no-series' ? null : selectedSeries);
     onClose();
   };
 
@@ -71,7 +71,7 @@ const ContentSeriesModal: React.FC<ContentSeriesModalProps> = ({
                     <SelectValue placeholder="Sin serie específica" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin serie</SelectItem>
+                    <SelectItem value="no-series">Sin serie</SelectItem>
                     {contentSeries.map((series) => (
                       <SelectItem key={series.id} value={series.id}>
                         {series.name}
