@@ -26,6 +26,7 @@ export interface Inspiration {
   timestamp?: string;
   imageUrl?: string;
   imageFile?: File;
+  type: 'video' | 'image' | 'note';
 }
 
 export interface ScriptSection {
@@ -33,6 +34,7 @@ export interface ScriptSection {
   type: 'hook' | 'buildup' | 'value' | 'cta';
   content: string;
   segments: TextSegment[];
+  collapsed: boolean;
 }
 
 export const SECTION_TYPES = {
@@ -60,10 +62,10 @@ export const SECTION_TYPES = {
 
 export const useTextEditor = () => {
   const [sections, setSections] = useState<ScriptSection[]>([
-    { id: 'hook', type: 'hook', content: '', segments: [] },
-    { id: 'buildup', type: 'buildup', content: '', segments: [] },
-    { id: 'value', type: 'value', content: '', segments: [] },
-    { id: 'cta', type: 'cta', content: '', segments: [] }
+    { id: 'hook', type: 'hook', content: '', segments: [], collapsed: false },
+    { id: 'buildup', type: 'buildup', content: '', segments: [], collapsed: false },
+    { id: 'value', type: 'value', content: '', segments: [], collapsed: false },
+    { id: 'cta', type: 'cta', content: '', segments: [], collapsed: false }
   ]);
   const [shots, setShots] = useState<Shot[]>([]);
   const [inspirations, setInspirations] = useState<Inspiration[]>([]);
@@ -76,6 +78,14 @@ export const useTextEditor = () => {
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   
   const editorRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  const toggleSectionCollapse = useCallback((sectionId: string) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId 
+        ? { ...section, collapsed: !section.collapsed }
+        : section
+    ));
+  }, []);
 
   const handleTextSelection = useCallback((sectionId: string) => {
     const selection = window.getSelection();
@@ -110,6 +120,19 @@ export const useTextEditor = () => {
     return newShot;
   }, []);
 
+  const cleanupSegments = useCallback((sectionId: string, newContent: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id !== sectionId) return section;
+      
+      // Remove segments that no longer exist in the content
+      const validSegments = section.segments.filter(segment => 
+        newContent.includes(segment.text)
+      );
+      
+      return { ...section, segments: validSegments };
+    }));
+  }, []);
+
   const assignShotToText = useCallback((shotId: string) => {
     if (!selectedText.range || !selectedText.text || !selectedText.sectionId) return;
     
@@ -119,21 +142,53 @@ export const useTextEditor = () => {
     const section = sections.find(s => s.id === selectedText.sectionId);
     if (!section) return;
 
+    // Check if selection overlaps with existing segments
     const startIndex = section.content.indexOf(selectedText.text);
     const endIndex = startIndex + selectedText.text.length;
 
+    // Remove overlapping segments and extend the new one if needed
+    const nonOverlappingSegments = section.segments.filter(segment => 
+      segment.endIndex <= startIndex || segment.startIndex >= endIndex
+    );
+
+    // Check for adjacent segments with the same shot
+    let finalStartIndex = startIndex;
+    let finalEndIndex = endIndex;
+    let finalText = selectedText.text;
+
+    // Extend to include adjacent segments with the same shot
+    section.segments.forEach(segment => {
+      if (segment.shotId === shotId) {
+        if (segment.endIndex === startIndex) {
+          finalStartIndex = segment.startIndex;
+          finalText = segment.text + finalText;
+        } else if (segment.startIndex === endIndex) {
+          finalEndIndex = segment.endIndex;
+          finalText = finalText + segment.text;
+        }
+      }
+    });
+
+    // Remove segments that are now part of the extended selection
+    const filteredSegments = nonOverlappingSegments.filter(segment => 
+      !(segment.shotId === shotId && (
+        (segment.endIndex === startIndex) || 
+        (segment.startIndex === endIndex)
+      ))
+    );
+
     const newSegment: TextSegment = {
       id: `segment-${Date.now()}`,
-      text: selectedText.text,
+      text: finalText,
       shotId,
       color: shot.color,
-      startIndex,
-      endIndex
+      startIndex: finalStartIndex,
+      endIndex: finalEndIndex
     };
 
     setSections(prev => prev.map(section => 
       section.id === selectedText.sectionId 
-        ? { ...section, segments: [...section.segments, newSegment] }
+        ? { ...section, segments: [...filteredSegments, newSegment] }
         : section
     ));
 
@@ -191,11 +246,30 @@ export const useTextEditor = () => {
           span.style.padding = '2px 6px';
           span.style.margin = '0 1px';
           span.style.display = 'inline-block';
+          span.style.position = 'relative';
           
           // Add indicator for segments with information
           if (segment.information) {
             span.style.borderBottom = `2px solid rgba(255,255,255,0.8)`;
-            span.title = 'Este segmento tiene información adicional';
+            span.title = segment.information;
+            
+            // Add info button
+            const infoButton = document.createElement('span');
+            infoButton.innerHTML = '+';
+            infoButton.style.position = 'absolute';
+            infoButton.style.top = '-8px';
+            infoButton.style.right = '-8px';
+            infoButton.style.backgroundColor = 'rgba(0,0,0,0.7)';
+            infoButton.style.color = 'white';
+            infoButton.style.borderRadius = '50%';
+            infoButton.style.width = '16px';
+            infoButton.style.height = '16px';
+            infoButton.style.fontSize = '10px';
+            infoButton.style.display = 'flex';
+            infoButton.style.alignItems = 'center';
+            infoButton.style.justifyContent = 'center';
+            infoButton.style.cursor = 'pointer';
+            span.appendChild(infoButton);
           }
           
           try {
@@ -216,7 +290,10 @@ export const useTextEditor = () => {
     setSections(prev => prev.map(section => 
       section.id === sectionId ? { ...section, content } : section
     ));
-  }, []);
+    
+    // Clean up segments that no longer exist
+    cleanupSegments(sectionId, content);
+  }, [cleanupSegments]);
 
   const addInspiration = useCallback((inspiration: Omit<Inspiration, 'id'>) => {
     const newInspiration: Inspiration = {
@@ -269,6 +346,7 @@ export const useTextEditor = () => {
     setShowShotMenu,
     applySegmentStyling,
     getAllContent,
-    getAllSegments
+    getAllSegments,
+    toggleSectionCollapse
   };
 };

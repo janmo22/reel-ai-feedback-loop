@@ -3,9 +3,9 @@ import React, { useEffect, useRef } from 'react';
 import { useTextEditor, SECTION_TYPES } from '@/hooks/use-text-editor';
 import ShotSelectionMenu from './ShotSelectionMenu';
 import ShotManager from './ShotManager';
-import InspirationManager from './InspirationManager';
 import TextSegmentInfo from './TextSegmentInfo';
 import ScriptSection from './ScriptSection';
+import CreativeZone from './CreativeZone';
 
 interface NotionStyleEditorProps {
   placeholder?: string;
@@ -32,7 +32,8 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     setShowShotMenu,
     applySegmentStyling,
     getAllContent,
-    getAllSegments
+    getAllSegments,
+    toggleSectionCollapse
   } = useTextEditor();
 
   // Create refs for each section
@@ -80,6 +81,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
             onContentChange={(content) => updateSectionContent(section.id, content)}
             onTextSelection={() => handleTextSelection(section.id)}
             onApplyStyling={() => applySegmentStyling(section.id)}
+            onToggleCollapse={() => toggleSectionCollapse(section.id)}
             editorRef={sectionRefs[section.type as keyof typeof sectionRefs]}
           />
         ))}
@@ -117,8 +119,8 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
         />
       )}
 
-      {/* Gestión de Inspiraciones */}
-      <InspirationManager
+      {/* Zona Creativa */}
+      <CreativeZone
         inspirations={inspirations}
         onAddInspiration={addInspiration}
       />
