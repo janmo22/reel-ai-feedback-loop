@@ -1,9 +1,10 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, Plus, X, Check, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, X, Check, Eye, EyeOff, Camera } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScriptSection as ScriptSectionType, SECTION_TYPES, TextSegment } from '@/hooks/use-text-editor';
 
@@ -15,6 +16,7 @@ interface ScriptSectionProps {
   onToggleCollapse: () => void;
   onAddSegmentInfo: (segmentId: string, info: string) => void;
   onRemoveSegment: (segmentId: string) => void;
+  onToggleShotRecorded: (shotId: string) => void;
   shots: any[];
   editorRef: React.RefObject<HTMLDivElement>;
   showRecordedShots: boolean;
@@ -29,6 +31,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   onToggleCollapse,
   onAddSegmentInfo,
   onRemoveSegment,
+  onToggleShotRecorded,
   shots,
   editorRef,
   showRecordedShots,
@@ -196,10 +199,15 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     onContentChange(newContent);
   };
 
-  const handleStartEditInfo = (segmentId: string) => {
-    const segment = section.segments.find(s => s.id === segmentId);
-    setEditingInfo(segmentId);
-    setInfoText(segment?.information || '');
+  const handleStartEditInfo = (groupId: string) => {
+    // Usar el primer segmento del grupo para editar información
+    const mergedGroups = mergeConsecutiveSegments(section.segments);
+    const group = mergedGroups.find(g => g.segments[0].id === groupId);
+    if (group) {
+      const firstSegment = group.segments[0];
+      setEditingInfo(firstSegment.id);
+      setInfoText(firstSegment.information || '');
+    }
   };
 
   const handleSaveInfo = () => {
@@ -213,6 +221,17 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const handleCancelEditInfo = () => {
     setEditingInfo(null);
     setInfoText('');
+  };
+
+  const handleRemoveGroup = (groupId: string) => {
+    // Remover todos los segmentos del grupo
+    const mergedGroups = mergeConsecutiveSegments(section.segments);
+    const group = mergedGroups.find(g => g.segments[0].id === groupId);
+    if (group) {
+      group.segments.forEach(segment => {
+        onRemoveSegment(segment.id);
+      });
+    }
   };
 
   return (
@@ -265,7 +284,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                     </TooltipContent>
                   </Tooltip>
                   <Badge variant="outline" className="text-xs">
-                    {section.segments.length} {section.segments.length === 1 ? 'toma' : 'tomas'}
+                    {mergeConsecutiveSegments(section.segments).length} {mergeConsecutiveSegments(section.segments).length === 1 ? 'toma' : 'tomas'}
                   </Badge>
                 </>
               )}
@@ -344,26 +363,31 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
               )}
             </div>
 
-            {/* Gestión de segmentos */}
+            {/* Gestión de segmentos agrupados */}
             {section.segments.length > 0 && (
               <div className="mt-4 space-y-2">
                 <div className="text-sm font-medium text-gray-700 mb-2">Tomas en esta sección:</div>
-                {section.segments.map((segment) => {
-                  const shotColor = getShotColor(segment.shotId);
-                  const shotName = getShotName(segment.shotId);
-                  const isRecorded = isShotRecorded(segment.shotId);
+                {mergeConsecutiveSegments(section.segments).map((group) => {
+                  const shotColor = getShotColor(group.shotId);
+                  const shotName = getShotName(group.shotId);
+                  const isRecorded = isShotRecorded(group.shotId);
+                  const firstSegment = group.segments[0];
+                  const allInfo = group.segments
+                    .map(s => s.information)
+                    .filter(info => info && info.trim())
+                    .join(' | ');
                   
                   return (
-                    <div key={segment.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                    <div key={firstSegment.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                       <div
                         className="w-3 h-3 rounded-full border"
                         style={{ backgroundColor: shotColor }}
                       />
                       <span className={`text-sm flex-1 ${isRecorded ? 'line-through opacity-60' : ''}`}>
-                        {shotName}: "{segment.text.substring(0, 30)}..."
+                        {shotName}: "{group.text.length > 30 ? group.text.substring(0, 30) + '...' : group.text}"
                       </span>
                       
-                      {editingInfo === segment.id ? (
+                      {editingInfo === firstSegment.id ? (
                         <div className="flex items-center gap-2">
                           <Input
                             value={infoText}
@@ -390,7 +414,32 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          {segment.information && (
+                          {/* Botón para marcar como grabado */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant={isRecorded ? "default" : "outline"}
+                                onClick={() => onToggleShotRecorded(group.shotId!)}
+                                className={`h-6 w-6 p-0 ${
+                                  isRecorded 
+                                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                    : 'border-gray-300 hover:bg-gray-100'
+                                }`}
+                              >
+                                {isRecorded ? (
+                                  <Check className="h-3 w-3" />
+                                ) : (
+                                  <Camera className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {isRecorded ? 'Marcar como pendiente' : 'Marcar como grabada'}
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {allInfo && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
@@ -398,23 +447,25 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>{segment.information}</p>
+                                <p>{allInfo}</p>
                               </TooltipContent>
                             </Tooltip>
                           )}
+                          
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleStartEditInfo(segment.id)}
+                            onClick={() => handleStartEditInfo(firstSegment.id)}
                             className="h-6 px-2 text-xs"
                           >
                             <Plus className="h-3 w-3 mr-1" />
                             Info
                           </Button>
+                          
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => onRemoveSegment(segment.id)}
+                            onClick={() => handleRemoveGroup(firstSegment.id)}
                             className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
                           >
                             <X className="h-3 w-3" />

@@ -88,6 +88,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
             onToggleCollapse={() => toggleSectionCollapse(section.id)}
             onAddSegmentInfo={(segmentId, info) => addSegmentInfo(section.id, segmentId, info)}
             onRemoveSegment={(segmentId) => removeSegment(section.id, segmentId)}
+            onToggleShotRecorded={toggleShotRecorded}
             shots={shots}
             editorRef={sectionRefs[section.type as keyof typeof sectionRefs]}
             showRecordedShots={showRecordedShots}
