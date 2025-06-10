@@ -26,7 +26,11 @@ const ContentSeriesModal: React.FC<ContentSeriesModalProps> = ({
   const [newSeriesName, setNewSeriesName] = useState('');
   const [newSeriesDescription, setNewSeriesDescription] = useState('');
 
+  console.log('ContentSeriesModal rendered - selectedSeries:', selectedSeries);
+  console.log('ContentSeriesModal rendered - contentSeries:', contentSeries);
+
   const handleSelectSeries = () => {
+    console.log('handleSelectSeries called with selectedSeries:', selectedSeries);
     onSelectSeries(selectedSeries === 'no-series' ? null : selectedSeries);
     onClose();
   };
@@ -35,6 +39,7 @@ const ContentSeriesModal: React.FC<ContentSeriesModalProps> = ({
     if (!newSeriesName.trim()) return;
     
     try {
+      console.log('Creating new series:', { name: newSeriesName, description: newSeriesDescription });
       await createSeries.mutateAsync({
         name: newSeriesName,
         description: newSeriesDescription
@@ -45,6 +50,11 @@ const ContentSeriesModal: React.FC<ContentSeriesModalProps> = ({
     } catch (error) {
       console.error('Error creating series:', error);
     }
+  };
+
+  const handleSeriesChange = (value: string) => {
+    console.log('Series selection changed to:', value);
+    setSelectedSeries(value);
   };
 
   return (
@@ -66,17 +76,20 @@ const ContentSeriesModal: React.FC<ContentSeriesModalProps> = ({
             <>
               <div>
                 <Label htmlFor="series-select">Seleccionar Serie</Label>
-                <Select value={selectedSeries} onValueChange={setSelectedSeries}>
+                <Select value={selectedSeries} onValueChange={handleSeriesChange}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Sin serie específica" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="no-series">Sin serie</SelectItem>
-                    {contentSeries.map((series) => (
-                      <SelectItem key={series.id} value={series.id}>
-                        {series.name}
-                      </SelectItem>
-                    ))}
+                    {contentSeries.map((series) => {
+                      console.log('Rendering series option:', series);
+                      return (
+                        <SelectItem key={series.id} value={series.id}>
+                          {series.name}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
