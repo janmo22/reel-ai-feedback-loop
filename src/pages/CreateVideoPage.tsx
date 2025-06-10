@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,6 +72,14 @@ const CreateVideoPage: React.FC = () => {
     },
     enabled: !!user
   });
+
+  // Filter out series with invalid IDs
+  const validSeries = contentSeries?.filter(series => {
+    return series && 
+           series.id && 
+           typeof series.id === 'string' && 
+           series.id.trim() !== '';
+  }) || [];
 
   const addSMP = () => {
     setSMPs([...smps, '']);
@@ -203,7 +210,7 @@ const CreateVideoPage: React.FC = () => {
                 />
               </div>
 
-              {contentSeries.length > 0 && (
+              {validSeries.length > 0 && (
                 <div>
                   <Label htmlFor="series">Content Series (Opcional)</Label>
                   <Select value={selectedSeries} onValueChange={setSelectedSeries}>
@@ -211,8 +218,8 @@ const CreateVideoPage: React.FC = () => {
                       <SelectValue placeholder="Selecciona una serie" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin serie</SelectItem>
-                      {contentSeries.map((series) => (
+                      <SelectItem value="no-series">Sin serie</SelectItem>
+                      {validSeries.map((series) => (
                         <SelectItem key={series.id} value={series.id}>
                           {series.name}
                         </SelectItem>
