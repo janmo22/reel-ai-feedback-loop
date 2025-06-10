@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 import { useTextEditor, SECTION_TYPES } from '@/hooks/use-text-editor';
 import ShotSelectionMenu from './ShotSelectionMenu';
@@ -128,5 +129,3 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
 };
 
 export default NotionStyleEditor;
-
-</initial_code>
