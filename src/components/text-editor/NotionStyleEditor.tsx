@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { useTextEditor, SECTION_TYPES } from '@/hooks/use-text-editor';
 import ShotSelectionMenu from './ShotSelectionMenu';
@@ -27,6 +26,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     assignShotToText,
     addInspiration,
     updateSegmentInfo,
+    addSegmentInfo,
     updateSectionContent,
     setShowShotMenu,
     applySegmentStyling,
@@ -82,6 +82,8 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
             onTextSelection={() => handleTextSelection(section.id)}
             onApplyStyling={() => applySegmentStyling(section.id)}
             onToggleCollapse={() => toggleSectionCollapse(section.id)}
+            onAddSegmentInfo={(segmentId, info) => addSegmentInfo(section.id, segmentId, info)}
+            shots={shots}
             editorRef={sectionRefs[section.type as keyof typeof sectionRefs]}
           />
         ))}
@@ -99,7 +101,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
         />
       )}
 
-      {/* Gestión de Tomas - ahora incluye el botón de grabado */}
+      {/* Gestión de Tomas */}
       {getAllSegments().length > 0 && (
         <TextSegmentInfo
           segments={getAllSegments()}

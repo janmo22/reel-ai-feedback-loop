@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback } from 'react';
 
 export interface TextSegment {
@@ -79,6 +78,19 @@ export const useTextEditor = () => {
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   
   const editorRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  const addSegmentInfo = useCallback((sectionId: string, segmentId: string, info: string) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId 
+        ? {
+            ...section,
+            segments: section.segments.map(segment => 
+              segment.id === segmentId ? { ...segment, information: info } : segment
+            )
+          }
+        : section
+    ));
+  }, []);
 
   const toggleSectionCollapse = useCallback((sectionId: string) => {
     setSections(prev => prev.map(section => 
@@ -166,13 +178,12 @@ export const useTextEditor = () => {
   }, [selectedText, shots, sections]);
 
   const applySegmentStyling = useCallback((sectionId: string) => {
-    // Simplified styling that doesn't interfere with editing
+    // Esta función ahora se maneja en el componente ScriptSection
     const editor = editorRefs.current[sectionId];
     const section = sections.find(s => s.id === sectionId);
     
     if (!editor || !section) return;
 
-    // Just add a class to the editor to show it has segments
     if (section.segments.length > 0) {
       editor.classList.add('has-segments');
     } else {
@@ -224,6 +235,7 @@ export const useTextEditor = () => {
     assignShotToText,
     addInspiration,
     updateSegmentInfo,
+    addSegmentInfo,
     updateSectionContent,
     setShowShotMenu,
     applySegmentStyling,

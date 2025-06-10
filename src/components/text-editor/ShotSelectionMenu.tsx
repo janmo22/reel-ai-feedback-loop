@@ -14,11 +14,28 @@ interface ShotSelectionMenuProps {
   onClose: () => void;
 }
 
+// Colores más distintivos y contrastantes
 const PRESET_COLORS = [
-  '#FF4444', '#00C851', '#007BFF', '#FF8800', '#9C27B0',
-  '#FF1744', '#00E676', '#2196F3', '#FF9800', '#E91E63',
-  '#F44336', '#4CAF50', '#3F51B5', '#FF5722', '#795548',
-  '#E53E3E', '#38A169', '#3182CE', '#DD6B20', '#D53F8C'
+  '#FF0000', // Rojo brillante
+  '#00FF00', // Verde brillante
+  '#0000FF', // Azul brillante
+  '#FF8C00', // Naranja oscuro
+  '#FF1493', // Rosa fucsia
+  '#9400D3', // Violeta
+  '#FFD700', // Dorado
+  '#00CED1', // Turquesa oscuro
+  '#DC143C', // Carmesí
+  '#32CD32', // Verde lima
+  '#4169E1', // Azul real
+  '#FF4500', // Rojo naranja
+  '#DA70D6', // Orquídea
+  '#00FA9A', // Verde menta
+  '#FF6347', // Tomate
+  '#8A2BE2', // Azul violeta
+  '#ADFF2F', // Verde amarillo
+  '#FF69B4', // Rosa caliente
+  '#20B2AA', // Verde mar claro
+  '#B22222'  // Ladrillo
 ];
 
 const ShotSelectionMenu: React.FC<ShotSelectionMenuProps> = ({
@@ -83,7 +100,7 @@ const ShotSelectionMenu: React.FC<ShotSelectionMenuProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <div 
-                      className="w-4 h-4 rounded-full border"
+                      className="w-4 h-4 rounded-full border border-gray-300"
                       style={{ backgroundColor: shot.color }}
                     />
                     <span className="text-sm">{shot.name}</span>
@@ -119,13 +136,13 @@ const ShotSelectionMenu: React.FC<ShotSelectionMenuProps> = ({
                 autoFocus
               />
               
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {PRESET_COLORS.map((color) => (
                   <button
                     key={color}
                     onClick={() => setSelectedColor(color)}
                     className={`w-8 h-8 rounded-full border-2 transition-all ${
-                      selectedColor === color ? 'border-gray-400 scale-110' : 'border-gray-200'
+                      selectedColor === color ? 'border-gray-900 scale-110' : 'border-gray-300'
                     }`}
                     style={{ backgroundColor: color }}
                   />
