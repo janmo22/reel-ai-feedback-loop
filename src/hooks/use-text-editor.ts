@@ -160,14 +160,29 @@ export const useTextEditor = () => {
   }, []);
 
   // Verificar si hay overlap con segmentos existentes
-  const hasOverlap = useCallback((sectionId: string, startIndex: number, endIndex: number) => {
+  const hasOverlap = useCallback((sectionId: string, startIndex: number, endIndex: number, excludeSegmentId?: string) => {
     const section = sections.find(s => s.id === sectionId);
     if (!section) return false;
 
     return section.segments.some(segment => 
+      segment.id !== excludeSegmentId && 
       !(endIndex <= segment.startIndex || startIndex >= segment.endIndex)
     );
   }, [sections]);
+
+  // Remover segmentos que se superponen con el nuevo texto seleccionado
+  const removeOverlappingSegments = useCallback((sectionId: string, startIndex: number, endIndex: number) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId 
+        ? {
+            ...section,
+            segments: section.segments.filter(segment => 
+              endIndex <= segment.startIndex || startIndex >= segment.endIndex
+            )
+          }
+        : section
+    ));
+  }, []);
 
   const assignShotToText = useCallback((shotId: string) => {
     if (!selectedText.range || !selectedText.text || !selectedText.sectionId) return;
@@ -181,13 +196,8 @@ export const useTextEditor = () => {
     const startIndex = section.content.indexOf(selectedText.text);
     const endIndex = startIndex + selectedText.text.length;
 
-    // Verificar si hay overlap
-    if (hasOverlap(selectedText.sectionId, startIndex, endIndex)) {
-      alert('Esta parte del texto ya tiene una toma asignada. Por favor, selecciona un texto diferente.');
-      setShowShotMenu(false);
-      setSelectedText({ text: '', range: null, sectionId: null });
-      return;
-    }
+    // Remover segmentos que se superponen antes de crear el nuevo
+    removeOverlappingSegments(selectedText.sectionId, startIndex, endIndex);
 
     const newSegment: TextSegment = {
       id: `segment-${Date.now()}`,
@@ -206,7 +216,7 @@ export const useTextEditor = () => {
 
     setShowShotMenu(false);
     setSelectedText({ text: '', range: null, sectionId: null });
-  }, [selectedText, shots, sections, hasOverlap]);
+  }, [selectedText, shots, sections, removeOverlappingSegments]);
 
   const applySegmentStyling = useCallback((sectionId: string) => {
     const editor = editorRefs.current[sectionId];
