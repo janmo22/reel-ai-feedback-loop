@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Target, Save, Eye, Plus, X } from 'lucide-react';
+import { Target, Save, Eye, Plus, X, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,13 +19,19 @@ interface ContentSeries {
   description: string | null;
 }
 
+interface SMP {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
 const CreateVideoPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
   const [title, setTitle] = useState('');
-  const [mainSMP, setMainSMP] = useState('');
-  const [secondarySMPs, setSecondarySMPs] = useState<string[]>([]);
+  const [mainSMP, setMainSMP] = useState<SMP>({ id: 'main', text: '', completed: false });
+  const [secondarySMPs, setSecondarySMPs] = useState<SMP[]>([]);
   const [selectedSeries, setSelectedSeries] = useState<string>('');
   const [scriptContent, setScriptContent] = useState('');
 
@@ -54,18 +60,37 @@ const CreateVideoPage: React.FC = () => {
            series.id.trim() !== '';
   }) || [];
 
+  const toggleMainSMPCompleted = () => {
+    setMainSMP(prev => ({ ...prev, completed: !prev.completed }));
+  };
+
+  const updateMainSMPText = (text: string) => {
+    setMainSMP(prev => ({ ...prev, text }));
+  };
+
   const addSecondarySMP = () => {
-    setSecondarySMPs([...secondarySMPs, '']);
+    const newSMP: SMP = {
+      id: `secondary-${Date.now()}`,
+      text: '',
+      completed: false
+    };
+    setSecondarySMPs([...secondarySMPs, newSMP]);
   };
 
-  const updateSecondarySMP = (index: number, value: string) => {
-    const updated = [...secondarySMPs];
-    updated[index] = value;
-    setSecondarySMPs(updated);
+  const updateSecondarySMP = (id: string, text: string) => {
+    setSecondarySMPs(prev => prev.map(smp => 
+      smp.id === id ? { ...smp, text } : smp
+    ));
   };
 
-  const removeSecondarySMP = (index: number) => {
-    setSecondarySMPs(secondarySMPs.filter((_, i) => i !== index));
+  const toggleSecondarySMPCompleted = (id: string) => {
+    setSecondarySMPs(prev => prev.map(smp => 
+      smp.id === id ? { ...smp, completed: !smp.completed } : smp
+    ));
+  };
+
+  const removeSecondarySMP = (id: string) => {
+    setSecondarySMPs(prev => prev.filter(smp => smp.id !== id));
   };
 
   const saveVideo = async (isDraft = true) => {
@@ -84,8 +109,8 @@ const CreateVideoPage: React.FC = () => {
         .insert({
           user_id: user.id,
           title: title.trim(),
-          main_smp: mainSMP.trim() || null,
-          secondary_smps: secondarySMPs.filter(smp => smp.trim() !== ''),
+          main_smp: mainSMP.text.trim() || null,
+          secondary_smps: secondarySMPs.filter(smp => smp.text.trim() !== '').map(smp => smp.text),
           hook: null,
           build_up: null,
           value_add: scriptContent.trim() || null,
@@ -104,7 +129,7 @@ const CreateVideoPage: React.FC = () => {
 
       // Reset form
       setTitle('');
-      setMainSMP('');
+      setMainSMP({ id: 'main', text: '', completed: false });
       setSecondarySMPs([]);
       setSelectedSeries('');
       setScriptContent('');
@@ -167,14 +192,25 @@ const CreateVideoPage: React.FC = () => {
 
             <div>
               <Label htmlFor="main-smp">Mensaje Principal (SMP)</Label>
-              <Textarea
-                id="main-smp"
-                placeholder="¿Cuál es el mensaje principal de tu video?"
-                value={mainSMP}
-                onChange={(e) => setMainSMP(e.target.value)}
-                className="mt-1"
-                rows={3}
-              />
+              <div className="flex gap-2 mt-1">
+                <Textarea
+                  id="main-smp"
+                  placeholder="¿Cuál es el mensaje principal de tu video?"
+                  value={mainSMP.text}
+                  onChange={(e) => updateMainSMPText(e.target.value)}
+                  className={`flex-1 ${mainSMP.completed ? 'line-through opacity-60' : ''}`}
+                  rows={2}
+                />
+                <Button
+                  type="button"
+                  variant={mainSMP.completed ? "default" : "outline"}
+                  size="sm"
+                  onClick={toggleMainSMPCompleted}
+                  className="mt-1 h-8 w-8 p-0"
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div>
@@ -192,24 +228,35 @@ const CreateVideoPage: React.FC = () => {
                 </Button>
               </div>
               
-              {secondarySMPs.map((smp, index) => (
-                <div key={index} className="flex gap-2 mb-2">
+              {secondarySMPs.map((smp) => (
+                <div key={smp.id} className="flex gap-2 mb-2">
                   <Textarea
-                    placeholder={`Mensaje secundario ${index + 1}`}
-                    value={smp}
-                    onChange={(e) => updateSecondarySMP(index, e.target.value)}
+                    placeholder="Mensaje secundario"
+                    value={smp.text}
+                    onChange={(e) => updateSecondarySMP(smp.id, e.target.value)}
                     rows={2}
-                    className="flex-1"
+                    className={`flex-1 ${smp.completed ? 'line-through opacity-60' : ''}`}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeSecondarySMP(index)}
-                    className="mt-1 h-8 w-8 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      type="button"
+                      variant={smp.completed ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleSecondarySMPCompleted(smp.id)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeSecondarySMP(smp.id)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
               

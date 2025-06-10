@@ -1,7 +1,7 @@
+
 import React, { useEffect, useRef } from 'react';
 import { useTextEditor, SECTION_TYPES } from '@/hooks/use-text-editor';
 import ShotSelectionMenu from './ShotSelectionMenu';
-import ShotManager from './ShotManager';
 import TextSegmentInfo from './TextSegmentInfo';
 import ScriptSection from './ScriptSection';
 import CreativeZone from './CreativeZone';
