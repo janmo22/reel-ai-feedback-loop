@@ -162,19 +162,9 @@ const CreateVideoPage: React.FC = () => {
         </Card>
 
         {/* Editor de texto principal */}
-        <div>
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">Guión del Video</h2>
-            <p className="text-gray-600 text-sm">
-              Escribe tu guión y selecciona texto para asignar tomas. Agrega inspiraciones para referencias.
-            </p>
-          </div>
-          
-          <NotionStyleEditor
-            placeholder="Escribe tu guión aquí... Selecciona cualquier parte del texto para asignar una toma específica."
-            onContentChange={setScriptContent}
-          />
-        </div>
+        <NotionStyleEditor
+          onContentChange={setScriptContent}
+        />
 
         {/* Botones de acción */}
         <div className="flex gap-3">

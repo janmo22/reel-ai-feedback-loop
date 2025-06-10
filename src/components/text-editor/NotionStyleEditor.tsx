@@ -1,11 +1,11 @@
 
-import React, { useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { useTextEditor } from '@/hooks/use-text-editor';
+import React, { useEffect, useRef } from 'react';
+import { useTextEditor, SECTION_TYPES } from '@/hooks/use-text-editor';
 import ShotSelectionMenu from './ShotSelectionMenu';
 import ShotManager from './ShotManager';
 import InspirationManager from './InspirationManager';
 import TextSegmentInfo from './TextSegmentInfo';
+import ScriptSection from './ScriptSection';
 
 interface NotionStyleEditorProps {
   placeholder?: string;
@@ -13,87 +13,89 @@ interface NotionStyleEditorProps {
 }
 
 const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({ 
-  placeholder = "Escribe tu guión aquí...",
   onContentChange 
 }) => {
   const {
-    content,
-    setContent,
-    segments,
+    sections,
     shots,
     inspirations,
     selectedText,
     showShotMenu,
     menuPosition,
-    editorRef,
+    editorRefs,
     handleTextSelection,
     addShot,
     assignShotToText,
     addInspiration,
     updateSegmentInfo,
+    updateSectionContent,
     setShowShotMenu,
-    applySegmentStyling
+    applySegmentStyling,
+    getAllContent,
+    getAllSegments
   } = useTextEditor();
 
+  // Create refs for each section
+  const hookRef = useRef<HTMLDivElement>(null);
+  const buildupRef = useRef<HTMLDivElement>(null);
+  const valueRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
+
+  // Store refs in the hook
   useEffect(() => {
-    onContentChange?.(content);
-  }, [content, onContentChange]);
+    editorRefs.current = {
+      hook: hookRef.current,
+      buildup: buildupRef.current,
+      value: valueRef.current,
+      cta: ctaRef.current
+    };
+  }, [editorRefs]);
 
   useEffect(() => {
-    // Apply styling to segments whenever content or segments change
-    if (editorRef.current) {
-      applySegmentStyling();
-    }
-  }, [content, segments, applySegmentStyling]);
+    onContentChange?.(getAllContent());
+  }, [sections, onContentChange, getAllContent]);
 
-  const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
-    const newContent = e.currentTarget.textContent || '';
-    setContent(newContent);
+  const sectionRefs = {
+    hook: hookRef,
+    buildup: buildupRef,
+    value: valueRef,
+    cta: ctaRef
   };
 
   return (
-    <div className="space-y-8">
-      {/* Editor Principal */}
-      <Card className="relative overflow-hidden border-0 shadow-sm bg-white">
-        <div className="p-8">
-          <div
-            ref={editorRef}
-            contentEditable
-            suppressContentEditableWarning
-            onInput={handleContentChange}
-            onMouseUp={handleTextSelection}
-            onKeyUp={handleTextSelection}
-            className="min-h-[400px] focus:outline-none text-gray-900 leading-relaxed text-lg"
-            style={{ 
-              fontSize: '18px',
-              lineHeight: '1.8',
-              fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
-            }}
-            data-placeholder={placeholder}
-          />
-          
-          {content === '' && (
-            <div 
-              className="absolute top-8 left-8 text-gray-400 pointer-events-none text-lg"
-              style={{ fontSize: '18px' }}
-            >
-              {placeholder}
-            </div>
-          )}
+    <div className="space-y-6">
+      {/* Secciones del guión */}
+      <div className="space-y-6">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-1">Estructura del Guión</h2>
+          <p className="text-gray-600 text-sm">
+            Escribe tu contenido por secciones. Selecciona texto para asignar tomas específicas.
+          </p>
         </div>
 
-        {/* Menú de selección de tomas */}
-        {showShotMenu && (
-          <ShotSelectionMenu
-            position={menuPosition}
-            shots={shots}
-            selectedText={selectedText.text}
-            onSelectShot={assignShotToText}
-            onAddNewShot={addShot}
-            onClose={() => setShowShotMenu(false)}
+        {sections.map((section) => (
+          <ScriptSection
+            key={section.id}
+            section={section}
+            onContentChange={(content) => updateSectionContent(section.id, content)}
+            onTextSelection={() => handleTextSelection(section.id)}
+            onApplyStyling={() => applySegmentStyling(section.id)}
+            editorRef={sectionRefs[section.type as keyof typeof sectionRefs]}
           />
-        )}
-      </Card>
+        ))}
+      </div>
+
+      {/* Menú de selección de tomas */}
+      {showShotMenu && (
+        <ShotSelectionMenu
+          position={menuPosition}
+          shots={shots}
+          selectedText={selectedText.text}
+          onSelectShot={assignShotToText}
+          onAddNewShot={addShot}
+          onClose={() => setShowShotMenu(false)}
+        />
+      )}
 
       {/* Gestión de Planos/Tomas */}
       <ShotManager 
@@ -102,11 +104,16 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
       />
 
       {/* Información de Segmentos */}
-      {segments.length > 0 && (
+      {getAllSegments().length > 0 && (
         <TextSegmentInfo
-          segments={segments}
+          segments={getAllSegments()}
           shots={shots}
-          onUpdateInfo={updateSegmentInfo}
+          onUpdateInfo={(segmentId, information) => {
+            const segment = getAllSegments().find(s => s.id === segmentId);
+            if (segment && 'sectionId' in segment) {
+              updateSegmentInfo(segment.sectionId, segmentId, information);
+            }
+          }}
         />
       )}
 

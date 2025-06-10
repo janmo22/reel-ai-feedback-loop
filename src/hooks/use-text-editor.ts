@@ -20,30 +20,72 @@ export interface Shot {
 
 export interface Inspiration {
   id: string;
-  url: string;
+  url?: string;
   title: string;
   notes: string;
   timestamp?: string;
+  imageUrl?: string;
+  imageFile?: File;
 }
 
+export interface ScriptSection {
+  id: string;
+  type: 'hook' | 'buildup' | 'value' | 'cta';
+  content: string;
+  segments: TextSegment[];
+}
+
+export const SECTION_TYPES = {
+  hook: {
+    label: 'Hook (Ruptura de patrón)',
+    description: 'Invita al usuario a quedarse en el video con una ruptura de patrón',
+    placeholder: 'Ejemplo: "Si haces esto, nunca más tendrás problemas con..."'
+  },
+  buildup: {
+    label: 'Build-up',
+    description: 'Explica el problema que soluciona tu video',
+    placeholder: 'Explica el problema o situación que vas a resolver...'
+  },
+  value: {
+    label: 'Aporte de valor',
+    description: 'Aquí vas con todo, explicas la solución',
+    placeholder: 'Comparte tu conocimiento y la solución al problema...'
+  },
+  cta: {
+    label: 'Call to action',
+    description: 'Llamada a la acción que aporte valor',
+    placeholder: 'Invita a tu audiencia a actuar: seguirte, comentar, etc...'
+  }
+};
+
 export const useTextEditor = () => {
-  const [content, setContent] = useState('');
-  const [segments, setSegments] = useState<TextSegment[]>([]);
+  const [sections, setSections] = useState<ScriptSection[]>([
+    { id: 'hook', type: 'hook', content: '', segments: [] },
+    { id: 'buildup', type: 'buildup', content: '', segments: [] },
+    { id: 'value', type: 'value', content: '', segments: [] },
+    { id: 'cta', type: 'cta', content: '', segments: [] }
+  ]);
   const [shots, setShots] = useState<Shot[]>([]);
   const [inspirations, setInspirations] = useState<Inspiration[]>([]);
-  const [selectedText, setSelectedText] = useState<{ text: string; range: Range | null }>({ text: '', range: null });
+  const [selectedText, setSelectedText] = useState<{ text: string; range: Range | null; sectionId: string | null }>({ 
+    text: '', 
+    range: null, 
+    sectionId: null 
+  });
   const [showShotMenu, setShowShotMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   
-  const editorRef = useRef<HTMLDivElement>(null);
+  const editorRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
-  const handleTextSelection = useCallback(() => {
+  const handleTextSelection = useCallback((sectionId: string) => {
     const selection = window.getSelection();
-    if (selection && selection.toString().trim() && editorRef.current) {
+    const editorRef = editorRefs.current[sectionId];
+    
+    if (selection && selection.toString().trim() && editorRef?.contains(selection.anchorNode)) {
       const text = selection.toString();
       const range = selection.getRangeAt(0);
       
-      setSelectedText({ text, range });
+      setSelectedText({ text, range, sectionId });
       
       // Get position for menu
       const rect = range.getBoundingClientRect();
@@ -68,22 +110,17 @@ export const useTextEditor = () => {
     return newShot;
   }, []);
 
-  const findTextPosition = useCallback((text: string, content: string) => {
-    const startIndex = content.indexOf(text);
-    if (startIndex === -1) return { startIndex: 0, endIndex: 0 };
-    return {
-      startIndex,
-      endIndex: startIndex + text.length
-    };
-  }, []);
-
   const assignShotToText = useCallback((shotId: string) => {
-    if (!selectedText.range || !selectedText.text) return;
+    if (!selectedText.range || !selectedText.text || !selectedText.sectionId) return;
     
     const shot = shots.find(s => s.id === shotId);
     if (!shot) return;
 
-    const { startIndex, endIndex } = findTextPosition(selectedText.text, content);
+    const section = sections.find(s => s.id === selectedText.sectionId);
+    if (!section) return;
+
+    const startIndex = section.content.indexOf(selectedText.text);
+    const endIndex = startIndex + selectedText.text.length;
 
     const newSegment: TextSegment = {
       id: `segment-${Date.now()}`,
@@ -94,17 +131,25 @@ export const useTextEditor = () => {
       endIndex
     };
 
-    setSegments(prev => [...prev, newSegment]);
+    setSections(prev => prev.map(section => 
+      section.id === selectedText.sectionId 
+        ? { ...section, segments: [...section.segments, newSegment] }
+        : section
+    ));
+
     setShowShotMenu(false);
-    setSelectedText({ text: '', range: null });
-  }, [selectedText, shots, content, findTextPosition]);
+    setSelectedText({ text: '', range: null, sectionId: null });
 
-  const applySegmentStyling = useCallback(() => {
-    if (!editorRef.current || segments.length === 0) return;
+    // Apply styling after state update
+    setTimeout(() => applySegmentStyling(selectedText.sectionId), 0);
+  }, [selectedText, shots, sections]);
 
-    const editor = editorRef.current;
-    const textContent = editor.textContent || '';
+  const applySegmentStyling = useCallback((sectionId: string) => {
+    const editor = editorRefs.current[sectionId];
+    const section = sections.find(s => s.id === sectionId);
     
+    if (!editor || !section || section.segments.length === 0) return;
+
     // Remove existing highlights
     const existingHighlights = editor.querySelectorAll('.text-segment-highlight');
     existingHighlights.forEach(highlight => {
@@ -116,7 +161,7 @@ export const useTextEditor = () => {
     });
 
     // Apply new highlights
-    segments.forEach(segment => {
+    section.segments.forEach(segment => {
       const shot = shots.find(s => s.id === segment.shotId);
       if (!shot) return;
 
@@ -139,24 +184,23 @@ export const useTextEditor = () => {
           
           const span = document.createElement('span');
           span.className = 'text-segment-highlight';
-          span.style.backgroundColor = `${shot.color}20`; // 20% opacity
-          span.style.color = shot.color;
-          span.style.fontWeight = '500';
-          span.style.borderRadius = '3px';
-          span.style.padding = '1px 2px';
-          span.style.position = 'relative';
+          span.style.backgroundColor = shot.color;
+          span.style.color = 'white';
+          span.style.fontWeight = '600';
+          span.style.borderRadius = '4px';
+          span.style.padding = '2px 6px';
+          span.style.margin = '0 1px';
+          span.style.display = 'inline-block';
           
           // Add indicator for segments with information
           if (segment.information) {
-            span.style.borderLeft = `3px solid ${shot.color}`;
-            span.style.paddingLeft = '6px';
+            span.style.borderBottom = `2px solid rgba(255,255,255,0.8)`;
             span.title = 'Este segmento tiene información adicional';
           }
           
           try {
             range.surroundContents(span);
           } catch (e) {
-            // If we can't surround contents, create a new span with the text
             span.textContent = segment.text;
             range.deleteContents();
             range.insertNode(span);
@@ -166,41 +210,65 @@ export const useTextEditor = () => {
         }
       }
     });
-  }, [segments, shots]);
+  }, [sections, shots]);
 
-  const addInspiration = useCallback((url: string, title: string, notes: string, timestamp?: string) => {
+  const updateSectionContent = useCallback((sectionId: string, content: string) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId ? { ...section, content } : section
+    ));
+  }, []);
+
+  const addInspiration = useCallback((inspiration: Omit<Inspiration, 'id'>) => {
     const newInspiration: Inspiration = {
       id: `inspiration-${Date.now()}`,
-      url,
-      title,
-      notes,
-      timestamp
+      ...inspiration
     };
     setInspirations(prev => [...prev, newInspiration]);
   }, []);
 
-  const updateSegmentInfo = useCallback((segmentId: string, information: string) => {
-    setSegments(prev => prev.map(segment => 
-      segment.id === segmentId ? { ...segment, information } : segment
+  const updateSegmentInfo = useCallback((sectionId: string, segmentId: string, information: string) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId 
+        ? {
+            ...section,
+            segments: section.segments.map(segment => 
+              segment.id === segmentId ? { ...segment, information } : segment
+            )
+          }
+        : section
     ));
-  }, []);
+    
+    // Reapply styling to show the information indicator
+    setTimeout(() => applySegmentStyling(sectionId), 0);
+  }, [applySegmentStyling]);
+
+  const getAllContent = useCallback(() => {
+    return sections.map(section => section.content).join('\n\n');
+  }, [sections]);
+
+  const getAllSegments = useCallback(() => {
+    return sections.flatMap(section => 
+      section.segments.map(segment => ({ ...segment, sectionId: section.id }))
+    );
+  }, [sections]);
 
   return {
-    content,
-    setContent,
-    segments,
+    sections,
     shots,
     inspirations,
     selectedText,
     showShotMenu,
     menuPosition,
-    editorRef,
+    editorRefs,
     handleTextSelection,
     addShot,
     assignShotToText,
     addInspiration,
     updateSegmentInfo,
+    updateSectionContent,
     setShowShotMenu,
-    applySegmentStyling
+    applySegmentStyling,
+    getAllContent,
+    getAllSegments
   };
 };
