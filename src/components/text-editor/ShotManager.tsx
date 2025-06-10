@@ -1,16 +1,17 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Camera, Palette } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Camera, Check } from 'lucide-react';
 import { Shot } from '@/hooks/use-text-editor';
 
 interface ShotManagerProps {
   shots: Shot[];
   onAddShot: (name: string, color: string) => Shot;
+  onToggleRecorded: (shotId: string) => void;
 }
 
-const ShotManager: React.FC<ShotManagerProps> = ({ shots }) => {
+const ShotManager: React.FC<ShotManagerProps> = ({ shots, onToggleRecorded }) => {
   if (shots.length === 0) return null;
 
   return (
@@ -42,6 +43,22 @@ const ShotManager: React.FC<ShotManagerProps> = ({ shots }) => {
                   </div>
                 )}
               </div>
+              <Button
+                variant={shot.recorded ? "default" : "outline"}
+                size="sm"
+                onClick={() => onToggleRecorded(shot.id)}
+                className={`h-8 w-8 p-0 ${
+                  shot.recorded 
+                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                    : 'border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                {shot.recorded ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}
+              </Button>
             </div>
           ))}
         </div>

@@ -33,7 +33,8 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     applySegmentStyling,
     getAllContent,
     getAllSegments,
-    toggleSectionCollapse
+    toggleSectionCollapse,
+    toggleShotRecorded
   } = useTextEditor();
 
   // Create refs for each section
@@ -103,6 +104,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
       <ShotManager 
         shots={shots}
         onAddShot={addShot}
+        onToggleRecorded={toggleShotRecorded}
       />
 
       {/* Información de Segmentos */}

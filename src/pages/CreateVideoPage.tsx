@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Target, Save, Eye } from 'lucide-react';
+import { Target, Save, Eye, Plus, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +25,7 @@ const CreateVideoPage: React.FC = () => {
   
   const [title, setTitle] = useState('');
   const [mainSMP, setMainSMP] = useState('');
+  const [secondarySMPs, setSecondarySMPs] = useState<string[]>([]);
   const [selectedSeries, setSelectedSeries] = useState<string>('');
   const [scriptContent, setScriptContent] = useState('');
 
@@ -52,6 +54,20 @@ const CreateVideoPage: React.FC = () => {
            series.id.trim() !== '';
   }) || [];
 
+  const addSecondarySMP = () => {
+    setSecondarySMPs([...secondarySMPs, '']);
+  };
+
+  const updateSecondarySMP = (index: number, value: string) => {
+    const updated = [...secondarySMPs];
+    updated[index] = value;
+    setSecondarySMPs(updated);
+  };
+
+  const removeSecondarySMP = (index: number) => {
+    setSecondarySMPs(secondarySMPs.filter((_, i) => i !== index));
+  };
+
   const saveVideo = async (isDraft = true) => {
     if (!user || !title.trim()) {
       toast({
@@ -69,7 +85,7 @@ const CreateVideoPage: React.FC = () => {
           user_id: user.id,
           title: title.trim(),
           main_smp: mainSMP.trim() || null,
-          secondary_smps: [],
+          secondary_smps: secondarySMPs.filter(smp => smp.trim() !== ''),
           hook: null,
           build_up: null,
           value_add: scriptContent.trim() || null,
@@ -89,6 +105,7 @@ const CreateVideoPage: React.FC = () => {
       // Reset form
       setTitle('');
       setMainSMP('');
+      setSecondarySMPs([]);
       setSelectedSeries('');
       setScriptContent('');
 
@@ -149,14 +166,58 @@ const CreateVideoPage: React.FC = () => {
             )}
 
             <div>
-              <Label htmlFor="main-smp">Mensaje Principal</Label>
-              <Input
+              <Label htmlFor="main-smp">Mensaje Principal (SMP)</Label>
+              <Textarea
                 id="main-smp"
                 placeholder="¿Cuál es el mensaje principal de tu video?"
                 value={mainSMP}
                 onChange={(e) => setMainSMP(e.target.value)}
                 className="mt-1"
+                rows={3}
               />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Mensajes Secundarios (SMPs)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addSecondarySMP}
+                  className="text-sm"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Agregar SMP
+                </Button>
+              </div>
+              
+              {secondarySMPs.map((smp, index) => (
+                <div key={index} className="flex gap-2 mb-2">
+                  <Textarea
+                    placeholder={`Mensaje secundario ${index + 1}`}
+                    value={smp}
+                    onChange={(e) => updateSecondarySMP(index, e.target.value)}
+                    rows={2}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeSecondarySMP(index)}
+                    className="mt-1 h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              
+              {secondarySMPs.length === 0 && (
+                <p className="text-sm text-gray-500">
+                  Los SMPs secundarios son mensajes de apoyo que refuerzan tu mensaje principal.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

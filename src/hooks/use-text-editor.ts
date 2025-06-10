@@ -16,6 +16,7 @@ export interface Shot {
   name: string;
   color: string;
   description?: string;
+  recorded?: boolean;
 }
 
 export interface Inspiration {
@@ -114,10 +115,17 @@ export const useTextEditor = () => {
       id: `shot-${Date.now()}`,
       name,
       color,
-      description
+      description,
+      recorded: false
     };
     setShots(prev => [...prev, newShot]);
     return newShot;
+  }, []);
+
+  const toggleShotRecorded = useCallback((shotId: string) => {
+    setShots(prev => prev.map(shot => 
+      shot.id === shotId ? { ...shot, recorded: !shot.recorded } : shot
+    ));
   }, []);
 
   const cleanupSegments = useCallback((sectionId: string, newContent: string) => {
@@ -347,6 +355,7 @@ export const useTextEditor = () => {
     applySegmentStyling,
     getAllContent,
     getAllSegments,
-    toggleSectionCollapse
+    toggleSectionCollapse,
+    toggleShotRecorded
   };
 };
