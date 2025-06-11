@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,7 +46,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
 
     const content = section.content;
     if (!content || section.segments.length === 0) {
-      // Si no hay segmentos, solo mostrar el contenido normal sin overlay
+      // Si no hay segmentos, limpiar el overlay
       contentRef.current.innerHTML = '';
       return;
     }
@@ -59,10 +58,12 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     let lastIndex = 0;
 
     sortedSegments.forEach(segment => {
-      // Añadir texto antes del segmento (sin formato)
+      // Añadir espacios transparentes antes del segmento para mantener la posición
       if (segment.startIndex > lastIndex) {
         const beforeText = content.slice(lastIndex, segment.startIndex);
-        html += `<span style="color: transparent;">${beforeText.replace(/\n/g, '<br>')}</span>`;
+        // Crear espacios invisibles para mantener la posición
+        const invisibleSpaces = beforeText.replace(/./g, ' ').replace(/\n/g, '<br>');
+        html += `<span style="color: transparent; user-select: none;">${invisibleSpaces}</span>`;
       }
 
       const shotColor = getShotColor(segment.shotId);
@@ -83,6 +84,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
           border-bottom-color: ${shotColor};
           border-bottom-width: 3px;
           color: ${shotColor};
+          font-weight: 500;
           ${strikethroughStyle}
         "
         data-segment-id="${segment.id}"
@@ -98,10 +100,11 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
       lastIndex = segment.endIndex;
     });
 
-    // Añadir texto restante (sin formato)
+    // Añadir espacios invisibles al final si es necesario
     if (lastIndex < content.length) {
       const remainingText = content.slice(lastIndex);
-      html += `<span style="color: transparent;">${remainingText.replace(/\n/g, '<br>')}</span>`;
+      const invisibleSpaces = remainingText.replace(/./g, ' ').replace(/\n/g, '<br>');
+      html += `<span style="color: transparent; user-select: none;">${invisibleSpaces}</span>`;
     }
 
     contentRef.current.innerHTML = html;
@@ -258,11 +261,12 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
               {section.segments.length > 0 && (
                 <div
                   ref={contentRef}
-                  className="absolute inset-0 pointer-events-none p-4 text-base leading-relaxed whitespace-pre-wrap z-5"
+                  className="absolute inset-0 pointer-events-auto p-4 text-base leading-relaxed whitespace-pre-wrap"
                   style={{ 
                     fontSize: '16px',
                     lineHeight: '1.6',
-                    fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
+                    fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
+                    zIndex: 15
                   }}
                 />
               )}
