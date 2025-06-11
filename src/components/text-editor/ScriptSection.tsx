@@ -56,6 +56,26 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     onContentChange(newContent);
   };
 
+  const renderContentWithHighlights = () => {
+    if (!section.content) return '';
+    
+    let content = section.content;
+    const sortedSegments = [...section.segments].sort((a, b) => b.startIndex - a.startIndex);
+    
+    sortedSegments.forEach(segment => {
+      const shotColor = getShotColor(segment.shotId);
+      const before = content.substring(0, segment.startIndex);
+      const highlighted = content.substring(segment.startIndex, segment.endIndex);
+      const after = content.substring(segment.endIndex);
+      
+      content = before + 
+        `<span style="background: ${shotColor}30; border-bottom: 3px solid ${shotColor}; padding: 1px 2px; border-radius: 2px; font-weight: 500;">${highlighted}</span>` + 
+        after;
+    });
+    
+    return content;
+  };
+
   const handleStartEditInfo = (segmentId: string) => {
     const segment = section.segments.find(s => s.id === segmentId);
     if (segment) {
@@ -117,7 +137,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
         {!section.collapsed && (
           <CardContent>
             <div className="relative">
-              {/* Editor contentEditable simple y limpio */}
+              {/* Editor with proper direction and highlighting */}
               <div
                 ref={editorRef}
                 contentEditable
@@ -125,21 +145,27 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 onInput={handleInput}
                 onMouseUp={onTextSelection}
                 onKeyUp={onTextSelection}
+                dangerouslySetInnerHTML={{ __html: renderContentWithHighlights() }}
                 className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap bg-white"
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
-                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
+                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
+                  direction: 'ltr',
+                  textAlign: 'left',
+                  unicodeBidi: 'normal'
                 }}
-              >
-                {section.content}
-              </div>
+              />
               
               {/* Placeholder cuando está vacío */}
               {section.content === '' && (
                 <div 
                   className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base"
-                  style={{ fontSize: '16px' }}
+                  style={{ 
+                    fontSize: '16px',
+                    direction: 'ltr',
+                    textAlign: 'left'
+                  }}
                 >
                   {sectionConfig.placeholder}
                 </div>
