@@ -41,13 +41,14 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const [infoText, setInfoText] = useState('');
   const [showRecordedInText, setShowRecordedInText] = useState(true);
 
-  // Función mejorada para renderizar contenido con subrayado exacto
+  // Función para renderizar contenido con subrayado exacto
   const renderStyledContent = useCallback(() => {
     if (!contentRef.current || !editorRef.current) return;
 
     const content = section.content;
     if (!content || section.segments.length === 0) {
-      contentRef.current.innerHTML = content.replace(/\n/g, '<br>');
+      // Si no hay segmentos, solo mostrar el contenido normal sin overlay
+      contentRef.current.innerHTML = '';
       return;
     }
 
@@ -58,10 +59,10 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     let lastIndex = 0;
 
     sortedSegments.forEach(segment => {
-      // Añadir texto antes del segmento
+      // Añadir texto antes del segmento (sin formato)
       if (segment.startIndex > lastIndex) {
         const beforeText = content.slice(lastIndex, segment.startIndex);
-        html += beforeText.replace(/\n/g, '<br>');
+        html += `<span style="color: transparent;">${beforeText.replace(/\n/g, '<br>')}</span>`;
       }
 
       const shotColor = getShotColor(segment.shotId);
@@ -81,6 +82,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
           background-color: ${shotColor}20;
           border-bottom-color: ${shotColor};
           border-bottom-width: 3px;
+          color: ${shotColor};
           ${strikethroughStyle}
         "
         data-segment-id="${segment.id}"
@@ -96,10 +98,10 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
       lastIndex = segment.endIndex;
     });
 
-    // Añadir texto restante
+    // Añadir texto restante (sin formato)
     if (lastIndex < content.length) {
       const remainingText = content.slice(lastIndex);
-      html += remainingText.replace(/\n/g, '<br>');
+      html += `<span style="color: transparent;">${remainingText.replace(/\n/g, '<br>')}</span>`;
     }
 
     contentRef.current.innerHTML = html;
@@ -234,6 +236,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
         {!section.collapsed && (
           <CardContent>
             <div className="relative">
+              {/* Editor principal */}
               <div
                 ref={editorRef}
                 contentEditable
@@ -246,26 +249,27 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                   fontSize: '16px',
                   lineHeight: '1.6',
                   fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
-                  backgroundColor: 'transparent'
+                  backgroundColor: 'white'
                 }}
                 data-placeholder={sectionConfig.placeholder}
               />
               
-              {/* Display styled content - behind the editor */}
-              <div
-                ref={contentRef}
-                className="absolute inset-0 pointer-events-none p-4 text-base leading-relaxed whitespace-pre-wrap z-0"
-                style={{ 
-                  fontSize: '16px',
-                  lineHeight: '1.6',
-                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
-                  color: 'rgba(0,0,0,0.1)'
-                }}
-              />
+              {/* Overlay solo para segmentos subrayados */}
+              {section.segments.length > 0 && (
+                <div
+                  ref={contentRef}
+                  className="absolute inset-0 pointer-events-none p-4 text-base leading-relaxed whitespace-pre-wrap z-5"
+                  style={{ 
+                    fontSize: '16px',
+                    lineHeight: '1.6',
+                    fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
+                  }}
+                />
+              )}
               
               {section.content === '' && (
                 <div 
-                  className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base z-5"
+                  className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base z-20"
                   style={{ fontSize: '16px' }}
                 >
                   {sectionConfig.placeholder}
