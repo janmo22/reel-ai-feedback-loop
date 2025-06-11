@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { useTextEditor, SECTION_TYPES } from '@/hooks/use-text-editor';
+import { useTextEditor } from '@/hooks/use-text-editor';
 import ShotSelectionMenu from './ShotSelectionMenu';
 import TextSegmentInfo from './TextSegmentInfo';
 import ScriptSection from './ScriptSection';
@@ -31,7 +31,6 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     removeSegment,
     updateSectionContent,
     setShowShotMenu,
-    applySegmentStyling,
     getAllContent,
     getAllSegments,
     toggleSectionCollapse,
@@ -82,7 +81,6 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
             section={section}
             onContentChange={(content) => updateSectionContent(section.id, content)}
             onTextSelection={() => handleTextSelection(section.id)}
-            onApplyStyling={() => applySegmentStyling(section.id)}
             onToggleCollapse={() => toggleSectionCollapse(section.id)}
             onAddSegmentInfo={(segmentId, info) => addSegmentInfo(section.id, segmentId, info)}
             onRemoveSegment={(segmentId) => removeSegment(section.id, segmentId)}

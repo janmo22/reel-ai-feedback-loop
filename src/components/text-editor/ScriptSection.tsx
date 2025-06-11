@@ -8,12 +8,12 @@ import { ChevronDown, ChevronRight, Plus, X, Check, Eye, EyeOff, Camera } from '
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScriptSection as ScriptSectionType, SECTION_TYPES, TextSegment } from '@/hooks/use-text-editor';
+import HighlightOverlay from './HighlightOverlay';
 
 interface ScriptSectionProps {
   section: ScriptSectionType;
   onContentChange: (content: string) => void;
   onTextSelection: () => void;
-  onApplyStyling: () => void;
   onToggleCollapse: () => void;
   onAddSegmentInfo: (segmentId: string, info: string) => void;
   onRemoveSegment: (segmentId: string) => void;
@@ -26,7 +26,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   section,
   onContentChange,
   onTextSelection,
-  onApplyStyling,
   onToggleCollapse,
   onAddSegmentInfo,
   onRemoveSegment,
@@ -38,6 +37,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const [editingInfo, setEditingInfo] = useState<string | null>(null);
   const [infoText, setInfoText] = useState('');
   const [showRecordedInText, setShowRecordedInText] = useState(true);
+  const observerRef = useRef<MutationObserver | null>(null);
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -54,84 +54,47 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     return shot?.recorded || false;
   };
 
-  // Crear CSS dinámico para highlighting de segmentos
-  const createHighlightingCSS = useCallback(() => {
-    if (!section.segments.length) return '';
-
-    let css = '';
-    section.segments.forEach((segment, index) => {
-      const color = getShotColor(segment.shotId);
-      const className = `segment-${section.id}-${segment.id}`;
-      
-      css += `
-        .${className} {
-          background: linear-gradient(to bottom, transparent 0%, transparent 70%, ${color}40 70%, ${color}40 100%);
-          border-bottom: 2px solid ${color};
-          position: relative;
-        }
-      `;
-    });
-
-    return css;
-  }, [section.segments, section.id, shots]);
-
-  // Aplicar highlighting mediante spans
-  const applyHighlighting = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor || !section.content) return;
-
-    // Crear una copia del contenido
-    let highlightedContent = section.content;
-    
-    // Ordenar segmentos por posición (de mayor a menor para evitar problemas de índices)
-    const sortedSegments = [...section.segments].sort((a, b) => b.startIndex - a.startIndex);
-
-    sortedSegments.forEach(segment => {
-      if (segment.startIndex >= 0 && segment.endIndex <= highlightedContent.length) {
-        const beforeText = highlightedContent.substring(0, segment.startIndex);
-        const segmentText = highlightedContent.substring(segment.startIndex, segment.endIndex);
-        const afterText = highlightedContent.substring(segment.endIndex);
-        
-        const className = `segment-${section.id}-${segment.id}`;
-        const spanTag = `<span class="${className}" data-segment-id="${segment.id}">${segmentText}</span>`;
-        
-        highlightedContent = beforeText + spanTag + afterText;
-      }
-    });
-
-    // Solo actualizar si es diferente para evitar bucles
-    if (editor.innerHTML !== highlightedContent) {
-      const selection = window.getSelection();
-      const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
-      const startOffset = range?.startOffset || 0;
-      const endOffset = range?.endOffset || 0;
-
-      editor.innerHTML = highlightedContent;
-
-      // Restaurar cursor si es posible
-      try {
-        if (range && editor.firstChild) {
-          const newRange = document.createRange();
-          newRange.setStart(editor.firstChild, Math.min(startOffset, editor.textContent?.length || 0));
-          newRange.setEnd(editor.firstChild, Math.min(endOffset, editor.textContent?.length || 0));
-          selection?.removeAllRanges();
-          selection?.addRange(newRange);
-        }
-      } catch (e) {
-        // Ignorar errores de cursor
-      }
-    }
-  }, [section.content, section.segments, section.id, editorRef]);
-
-  // Aplicar highlighting cuando cambien los segmentos
+  // Configurar MutationObserver para detectar cambios en tiempo real
   useEffect(() => {
-    const timer = setTimeout(() => {
-      applyHighlighting();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [applyHighlighting]);
+    const editor = editorRef.current;
+    if (!editor) return;
 
-  const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
+    // Limpiar observer anterior si existe
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    // Crear nuevo observer
+    observerRef.current = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList' || mutation.type === 'characterData') {
+          shouldUpdate = true;
+        }
+      });
+
+      if (shouldUpdate) {
+        const newContent = editor.textContent || '';
+        onContentChange(newContent);
+      }
+    });
+
+    // Observar cambios en el editor
+    observerRef.current.observe(editor, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [editorRef, onContentChange]);
+
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     const newContent = e.currentTarget.textContent || '';
     onContentChange(newContent);
   };
@@ -159,7 +122,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
 
   return (
     <TooltipProvider>
-      <style>{createHighlightingCSS()}</style>
       <Card className="border-0 shadow-sm bg-white">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -219,53 +181,39 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
         {!section.collapsed && (
           <CardContent>
             <div className="relative">
+              {/* Editor contentEditable puro */}
               <div
                 ref={editorRef}
                 contentEditable
                 suppressContentEditableWarning
-                onInput={handleContentChange}
+                onInput={handleInput}
                 onMouseUp={onTextSelection}
                 onKeyUp={onTextSelection}
-                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap relative"
+                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap relative bg-white"
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
-                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
+                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
+                  zIndex: 2
                 }}
-                data-placeholder={sectionConfig.placeholder}
+                dangerouslySetInnerHTML={{ __html: section.content }}
+              />
+
+              {/* Overlay de highlighting */}
+              <HighlightOverlay
+                segments={section.segments}
+                content={section.content}
+                editorRef={editorRef}
+                shots={shots}
               />
               
+              {/* Placeholder cuando está vacío */}
               {section.content === '' && (
                 <div 
                   className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base"
-                  style={{ fontSize: '16px' }}
+                  style={{ fontSize: '16px', zIndex: 1 }}
                 >
                   {sectionConfig.placeholder}
-                </div>
-              )}
-
-              {/* Overlay para mostrar líneas tachadas en tomas grabadas */}
-              {showRecordedInText && section.segments.some(s => isShotRecorded(s.shotId)) && (
-                <div className="absolute inset-0 pointer-events-none">
-                  {section.segments
-                    .filter(segment => isShotRecorded(segment.shotId))
-                    .map(segment => {
-                      const startPercent = (segment.startIndex / (section.content?.length || 1)) * 100;
-                      const endPercent = (segment.endIndex / (section.content?.length || 1)) * 100;
-                      
-                      return (
-                        <div
-                          key={`strikethrough-${segment.id}`}
-                          className="absolute h-0.5 bg-gray-400"
-                          style={{
-                            left: `${startPercent}%`,
-                            width: `${endPercent - startPercent}%`,
-                            top: '50%',
-                            transform: 'translateY(-50%)'
-                          }}
-                        />
-                      );
-                    })}
                 </div>
               )}
             </div>
