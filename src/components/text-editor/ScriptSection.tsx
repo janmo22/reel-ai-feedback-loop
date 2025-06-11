@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -151,14 +152,11 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     onContentChange(newContent);
   };
 
-  const handleStartEditInfo = (groupId: string) => {
-    // Usar el primer segmento del grupo para editar información
-    const mergedGroups = mergeConsecutiveSegments(section.segments);
-    const group = mergedGroups.find(g => g.segments[0].id === groupId);
-    if (group) {
-      const firstSegment = group.segments[0];
-      setEditingInfo(firstSegment.id);
-      setInfoText(firstSegment.information || '');
+  const handleStartEditInfo = (segmentId: string) => {
+    const segment = section.segments.find(s => s.id === segmentId);
+    if (segment) {
+      setEditingInfo(segment.id);
+      setInfoText(segment.information || '');
     }
   };
 
@@ -173,17 +171,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const handleCancelEditInfo = () => {
     setEditingInfo(null);
     setInfoText('');
-  };
-
-  const handleRemoveGroup = (groupId: string) => {
-    // Remover todos los segmentos del grupo
-    const mergedGroups = mergeConsecutiveSegments(section.segments);
-    const group = mergedGroups.find(g => g.segments[0].id === groupId);
-    if (group) {
-      group.segments.forEach(segment => {
-        onRemoveSegment(segment.id);
-      });
-    }
   };
 
   return (
