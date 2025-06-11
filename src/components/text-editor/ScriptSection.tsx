@@ -38,7 +38,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const [editingInfo, setEditingInfo] = useState<string | null>(null);
   const [infoText, setInfoText] = useState('');
   const [showRecordedInText, setShowRecordedInText] = useState(true);
-  const [highlightStyles, setHighlightStyles] = useState<React.CSSProperties>({});
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -55,119 +54,85 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     return shot?.recorded || false;
   };
 
-  // Crear estilos de subrayado dinámicos para cada segmento
-  const createHighlightStyles = useCallback(() => {
-    if (!section.content || section.segments.length === 0) {
-      setHighlightStyles({});
-      return;
-    }
+  // Crear CSS dinámico para highlighting de segmentos
+  const createHighlightingCSS = useCallback(() => {
+    if (!section.segments.length) return '';
 
-    const styles: React.CSSProperties = {};
+    let css = '';
+    section.segments.forEach((segment, index) => {
+      const color = getShotColor(segment.shotId);
+      const className = `segment-${section.id}-${segment.id}`;
+      
+      css += `
+        .${className} {
+          background: linear-gradient(to bottom, transparent 0%, transparent 70%, ${color}40 70%, ${color}40 100%);
+          border-bottom: 2px solid ${color};
+          position: relative;
+        }
+      `;
+    });
+
+    return css;
+  }, [section.segments, section.id, shots]);
+
+  // Aplicar highlighting mediante spans
+  const applyHighlighting = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor || !section.content) return;
+
+    // Crear una copia del contenido
+    let highlightedContent = section.content;
     
-    // Crear un gradiente linear para cada segmento
-    const gradientStops: string[] = [];
-    let lastPosition = 0;
-    
-    // Ordenar segmentos por posición
-    const sortedSegments = [...section.segments].sort((a, b) => a.startIndex - b.startIndex);
-    
+    // Ordenar segmentos por posición (de mayor a menor para evitar problemas de índices)
+    const sortedSegments = [...section.segments].sort((a, b) => b.startIndex - a.startIndex);
+
     sortedSegments.forEach(segment => {
-      const startPercent = (segment.startIndex / section.content.length) * 100;
-      const endPercent = (segment.endIndex / section.content.length) * 100;
-      const shotColor = getShotColor(segment.shotId);
-      const isRecorded = isShotRecorded(segment.shotId);
-      
-      // Área transparente antes del segmento
-      if (startPercent > lastPosition) {
-        gradientStops.push(`transparent ${lastPosition}%`);
-        gradientStops.push(`transparent ${startPercent}%`);
-      }
-      
-      // Área del segmento con color
-      const backgroundColor = `${shotColor}20`; // 20% opacity
-      const borderColor = shotColor;
-      
-      gradientStops.push(`${backgroundColor} ${startPercent}%`);
-      gradientStops.push(`${backgroundColor} ${endPercent}%`);
-      
-      lastPosition = endPercent;
-    });
-    
-    // Área transparente después del último segmento
-    if (lastPosition < 100) {
-      gradientStops.push(`transparent ${lastPosition}%`);
-      gradientStops.push(`transparent 100%`);
-    }
-    
-    if (gradientStops.length > 0) {
-      styles.background = `linear-gradient(to right, ${gradientStops.join(', ')})`;
-    }
-    
-    setHighlightStyles(styles);
-  }, [section.segments, section.content, shots, showRecordedInText]);
-
-  // Aplicar estilos cuando cambien los segmentos
-  useEffect(() => {
-    createHighlightStyles();
-  }, [createHighlightStyles]);
-
-  // Limpiar segmentos que ya no existen en el contenido
-  const cleanupInvalidSegments = useCallback((newContent: string) => {
-    const validSegments = section.segments.filter(segment => {
-      // Verificar si el texto del segmento sigue existiendo en el contenido
-      const segmentText = segment.text.trim();
-      if (!segmentText || !newContent.includes(segmentText)) {
-        return false;
-      }
-      
-      // Verificar si las posiciones son válidas
-      if (segment.startIndex < 0 || segment.endIndex > newContent.length) {
-        return false;
-      }
-      
-      return true;
-    });
-    
-    // Si hay segmentos inválidos, eliminarlos
-    const invalidSegments = section.segments.filter(seg => 
-      !validSegments.find(valid => valid.id === seg.id)
-    );
-    
-    invalidSegments.forEach(segment => {
-      onRemoveSegment(segment.id);
-    });
-  }, [section.segments, onRemoveSegment]);
-
-  // Actualizar posiciones de segmentos cuando cambia el contenido
-  const updateSegmentPositions = useCallback((newContent: string) => {
-    section.segments.forEach(segment => {
-      const segmentText = segment.text.trim();
-      const newIndex = newContent.indexOf(segmentText);
-      
-      if (newIndex !== -1 && newIndex !== segment.startIndex) {
-        // Actualizar posiciones si el texto se movió
-        const updatedSegment = {
-          ...segment,
-          startIndex: newIndex,
-          endIndex: newIndex + segmentText.length
-        };
+      if (segment.startIndex >= 0 && segment.endIndex <= highlightedContent.length) {
+        const beforeText = highlightedContent.substring(0, segment.startIndex);
+        const segmentText = highlightedContent.substring(segment.startIndex, segment.endIndex);
+        const afterText = highlightedContent.substring(segment.endIndex);
         
-        // Aquí podrías llamar a una función de actualización si estuviera disponible
-        // Por ahora, el hook manejará esto automáticamente
+        const className = `segment-${section.id}-${segment.id}`;
+        const spanTag = `<span class="${className}" data-segment-id="${segment.id}">${segmentText}</span>`;
+        
+        highlightedContent = beforeText + spanTag + afterText;
       }
     });
-  }, [section.segments]);
+
+    // Solo actualizar si es diferente para evitar bucles
+    if (editor.innerHTML !== highlightedContent) {
+      const selection = window.getSelection();
+      const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+      const startOffset = range?.startOffset || 0;
+      const endOffset = range?.endOffset || 0;
+
+      editor.innerHTML = highlightedContent;
+
+      // Restaurar cursor si es posible
+      try {
+        if (range && editor.firstChild) {
+          const newRange = document.createRange();
+          newRange.setStart(editor.firstChild, Math.min(startOffset, editor.textContent?.length || 0));
+          newRange.setEnd(editor.firstChild, Math.min(endOffset, editor.textContent?.length || 0));
+          selection?.removeAllRanges();
+          selection?.addRange(newRange);
+        }
+      } catch (e) {
+        // Ignorar errores de cursor
+      }
+    }
+  }, [section.content, section.segments, section.id, editorRef]);
+
+  // Aplicar highlighting cuando cambien los segmentos
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      applyHighlighting();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [applyHighlighting]);
 
   const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
     const newContent = e.currentTarget.textContent || '';
-    
-    // Limpiar segmentos inválidos
-    cleanupInvalidSegments(newContent);
-    
-    // Actualizar posiciones de segmentos
-    updateSegmentPositions(newContent);
-    
-    // Notificar el cambio de contenido
     onContentChange(newContent);
   };
 
@@ -194,6 +159,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
 
   return (
     <TooltipProvider>
+      <style>{createHighlightingCSS()}</style>
       <Card className="border-0 shadow-sm bg-white">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -264,8 +230,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
-                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
-                  ...highlightStyles
+                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
                 }}
                 data-placeholder={sectionConfig.placeholder}
               />

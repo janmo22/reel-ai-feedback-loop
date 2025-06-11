@@ -120,29 +120,34 @@ export const useTextEditor = () => {
     ));
   }, []);
 
-  // Función mejorada para obtener la posición exacta del cursor en el texto
-  const getExactTextPosition = useCallback((sectionId: string, range: Range): { start: number; end: number } | null => {
+  // Función mejorada para obtener la posición exacta del cursor en el texto plano
+  const getTextPosition = useCallback((sectionId: string, range: Range): { start: number; end: number } | null => {
     const editor = editorRefs.current[sectionId];
     if (!editor || !range) return null;
 
-    // Crear un range temporal que vaya desde el inicio del editor hasta el inicio de la selección
-    const startRange = document.createRange();
-    startRange.setStart(editor, 0);
-    startRange.setEnd(range.startContainer, range.startOffset);
+    const textContent = editor.textContent || '';
     
-    // Crear un range temporal que vaya desde el inicio del editor hasta el final de la selección
-    const endRange = document.createRange();
-    endRange.setStart(editor, 0);
-    endRange.setEnd(range.endContainer, range.endOffset);
+    try {
+      // Crear un range temporal para obtener la posición del inicio
+      const startRange = document.createRange();
+      startRange.setStart(editor, 0);
+      startRange.setEnd(range.startContainer, range.startOffset);
+      const startText = startRange.toString();
+      
+      // Crear un range temporal para obtener la posición del final
+      const endRange = document.createRange();
+      endRange.setStart(editor, 0);
+      endRange.setEnd(range.endContainer, range.endOffset);
+      const endText = endRange.toString();
 
-    // Obtener el texto exacto para calcular las posiciones
-    const startText = startRange.toString();
-    const endText = endRange.toString();
-
-    return {
-      start: startText.length,
-      end: endText.length
-    };
+      return {
+        start: startText.length,
+        end: endText.length
+      };
+    } catch (error) {
+      console.log('Error getting text position:', error);
+      return null;
+    }
   }, []);
 
   // Función mejorada para manejar la selección de texto
@@ -152,23 +157,19 @@ export const useTextEditor = () => {
     
     if (!selection || !editorRef) return;
 
-    // Verificar si hay una selección válida
     const selectedText = selection.toString().trim();
     if (!selectedText) {
       setShowShotMenu(false);
       return;
     }
 
-    // Verificar que la selección está dentro del editor correcto
     if (!selection.rangeCount || !editorRef.contains(selection.anchorNode)) {
       setShowShotMenu(false);
       return;
     }
 
     const range = selection.getRangeAt(0);
-    
-    // Obtener posición exacta
-    const position = getExactTextPosition(sectionId, range);
+    const position = getTextPosition(sectionId, range);
     if (!position) return;
 
     setSelectedText({ 
@@ -186,7 +187,7 @@ export const useTextEditor = () => {
       y: rect.top - 10
     });
     setShowShotMenu(true);
-  }, [getExactTextPosition]);
+  }, [getTextPosition]);
 
   const addShot = useCallback((name: string, color: string, description?: string) => {
     const newShot: Shot = {
@@ -206,30 +207,37 @@ export const useTextEditor = () => {
     ));
   }, []);
 
-  // Función mejorada para limpiar segmentos cuando cambia el contenido
-  const cleanupSegmentsOnContentChange = useCallback((sectionId: string, newContent: string) => {
+  // Función para validar si un segmento sigue siendo válido en el contenido actual
+  const isSegmentValid = useCallback((segment: TextSegment, content: string): boolean => {
+    if (!content || !segment.text) return false;
+    
+    // Verificar que las posiciones sean válidas
+    if (segment.startIndex < 0 || segment.endIndex > content.length) return false;
+    
+    // Verificar que el texto en esa posición coincida
+    const currentText = content.substring(segment.startIndex, segment.endIndex);
+    return currentText === segment.text;
+  }, []);
+
+  // Función para actualizar las posiciones de los segmentos después de cambios de texto
+  const updateSegmentPositions = useCallback((sectionId: string, newContent: string) => {
     setSections(prev => prev.map(section => {
       if (section.id !== sectionId) return section;
 
-      // Si no hay contenido nuevo, limpiar todos los segmentos
+      // Si no hay contenido, eliminar todos los segmentos
       if (!newContent.trim()) {
-        return { ...section, segments: [] };
+        return { ...section, content: newContent, segments: [] };
       }
 
-      // Filtrar segmentos que siguen siendo válidos
+      // Filtrar y actualizar segmentos válidos
       const validSegments = section.segments.filter(segment => {
-        const segmentText = segment.text.trim();
+        // Buscar el texto del segmento en el nuevo contenido
+        const segmentIndex = newContent.indexOf(segment.text);
         
-        // Verificar si el texto del segmento aún existe en el contenido
-        if (!segmentText || !newContent.includes(segmentText)) {
-          return false;
-        }
-        
-        // Actualizar posiciones si es necesario
-        const newIndex = newContent.indexOf(segmentText);
-        if (newIndex !== -1) {
-          segment.startIndex = newIndex;
-          segment.endIndex = newIndex + segmentText.length;
+        if (segmentIndex !== -1) {
+          // Actualizar posiciones
+          segment.startIndex = segmentIndex;
+          segment.endIndex = segmentIndex + segment.text.length;
           return true;
         }
         
@@ -238,19 +246,18 @@ export const useTextEditor = () => {
 
       return {
         ...section,
+        content: newContent,
         segments: validSegments
       };
     }));
   }, []);
 
   const updateSectionContent = useCallback((sectionId: string, content: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId ? { ...section, content } : section
-    ));
-    
-    // Limpiar segmentos después del cambio de contenido
-    cleanupSegmentsOnContentChange(sectionId, content);
-  }, [cleanupSegmentsOnContentChange]);
+    // Usar setTimeout para evitar conflictos con el DOM
+    setTimeout(() => {
+      updateSegmentPositions(sectionId, content);
+    }, 0);
+  }, [updateSegmentPositions]);
 
   // Función mejorada para asignar toma al texto
   const assignShotToText = useCallback((shotId: string) => {
@@ -259,26 +266,10 @@ export const useTextEditor = () => {
     const shot = shots.find(s => s.id === shotId);
     if (!shot) return;
 
-    const section = sections.find(s => s.id === selectedText.sectionId);
-    if (!section) return;
-
-    // Usar las posiciones exactas calculadas durante la selección
     const startIndex = selectedText.startIndex ?? 0;
     const endIndex = selectedText.endIndex ?? selectedText.text.length;
 
-    // Remover segmentos que se superponen con el nuevo
-    setSections(prev => prev.map(sec => 
-      sec.id === selectedText.sectionId 
-        ? {
-            ...sec,
-            segments: sec.segments.filter(segment => 
-              endIndex <= segment.startIndex || startIndex >= segment.endIndex
-            )
-          }
-        : sec
-    ));
-
-    // Crear nuevo segmento con posiciones exactas
+    // Crear nuevo segmento
     const newSegment: TextSegment = {
       id: `segment-${Date.now()}`,
       text: selectedText.text,
@@ -288,19 +279,26 @@ export const useTextEditor = () => {
       endIndex
     };
 
-    setSections(prev => prev.map(section => 
-      section.id === selectedText.sectionId 
-        ? { ...section, segments: [...section.segments, newSegment] }
-        : section
-    ));
+    setSections(prev => prev.map(section => {
+      if (section.id !== selectedText.sectionId) return section;
+      
+      // Remover segmentos que se superponen
+      const nonOverlappingSegments = section.segments.filter(segment => 
+        endIndex <= segment.startIndex || startIndex >= segment.endIndex
+      );
+      
+      return {
+        ...section,
+        segments: [...nonOverlappingSegments, newSegment]
+      };
+    }));
 
     setShowShotMenu(false);
     setSelectedText({ text: '', range: null, sectionId: null, startIndex: undefined, endIndex: undefined });
-  }, [selectedText, shots, sections]);
+  }, [selectedText, shots]);
 
   const applySegmentStyling = useCallback((sectionId: string) => {
-    // Esta función ya no es necesaria con el nuevo sistema de CSS puro
-    // Se mantiene por compatibilidad
+    // Esta función ya no es necesaria con el nuevo sistema
   }, []);
 
   const addInspiration = useCallback((inspiration: Omit<Inspiration, 'id'>) => {
