@@ -1,18 +1,19 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, Plus, X, Check, Camera } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, X, Check, Eye, EyeOff, Camera, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScriptSection as ScriptSectionType, SECTION_TYPES } from '@/hooks/use-text-editor';
+import { ScriptSection as ScriptSectionType, SECTION_TYPES, TextSegment } from '@/hooks/use-text-editor';
 
 interface ScriptSectionProps {
   section: ScriptSectionType;
   onContentChange: (content: string) => void;
   onTextSelection: () => void;
+  onApplyStyling: () => void;
   onToggleCollapse: () => void;
   onAddSegmentInfo: (segmentId: string, info: string) => void;
   onRemoveSegment: (segmentId: string) => void;
@@ -25,6 +26,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   section,
   onContentChange,
   onTextSelection,
+  onApplyStyling,
   onToggleCollapse,
   onAddSegmentInfo,
   onRemoveSegment,
@@ -33,8 +35,17 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   editorRef
 }) => {
   const sectionConfig = SECTION_TYPES[section.type];
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
   const [editingInfo, setEditingInfo] = useState<string | null>(null);
   const [infoText, setInfoText] = useState('');
+  const [showRecordedInText, setShowRecordedInText] = useState(true);
+
+  useEffect(() => {
+    if (contentRef.current && section.segments.length > 0) {
+      renderStyledContent();
+    }
+  }, [section.segments, section.content, hoveredSegment, showRecordedInText]);
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -51,36 +62,152 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     return shot?.recorded || false;
   };
 
-  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+  // Función para agrupar segmentos consecutivos con la misma toma
+  const mergeConsecutiveSegments = (segments: TextSegment[]) => {
+    if (segments.length === 0) return [];
+
+    const sortedSegments = [...segments].sort((a, b) => a.startIndex - b.startIndex);
+    const mergedGroups: Array<{
+      shotId?: string;
+      startIndex: number;
+      endIndex: number;
+      segments: TextSegment[];
+      text: string;
+    }> = [];
+
+    let currentGroup = {
+      shotId: sortedSegments[0].shotId,
+      startIndex: sortedSegments[0].startIndex,
+      endIndex: sortedSegments[0].endIndex,
+      segments: [sortedSegments[0]],
+      text: sortedSegments[0].text
+    };
+
+    for (let i = 1; i < sortedSegments.length; i++) {
+      const segment = sortedSegments[i];
+      
+      // Si el segmento actual tiene la misma toma y es consecutivo (o muy cercano)
+      if (segment.shotId === currentGroup.shotId && 
+          segment.startIndex <= currentGroup.endIndex + 2) {
+        // Extender el grupo actual
+        currentGroup.endIndex = Math.max(currentGroup.endIndex, segment.endIndex);
+        currentGroup.segments.push(segment);
+        // Actualizar el texto del grupo completo
+        currentGroup.text = section.content.slice(currentGroup.startIndex, currentGroup.endIndex);
+      } else {
+        // Iniciar un nuevo grupo
+        mergedGroups.push(currentGroup);
+        currentGroup = {
+          shotId: segment.shotId,
+          startIndex: segment.startIndex,
+          endIndex: segment.endIndex,
+          segments: [segment],
+          text: segment.text
+        };
+      }
+    }
+    
+    // Añadir el último grupo
+    mergedGroups.push(currentGroup);
+    
+    return mergedGroups;
+  };
+
+  const renderStyledContent = () => {
+    if (!contentRef.current) return;
+
+    const content = section.content;
+    if (!content || section.segments.length === 0) {
+      contentRef.current.innerHTML = content.replace(/\n/g, '<br>');
+      return;
+    }
+
+    // Agrupar segmentos consecutivos con la misma toma
+    const mergedGroups = mergeConsecutiveSegments(section.segments);
+
+    let html = '';
+    let lastIndex = 0;
+
+    mergedGroups.forEach(group => {
+      // Añadir texto antes del grupo
+      if (group.startIndex > lastIndex) {
+        const beforeText = content.slice(lastIndex, group.startIndex);
+        html += beforeText.replace(/\n/g, '<br>');
+      }
+
+      const shotColor = getShotColor(group.shotId);
+      const shotName = getShotName(group.shotId);
+      const isRecorded = isShotRecorded(group.shotId);
+      
+      // Usar el primer segmento del grupo para los datos
+      const firstSegment = group.segments[0];
+      const allInfo = group.segments
+        .map(s => s.information)
+        .filter(info => info && info.trim())
+        .join(' | ');
+
+      // Aplicar tachado si está grabado y la opción está activada
+      const strikethroughStyle = showRecordedInText && isRecorded ? 'text-decoration: line-through; opacity: 0.7;' : '';
+
+      // Escapar el texto del grupo y reemplazar saltos de línea
+      const groupTextWithBreaks = group.text.replace(/\n/g, '<br>');
+
+      html += `<span 
+        class="segment-highlight relative cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm border-b-2" 
+        style="
+          background-color: ${shotColor}20;
+          border-bottom-color: ${shotColor};
+          border-bottom-width: 3px;
+          ${strikethroughStyle}
+        "
+        data-segment-id="${firstSegment.id}"
+        data-shot-name="${shotName}"
+        data-segment-info="${allInfo}"
+        data-recorded="${isRecorded}"
+        data-has-info="${allInfo ? 'true' : 'false'}"
+        onmouseenter="this.style.backgroundColor = '${shotColor}40'"
+        onmouseleave="this.style.backgroundColor = '${shotColor}20'"
+      >${groupTextWithBreaks}${allInfo ? '<sup style="color: ' + shotColor + '; font-weight: bold; margin-left: 2px;">+</sup>' : ''}</span>`;
+
+      lastIndex = group.endIndex;
+    });
+
+    // Añadir texto restante
+    if (lastIndex < content.length) {
+      const remainingText = content.slice(lastIndex);
+      html += remainingText.replace(/\n/g, '<br>');
+    }
+
+    contentRef.current.innerHTML = html;
+
+    // Añadir event listeners después de renderizar
+    const segmentElements = contentRef.current.querySelectorAll('.segment-highlight');
+    segmentElements.forEach(element => {
+      const segmentId = element.getAttribute('data-segment-id');
+      
+      element.addEventListener('mouseenter', () => {
+        setHoveredSegment(segmentId);
+      });
+      
+      element.addEventListener('mouseleave', () => {
+        setHoveredSegment(null);
+      });
+    });
+  };
+
+  const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
     const newContent = e.currentTarget.textContent || '';
     onContentChange(newContent);
   };
 
-  const renderContentWithHighlights = () => {
-    if (!section.content) return '';
-    
-    let content = section.content;
-    const sortedSegments = [...section.segments].sort((a, b) => b.startIndex - a.startIndex);
-    
-    sortedSegments.forEach(segment => {
-      const shotColor = getShotColor(segment.shotId);
-      const before = content.substring(0, segment.startIndex);
-      const highlighted = content.substring(segment.startIndex, segment.endIndex);
-      const after = content.substring(segment.endIndex);
-      
-      content = before + 
-        `<span style="background: ${shotColor}30; border-bottom: 3px solid ${shotColor}; padding: 1px 2px; border-radius: 2px; font-weight: 500;">${highlighted}</span>` + 
-        after;
-    });
-    
-    return content;
-  };
-
-  const handleStartEditInfo = (segmentId: string) => {
-    const segment = section.segments.find(s => s.id === segmentId);
-    if (segment) {
-      setEditingInfo(segment.id);
-      setInfoText(segment.information || '');
+  const handleStartEditInfo = (groupId: string) => {
+    // Usar el primer segmento del grupo para editar información
+    const mergedGroups = mergeConsecutiveSegments(section.segments);
+    const group = mergedGroups.find(g => g.segments[0].id === groupId);
+    if (group) {
+      const firstSegment = group.segments[0];
+      setEditingInfo(firstSegment.id);
+      setInfoText(firstSegment.information || '');
     }
   };
 
@@ -95,6 +222,17 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const handleCancelEditInfo = () => {
     setEditingInfo(null);
     setInfoText('');
+  };
+
+  const handleRemoveGroup = (groupId: string) => {
+    // Remover todos los segmentos del grupo
+    const mergedGroups = mergeConsecutiveSegments(section.segments);
+    const group = mergedGroups.find(g => g.segments[0].id === groupId);
+    if (group) {
+      group.segments.forEach(segment => {
+        onRemoveSegment(segment.id);
+      });
+    }
   };
 
   return (
@@ -126,9 +264,30 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
             </div>
             <div className="flex items-center gap-2">
               {section.segments.length > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  {section.segments.length} {section.segments.length === 1 ? 'toma' : 'tomas'}
-                </Badge>
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowRecordedInText(!showRecordedInText)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {showRecordedInText ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {showRecordedInText ? 'Ocultar tachado de grabadas' : 'Mostrar tachado de grabadas'}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Badge variant="outline" className="text-xs">
+                    {mergeConsecutiveSegments(section.segments).length} {mergeConsecutiveSegments(section.segments).length === 1 ? 'toma' : 'tomas'}
+                  </Badge>
+                </>
               )}
             </div>
           </div>
@@ -137,61 +296,99 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
         {!section.collapsed && (
           <CardContent>
             <div className="relative">
-              {/* Editor with proper direction and highlighting */}
               <div
                 ref={editorRef}
                 contentEditable
                 suppressContentEditableWarning
-                onInput={handleInput}
+                onInput={handleContentChange}
                 onMouseUp={onTextSelection}
                 onKeyUp={onTextSelection}
-                dangerouslySetInnerHTML={{ __html: renderContentWithHighlights() }}
-                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap bg-white"
+                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap"
+                style={{ 
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
+                }}
+                data-placeholder={sectionConfig.placeholder}
+              />
+              
+              {/* Display styled content */}
+              <div
+                ref={contentRef}
+                className="absolute inset-0 pointer-events-none p-4 text-base leading-relaxed whitespace-pre-wrap"
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
                   fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
-                  direction: 'ltr',
-                  textAlign: 'left',
-                  unicodeBidi: 'normal'
+                  color: 'transparent'
                 }}
               />
               
-              {/* Placeholder cuando está vacío */}
               {section.content === '' && (
                 <div 
                   className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base"
-                  style={{ 
-                    fontSize: '16px',
-                    direction: 'ltr',
-                    textAlign: 'left'
-                  }}
+                  style={{ fontSize: '16px' }}
                 >
                   {sectionConfig.placeholder}
                 </div>
               )}
+
+              {/* Hover tooltip para añadir información */}
+              {hoveredSegment && (
+                <div 
+                  className="absolute z-10 bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-auto"
+                  style={{
+                    top: '-35px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span>Añadir información</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleStartEditInfo(hoveredSegment)}
+                      className="h-4 w-4 p-0 text-white hover:bg-gray-700"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {/* Mostrar información existente */}
+                  {section.segments.find(s => s.id === hoveredSegment)?.information && (
+                    <div className="mt-1 text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded">
+                      {section.segments.find(s => s.id === hoveredSegment)?.information}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Gestión de segmentos */}
+            {/* Gestión de segmentos agrupados */}
             {section.segments.length > 0 && (
               <div className="mt-4 space-y-2">
                 <div className="text-sm font-medium text-gray-700 mb-2">Tomas en esta sección:</div>
-                {section.segments.map((segment) => {
-                  const shotColor = getShotColor(segment.shotId);
-                  const shotName = getShotName(segment.shotId);
-                  const isRecorded = isShotRecorded(segment.shotId);
+                {mergeConsecutiveSegments(section.segments).map((group) => {
+                  const shotColor = getShotColor(group.shotId);
+                  const shotName = getShotName(group.shotId);
+                  const isRecorded = isShotRecorded(group.shotId);
+                  const firstSegment = group.segments[0];
+                  const allInfo = group.segments
+                    .map(s => s.information)
+                    .filter(info => info && info.trim())
+                    .join(' | ');
                   
                   return (
-                    <div key={segment.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                    <div key={firstSegment.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
                       <div
                         className="w-3 h-3 rounded-full border"
                         style={{ backgroundColor: shotColor }}
                       />
                       <span className={`text-sm flex-1 ${isRecorded ? 'line-through opacity-60' : ''}`}>
-                        {shotName}: "{segment.text.length > 30 ? segment.text.substring(0, 30) + '...' : segment.text}"
+                        {shotName}: "{group.text.length > 30 ? group.text.substring(0, 30) + '...' : group.text}"
                       </span>
                       
-                      {editingInfo === segment.id ? (
+                      {editingInfo === firstSegment.id ? (
                         <div className="flex items-center gap-2">
                           <Input
                             value={infoText}
@@ -218,12 +415,13 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
+                          {/* Botón para marcar como grabado */}
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 size="sm"
                                 variant={isRecorded ? "default" : "outline"}
-                                onClick={() => onToggleShotRecorded(segment.shotId!)}
+                                onClick={() => onToggleShotRecorded(group.shotId!)}
                                 className={`h-6 w-6 p-0 ${
                                   isRecorded 
                                     ? 'bg-green-600 hover:bg-green-700 text-white' 
@@ -242,7 +440,8 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                             </TooltipContent>
                           </Tooltip>
 
-                          {segment.information && (
+                          {/* Indicador de información adicional */}
+                          {allInfo && (
                             <Popover>
                               <PopoverTrigger asChild>
                                 <Button
@@ -256,7 +455,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                               <PopoverContent className="w-80">
                                 <div className="space-y-2">
                                   <h4 className="font-medium text-sm">Información adicional</h4>
-                                  <p className="text-sm text-gray-600">{segment.information}</p>
+                                  <p className="text-sm text-gray-600">{allInfo}</p>
                                 </div>
                               </PopoverContent>
                             </Popover>
@@ -265,7 +464,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleStartEditInfo(segment.id)}
+                            onClick={() => handleStartEditInfo(firstSegment.id)}
                             className="h-6 px-2 text-xs"
                           >
                             <Plus className="h-3 w-3 mr-1" />
@@ -275,7 +474,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => onRemoveSegment(segment.id)}
+                            onClick={() => handleRemoveGroup(firstSegment.id)}
                             className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
                           >
                             <X className="h-3 w-3" />
