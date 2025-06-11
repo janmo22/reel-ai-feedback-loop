@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +38,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const [editingInfo, setEditingInfo] = useState<string | null>(null);
   const [infoText, setInfoText] = useState('');
   const [showRecordedInText, setShowRecordedInText] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [highlightStyles, setHighlightStyles] = useState<React.CSSProperties>({});
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -54,92 +55,119 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     return shot?.recorded || false;
   };
 
-  const applyHighlighting = useCallback(() => {
-    if (!editorRef.current || isUpdating || section.segments.length === 0) {
+  // Crear estilos de subrayado dinámicos para cada segmento
+  const createHighlightStyles = useCallback(() => {
+    if (!section.content || section.segments.length === 0) {
+      setHighlightStyles({});
       return;
     }
 
-    const content = section.content;
-    if (!content) return;
-
-    setIsUpdating(true);
-
+    const styles: React.CSSProperties = {};
+    
+    // Crear un gradiente linear para cada segmento
+    const gradientStops: string[] = [];
+    let lastPosition = 0;
+    
     // Ordenar segmentos por posición
     const sortedSegments = [...section.segments].sort((a, b) => a.startIndex - b.startIndex);
-
-    let html = '';
-    let lastIndex = 0;
-
+    
     sortedSegments.forEach(segment => {
-      // Texto antes del segmento
-      if (segment.startIndex > lastIndex) {
-        const beforeText = content.slice(lastIndex, segment.startIndex);
-        html += beforeText.replace(/\n/g, '<br>');
-      }
-
+      const startPercent = (segment.startIndex / section.content.length) * 100;
+      const endPercent = (segment.endIndex / section.content.length) * 100;
       const shotColor = getShotColor(segment.shotId);
       const isRecorded = isShotRecorded(segment.shotId);
-      const segmentText = content.slice(segment.startIndex, segment.endIndex);
       
-      // Estilo de subrayado simple como Apple Notes
-      const textDecoration = showRecordedInText && isRecorded ? 'line-through' : 'none';
-      const opacity = showRecordedInText && isRecorded ? '0.6' : '1';
-
-      html += `<span 
-        class="text-highlight"
-        style="
-          border-bottom: 2px solid ${shotColor};
-          background-color: ${shotColor}15;
-          padding: 1px 2px;
-          margin: 0 1px;
-          border-radius: 2px;
-          text-decoration: ${textDecoration};
-          opacity: ${opacity};
-          cursor: pointer;
-        "
-        data-segment-id="${segment.id}"
-        data-shot-color="${shotColor}"
-      >${segmentText.replace(/\n/g, '<br>')}</span>`;
-
-      lastIndex = segment.endIndex;
+      // Área transparente antes del segmento
+      if (startPercent > lastPosition) {
+        gradientStops.push(`transparent ${lastPosition}%`);
+        gradientStops.push(`transparent ${startPercent}%`);
+      }
+      
+      // Área del segmento con color
+      const backgroundColor = `${shotColor}20`; // 20% opacity
+      const borderColor = shotColor;
+      
+      gradientStops.push(`${backgroundColor} ${startPercent}%`);
+      gradientStops.push(`${backgroundColor} ${endPercent}%`);
+      
+      lastPosition = endPercent;
     });
-
-    // Texto restante
-    if (lastIndex < content.length) {
-      const remainingText = content.slice(lastIndex);
-      html += remainingText.replace(/\n/g, '<br>');
+    
+    // Área transparente después del último segmento
+    if (lastPosition < 100) {
+      gradientStops.push(`transparent ${lastPosition}%`);
+      gradientStops.push(`transparent 100%`);
     }
-
-    if (editorRef.current.innerHTML !== html) {
-      editorRef.current.innerHTML = html;
-      
-      // Agregar event listeners para desasignar al hacer click
-      const highlights = editorRef.current.querySelectorAll('.text-highlight');
-      highlights.forEach(element => {
-        const segmentId = element.getAttribute('data-segment-id');
-        element.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (segmentId) {
-            onRemoveSegment(segmentId);
-          }
-        });
-      });
+    
+    if (gradientStops.length > 0) {
+      styles.background = `linear-gradient(to right, ${gradientStops.join(', ')})`;
     }
+    
+    setHighlightStyles(styles);
+  }, [section.segments, section.content, shots, showRecordedInText]);
 
-    setIsUpdating(false);
-  }, [section.segments, section.content, showRecordedInText, shots, onRemoveSegment, isUpdating]);
-
+  // Aplicar estilos cuando cambien los segmentos
   useEffect(() => {
-    if (!isUpdating) {
-      applyHighlighting();
-    }
-  }, [applyHighlighting]);
+    createHighlightStyles();
+  }, [createHighlightStyles]);
+
+  // Limpiar segmentos que ya no existen en el contenido
+  const cleanupInvalidSegments = useCallback((newContent: string) => {
+    const validSegments = section.segments.filter(segment => {
+      // Verificar si el texto del segmento sigue existiendo en el contenido
+      const segmentText = segment.text.trim();
+      if (!segmentText || !newContent.includes(segmentText)) {
+        return false;
+      }
+      
+      // Verificar si las posiciones son válidas
+      if (segment.startIndex < 0 || segment.endIndex > newContent.length) {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    // Si hay segmentos inválidos, eliminarlos
+    const invalidSegments = section.segments.filter(seg => 
+      !validSegments.find(valid => valid.id === seg.id)
+    );
+    
+    invalidSegments.forEach(segment => {
+      onRemoveSegment(segment.id);
+    });
+  }, [section.segments, onRemoveSegment]);
+
+  // Actualizar posiciones de segmentos cuando cambia el contenido
+  const updateSegmentPositions = useCallback((newContent: string) => {
+    section.segments.forEach(segment => {
+      const segmentText = segment.text.trim();
+      const newIndex = newContent.indexOf(segmentText);
+      
+      if (newIndex !== -1 && newIndex !== segment.startIndex) {
+        // Actualizar posiciones si el texto se movió
+        const updatedSegment = {
+          ...segment,
+          startIndex: newIndex,
+          endIndex: newIndex + segmentText.length
+        };
+        
+        // Aquí podrías llamar a una función de actualización si estuviera disponible
+        // Por ahora, el hook manejará esto automáticamente
+      }
+    });
+  }, [section.segments]);
 
   const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
-    if (isUpdating) return;
-    
     const newContent = e.currentTarget.textContent || '';
+    
+    // Limpiar segmentos inválidos
+    cleanupInvalidSegments(newContent);
+    
+    // Actualizar posiciones de segmentos
+    updateSegmentPositions(newContent);
+    
+    // Notificar el cambio de contenido
     onContentChange(newContent);
   };
 
@@ -232,11 +260,12 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 onInput={handleContentChange}
                 onMouseUp={onTextSelection}
                 onKeyUp={onTextSelection}
-                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap"
+                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap relative"
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
-                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
+                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
+                  ...highlightStyles
                 }}
                 data-placeholder={sectionConfig.placeholder}
               />
@@ -247,6 +276,31 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                   style={{ fontSize: '16px' }}
                 >
                   {sectionConfig.placeholder}
+                </div>
+              )}
+
+              {/* Overlay para mostrar líneas tachadas en tomas grabadas */}
+              {showRecordedInText && section.segments.some(s => isShotRecorded(s.shotId)) && (
+                <div className="absolute inset-0 pointer-events-none">
+                  {section.segments
+                    .filter(segment => isShotRecorded(segment.shotId))
+                    .map(segment => {
+                      const startPercent = (segment.startIndex / (section.content?.length || 1)) * 100;
+                      const endPercent = (segment.endIndex / (section.content?.length || 1)) * 100;
+                      
+                      return (
+                        <div
+                          key={`strikethrough-${segment.id}`}
+                          className="absolute h-0.5 bg-gray-400"
+                          style={{
+                            left: `${startPercent}%`,
+                            width: `${endPercent - startPercent}%`,
+                            top: '50%',
+                            transform: 'translateY(-50%)'
+                          }}
+                        />
+                      );
+                    })}
                 </div>
               )}
             </div>

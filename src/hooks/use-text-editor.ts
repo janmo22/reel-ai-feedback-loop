@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback } from 'react';
 
 export interface TextSegment {
@@ -166,22 +167,6 @@ export const useTextEditor = () => {
 
     const range = selection.getRangeAt(0);
     
-    // Verificar si se está clickeando en un segmento existente para desasignarlo
-    const clickedElement = range.commonAncestorContainer.nodeType === Node.TEXT_NODE 
-      ? range.commonAncestorContainer.parentElement 
-      : range.commonAncestorContainer as Element;
-    
-    if (clickedElement && clickedElement.closest && clickedElement.closest('.segment-highlight')) {
-      const segmentElement = clickedElement.closest('.segment-highlight');
-      const segmentId = segmentElement.getAttribute('data-segment-id');
-      
-      if (segmentId && selectedText.length < 3) { // Click corto para desasignar
-        removeSegment(sectionId, segmentId);
-        setShowShotMenu(false);
-        return;
-      }
-    }
-
     // Obtener posición exacta
     const position = getExactTextPosition(sectionId, range);
     if (!position) return;
@@ -201,7 +186,7 @@ export const useTextEditor = () => {
       y: rect.top - 10
     });
     setShowShotMenu(true);
-  }, [removeSegment, getExactTextPosition]);
+  }, [getExactTextPosition]);
 
   const addShot = useCallback((name: string, color: string, description?: string) => {
     const newShot: Shot = {
@@ -221,8 +206,8 @@ export const useTextEditor = () => {
     ));
   }, []);
 
-  // Función mejorada para actualizar segmentos cuando cambia el contenido
-  const updateSegmentsAfterContentChange = useCallback((sectionId: string, newContent: string, oldContent: string) => {
+  // Función mejorada para limpiar segmentos cuando cambia el contenido
+  const cleanupSegmentsOnContentChange = useCallback((sectionId: string, newContent: string) => {
     setSections(prev => prev.map(section => {
       if (section.id !== sectionId) return section;
 
@@ -231,89 +216,41 @@ export const useTextEditor = () => {
         return { ...section, segments: [] };
       }
 
-      // Actualizar cada segmento buscando su texto en el nuevo contenido
-      const updatedSegments = section.segments.map(segment => {
+      // Filtrar segmentos que siguen siendo válidos
+      const validSegments = section.segments.filter(segment => {
         const segmentText = segment.text.trim();
         
-        // Buscar el texto del segmento en el nuevo contenido
-        const index = newContent.indexOf(segmentText);
+        // Verificar si el texto del segmento aún existe en el contenido
+        if (!segmentText || !newContent.includes(segmentText)) {
+          return false;
+        }
         
-        if (index !== -1) {
-          return {
-            ...segment,
-            startIndex: index,
-            endIndex: index + segmentText.length,
-            text: segmentText
-          };
+        // Actualizar posiciones si es necesario
+        const newIndex = newContent.indexOf(segmentText);
+        if (newIndex !== -1) {
+          segment.startIndex = newIndex;
+          segment.endIndex = newIndex + segmentText.length;
+          return true;
         }
-
-        // Si no se encuentra exacto, intentar búsqueda más flexible
-        const words = segmentText.split(/\s+/).filter(w => w.length > 2);
-        if (words.length > 0) {
-          const firstWordIndex = newContent.indexOf(words[0]);
-          const lastWord = words[words.length - 1];
-          const lastWordIndex = newContent.indexOf(lastWord, firstWordIndex);
-          
-          if (firstWordIndex !== -1 && lastWordIndex !== -1) {
-            const newStartIndex = firstWordIndex;
-            const newEndIndex = lastWordIndex + lastWord.length;
-            const recoveredText = newContent.slice(newStartIndex, newEndIndex);
-            
-            return {
-              ...segment,
-              text: recoveredText,
-              startIndex: newStartIndex,
-              endIndex: newEndIndex
-            };
-          }
-        }
-
-        // Si no se puede recuperar, retornar null para eliminarlo
-        return null;
-      }).filter((segment): segment is TextSegment => segment !== null);
+        
+        return false;
+      });
 
       return {
         ...section,
-        segments: updatedSegments
+        segments: validSegments
       };
     }));
   }, []);
 
   const updateSectionContent = useCallback((sectionId: string, content: string) => {
-    const oldContent = sections.find(s => s.id === sectionId)?.content || '';
-    
     setSections(prev => prev.map(section => 
       section.id === sectionId ? { ...section, content } : section
     ));
     
-    // Actualizar segmentos después del cambio de contenido
-    updateSegmentsAfterContentChange(sectionId, content, oldContent);
-  }, [sections, updateSegmentsAfterContentChange]);
-
-  // Verificar si hay overlap con segmentos existentes
-  const hasOverlap = useCallback((sectionId: string, startIndex: number, endIndex: number, excludeSegmentId?: string) => {
-    const section = sections.find(s => s.id === sectionId);
-    if (!section) return false;
-
-    return section.segments.some(segment => 
-      segment.id !== excludeSegmentId && 
-      !(endIndex <= segment.startIndex || startIndex >= segment.endIndex)
-    );
-  }, [sections]);
-
-  // Remover segmentos que se superponen con el nuevo texto seleccionado
-  const removeOverlappingSegments = useCallback((sectionId: string, startIndex: number, endIndex: number) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? {
-            ...section,
-            segments: section.segments.filter(segment => 
-              endIndex <= segment.startIndex || startIndex >= segment.endIndex
-            )
-          }
-        : section
-    ));
-  }, []);
+    // Limpiar segmentos después del cambio de contenido
+    cleanupSegmentsOnContentChange(sectionId, content);
+  }, [cleanupSegmentsOnContentChange]);
 
   // Función mejorada para asignar toma al texto
   const assignShotToText = useCallback((shotId: string) => {
@@ -329,7 +266,7 @@ export const useTextEditor = () => {
     const startIndex = selectedText.startIndex ?? 0;
     const endIndex = selectedText.endIndex ?? selectedText.text.length;
 
-    // Remover segmentos que se superponen
+    // Remover segmentos que se superponen con el nuevo
     setSections(prev => prev.map(sec => 
       sec.id === selectedText.sectionId 
         ? {
@@ -362,17 +299,9 @@ export const useTextEditor = () => {
   }, [selectedText, shots, sections]);
 
   const applySegmentStyling = useCallback((sectionId: string) => {
-    const editor = editorRefs.current[sectionId];
-    const section = sections.find(s => s.id === sectionId);
-    
-    if (!editor || !section) return;
-
-    if (section.segments.length > 0) {
-      editor.classList.add('has-segments');
-    } else {
-      editor.classList.remove('has-segments');
-    }
-  }, [sections]);
+    // Esta función ya no es necesaria con el nuevo sistema de CSS puro
+    // Se mantiene por compatibilidad
+  }, []);
 
   const addInspiration = useCallback((inspiration: Omit<Inspiration, 'id'>) => {
     const newInspiration: Inspiration = {
