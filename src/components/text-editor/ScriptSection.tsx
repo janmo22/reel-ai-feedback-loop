@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,107 +34,10 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   editorRef
 }) => {
   const sectionConfig = SECTION_TYPES[section.type];
-  const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
   const [editingInfo, setEditingInfo] = useState<string | null>(null);
   const [infoText, setInfoText] = useState('');
   const [showRecordedInText, setShowRecordedInText] = useState(true);
-  const [isUpdatingContent, setIsUpdatingContent] = useState(false);
-
-  // Función para aplicar estilos directamente al editor
-  const applyStylesToEditor = useCallback(() => {
-    if (!editorRef.current || isUpdatingContent) return;
-
-    const content = section.content;
-    if (!content || section.segments.length === 0) {
-      // Si no hay segmentos, mostrar solo el texto plano
-      if (editorRef.current.innerHTML !== content) {
-        setIsUpdatingContent(true);
-        editorRef.current.innerHTML = content.replace(/\n/g, '<br>');
-        setIsUpdatingContent(false);
-      }
-      return;
-    }
-
-    // Ordenar segmentos por posición
-    const sortedSegments = [...section.segments].sort((a, b) => a.startIndex - b.startIndex);
-
-    let html = '';
-    let lastIndex = 0;
-
-    sortedSegments.forEach(segment => {
-      // Añadir texto antes del segmento (sin formato)
-      if (segment.startIndex > lastIndex) {
-        const beforeText = content.slice(lastIndex, segment.startIndex);
-        html += beforeText.replace(/\n/g, '<br>');
-      }
-
-      const shotColor = getShotColor(segment.shotId);
-      const shotName = getShotName(segment.shotId);
-      const isRecorded = isShotRecorded(segment.shotId);
-      
-      // Aplicar estilo de tachado si está grabado y la opción está activada
-      const strikethroughStyle = showRecordedInText && isRecorded ? 'text-decoration: line-through; opacity: 0.7;' : '';
-
-      // Obtener el texto exacto del segmento
-      const segmentText = content.slice(segment.startIndex, segment.endIndex);
-
-      html += `<span 
-        class="segment-highlight" 
-        style="
-          background-color: ${shotColor}20;
-          border-bottom: 3px solid ${shotColor};
-          color: ${shotColor};
-          font-weight: 500;
-          padding: 2px 4px;
-          border-radius: 3px;
-          cursor: pointer;
-          ${strikethroughStyle}
-        "
-        data-segment-id="${segment.id}"
-        data-shot-name="${shotName}"
-        data-segment-info="${segment.information || ''}"
-        data-recorded="${isRecorded}"
-        onmouseenter="this.style.backgroundColor = '${shotColor}40'"
-        onmouseleave="this.style.backgroundColor = '${shotColor}20'"
-        onclick="event.preventDefault(); event.stopPropagation();"
-      >${segmentText.replace(/\n/g, '<br>')}${segment.information ? '<sup style="color: ' + shotColor + '; font-weight: bold; margin-left: 2px;">+</sup>' : ''}</span>`;
-
-      lastIndex = segment.endIndex;
-    });
-
-    // Añadir texto restante (sin formato)
-    if (lastIndex < content.length) {
-      const remainingText = content.slice(lastIndex);
-      html += remainingText.replace(/\n/g, '<br>');
-    }
-
-    // Actualizar el contenido del editor solo si es diferente
-    if (editorRef.current.innerHTML !== html) {
-      setIsUpdatingContent(true);
-      editorRef.current.innerHTML = html;
-      
-      // Añadir event listeners para desasignar tomas
-      const segmentElements = editorRef.current.querySelectorAll('.segment-highlight');
-      segmentElements.forEach(element => {
-        const segmentId = element.getAttribute('data-segment-id');
-        
-        element.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (segmentId) {
-            onRemoveSegment(segmentId);
-          }
-        });
-      });
-      
-      setIsUpdatingContent(false);
-    }
-  }, [section.segments, section.content, showRecordedInText, shots, onRemoveSegment, isUpdatingContent]);
-
-  // Aplicar estilos cuando cambien los segmentos o el contenido
-  useEffect(() => {
-    applyStylesToEditor();
-  }, [applyStylesToEditor]);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -152,10 +54,91 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     return shot?.recorded || false;
   };
 
+  const applyHighlighting = useCallback(() => {
+    if (!editorRef.current || isUpdating || section.segments.length === 0) {
+      return;
+    }
+
+    const content = section.content;
+    if (!content) return;
+
+    setIsUpdating(true);
+
+    // Ordenar segmentos por posición
+    const sortedSegments = [...section.segments].sort((a, b) => a.startIndex - b.startIndex);
+
+    let html = '';
+    let lastIndex = 0;
+
+    sortedSegments.forEach(segment => {
+      // Texto antes del segmento
+      if (segment.startIndex > lastIndex) {
+        const beforeText = content.slice(lastIndex, segment.startIndex);
+        html += beforeText.replace(/\n/g, '<br>');
+      }
+
+      const shotColor = getShotColor(segment.shotId);
+      const isRecorded = isShotRecorded(segment.shotId);
+      const segmentText = content.slice(segment.startIndex, segment.endIndex);
+      
+      // Estilo de subrayado simple como Apple Notes
+      const textDecoration = showRecordedInText && isRecorded ? 'line-through' : 'none';
+      const opacity = showRecordedInText && isRecorded ? '0.6' : '1';
+
+      html += `<span 
+        class="text-highlight"
+        style="
+          border-bottom: 2px solid ${shotColor};
+          background-color: ${shotColor}15;
+          padding: 1px 2px;
+          margin: 0 1px;
+          border-radius: 2px;
+          text-decoration: ${textDecoration};
+          opacity: ${opacity};
+          cursor: pointer;
+        "
+        data-segment-id="${segment.id}"
+        data-shot-color="${shotColor}"
+      >${segmentText.replace(/\n/g, '<br>')}</span>`;
+
+      lastIndex = segment.endIndex;
+    });
+
+    // Texto restante
+    if (lastIndex < content.length) {
+      const remainingText = content.slice(lastIndex);
+      html += remainingText.replace(/\n/g, '<br>');
+    }
+
+    if (editorRef.current.innerHTML !== html) {
+      editorRef.current.innerHTML = html;
+      
+      // Agregar event listeners para desasignar al hacer click
+      const highlights = editorRef.current.querySelectorAll('.text-highlight');
+      highlights.forEach(element => {
+        const segmentId = element.getAttribute('data-segment-id');
+        element.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (segmentId) {
+            onRemoveSegment(segmentId);
+          }
+        });
+      });
+    }
+
+    setIsUpdating(false);
+  }, [section.segments, section.content, showRecordedInText, shots, onRemoveSegment, isUpdating]);
+
+  useEffect(() => {
+    if (!isUpdating) {
+      applyHighlighting();
+    }
+  }, [applyHighlighting]);
+
   const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
-    if (isUpdatingContent) return;
+    if (isUpdating) return;
     
-    // Obtener el texto plano sin HTML
     const newContent = e.currentTarget.textContent || '';
     onContentChange(newContent);
   };
@@ -242,7 +225,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
         {!section.collapsed && (
           <CardContent>
             <div className="relative">
-              {/* Editor principal */}
               <div
                 ref={editorRef}
                 contentEditable
@@ -315,7 +297,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          {/* Botón para marcar como grabado */}
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
@@ -340,7 +321,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                             </TooltipContent>
                           </Tooltip>
 
-                          {/* Indicador de información adicional */}
                           {segment.information && (
                             <Popover>
                               <PopoverTrigger asChild>
