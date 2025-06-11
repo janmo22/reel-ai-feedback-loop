@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Lightbulb, Upload, Link, StickyNote, X, ExternalLink } from 'lucide-react';
 import { Inspiration } from '@/hooks/use-text-editor';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CreativeZoneProps {
   inspirations: Inspiration[];
@@ -18,6 +21,9 @@ const CreativeZone: React.FC<CreativeZoneProps> = ({
 }) => {
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [quickText, setQuickText] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleQuickAdd = () => {
     if (!quickText.trim()) return;
@@ -36,22 +42,67 @@ const CreativeZone: React.FC<CreativeZoneProps> = ({
     setShowQuickAdd(false);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !user) return;
 
-    const imageUrl = URL.createObjectURL(file);
-    
-    onAddInspiration({
-      title: `Imagen - ${file.name.split('.')[0]}`,
-      notes: '',
-      imageUrl,
-      imageFile: file,
-      type: 'image'
-    });
+    setUploading(true);
 
-    // Reset the input
-    e.target.value = '';
+    try {
+      // Crear un nombre único para el archivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      // Subir archivo a Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('creative-images')
+        .upload(fileName, file);
+
+      if (error) {
+        throw error;
+      }
+
+      // Obtener la URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('creative-images')
+        .getPublicUrl(fileName);
+
+      // Agregar inspiración con la imagen subida
+      onAddInspiration({
+        title: `Imagen - ${file.name.split('.')[0]}`,
+        notes: '',
+        imageUrl: publicUrl,
+        type: 'image'
+      });
+
+      toast({
+        title: "Imagen subida",
+        description: "La imagen se ha agregado correctamente a tu zona creativa.",
+      });
+
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      
+      // Fallback a URL local si falla la subida
+      const imageUrl = URL.createObjectURL(file);
+      onAddInspiration({
+        title: `Imagen - ${file.name.split('.')[0]}`,
+        notes: '',
+        imageUrl,
+        imageFile: file,
+        type: 'image'
+      });
+
+      toast({
+        title: "Imagen agregada localmente",
+        description: "La imagen se guardó localmente. Para almacenamiento permanente, verifica tu configuración de Supabase.",
+        variant: "default",
+      });
+    } finally {
+      setUploading(false);
+      // Reset the input
+      e.target.value = '';
+    }
   };
 
   const handleUrlAdd = () => {
@@ -97,15 +148,17 @@ const CreativeZone: React.FC<CreativeZoneProps> = ({
               accept="image/*"
               onChange={handleImageUpload}
               className="hidden"
+              disabled={uploading}
             />
             <Button
               variant="outline"
               size="sm"
               className="border-dashed text-gray-600 hover:text-gray-900 hover:bg-white/80"
               type="button"
+              disabled={uploading}
             >
               <Upload className="h-4 w-4 mr-1" />
-              Subir imagen
+              {uploading ? 'Subiendo...' : 'Subir imagen'}
             </Button>
           </label>
 
@@ -170,6 +223,10 @@ const CreativeZone: React.FC<CreativeZoneProps> = ({
                     src={inspiration.imageUrl} 
                     alt={inspiration.title}
                     className="w-full h-24 object-cover rounded mb-2"
+                    onError={(e) => {
+                      console.log('Error loading image:', inspiration.imageUrl);
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                 )}
                 

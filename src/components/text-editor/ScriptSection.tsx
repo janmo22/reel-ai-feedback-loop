@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -151,12 +150,16 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
           .filter(info => info && info.trim())
           .join(' | ');
 
+        // Aplicar tachado si está grabado
+        const strikethroughStyle = isRecorded ? 'text-decoration: line-through; opacity: 0.7;' : '';
+
         html += `<span 
-          class="segment-highlight relative cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm border-b-2 ${isRecorded ? 'line-through opacity-70' : ''}" 
+          class="segment-highlight relative cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm border-b-2" 
           style="
             background-color: ${shotColor}20;
             border-bottom-color: ${shotColor};
             border-bottom-width: 3px;
+            ${strikethroughStyle}
           "
           data-segment-id="${firstSegment.id}"
           data-shot-name="${shotName}"

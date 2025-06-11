@@ -153,11 +153,64 @@ export const useTextEditor = () => {
     ));
   }, []);
 
+  // Nueva función para actualizar segmentos cuando cambia el contenido
+  const updateSegmentsAfterContentChange = useCallback((sectionId: string, newContent: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id !== sectionId) return section;
+
+      const updatedSegments = section.segments.map(segment => {
+        // Buscar el texto del segmento en el nuevo contenido
+        const segmentIndex = newContent.indexOf(segment.text);
+        
+        if (segmentIndex !== -1) {
+          // Si el texto original del segmento sigue existiendo, actualizar posiciones
+          return {
+            ...segment,
+            startIndex: segmentIndex,
+            endIndex: segmentIndex + segment.text.length
+          };
+        } else {
+          // Si el texto original no existe, intentar encontrar una coincidencia parcial
+          // o expandir el segmento para incluir texto adicional
+          const oldContent = section.content;
+          const oldStart = segment.startIndex;
+          const oldEnd = segment.endIndex;
+          
+          // Verificar si el usuario escribió dentro del segmento
+          if (newContent.length > oldContent.length) {
+            const insertionPoint = newContent.length - oldContent.length;
+            
+            // Si la inserción fue dentro del segmento, expandir el segmento
+            if (oldStart <= insertionPoint && insertionPoint <= oldEnd) {
+              const newText = newContent.slice(oldStart, oldEnd + (newContent.length - oldContent.length));
+              return {
+                ...segment,
+                text: newText,
+                endIndex: oldEnd + (newContent.length - oldContent.length)
+              };
+            }
+          }
+          
+          // Si no se puede actualizar automáticamente, mantener el segmento como está
+          return segment;
+        }
+      }).filter(segment => segment.text.trim() !== ''); // Filtrar segmentos vacíos
+
+      return {
+        ...section,
+        segments: updatedSegments
+      };
+    }));
+  }, []);
+
   const updateSectionContent = useCallback((sectionId: string, content: string) => {
     setSections(prev => prev.map(section => 
       section.id === sectionId ? { ...section, content } : section
     ));
-  }, []);
+    
+    // Actualizar segmentos después del cambio de contenido
+    updateSegmentsAfterContentChange(sectionId, content);
+  }, [updateSegmentsAfterContentChange]);
 
   // Verificar si hay overlap con segmentos existentes
   const hasOverlap = useCallback((sectionId: string, startIndex: number, endIndex: number, excludeSegmentId?: string) => {
