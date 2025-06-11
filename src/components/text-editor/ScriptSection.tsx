@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input';
 import { ChevronDown, ChevronRight, Plus, X, Check, Eye, EyeOff, Camera } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScriptSection as ScriptSectionType, SECTION_TYPES, TextSegment } from '@/hooks/use-text-editor';
-import HighlightOverlay from './HighlightOverlay';
+import { ScriptSection as ScriptSectionType, SECTION_TYPES } from '@/hooks/use-text-editor';
 
 interface ScriptSectionProps {
   section: ScriptSectionType;
@@ -37,7 +36,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const [editingInfo, setEditingInfo] = useState<string | null>(null);
   const [infoText, setInfoText] = useState('');
   const [showRecordedInText, setShowRecordedInText] = useState(true);
-  const observerRef = useRef<MutationObserver | null>(null);
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -53,46 +51,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     const shot = shots.find(s => s.id === shotId);
     return shot?.recorded || false;
   };
-
-  // Configurar MutationObserver para detectar cambios en tiempo real
-  useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    // Limpiar observer anterior si existe
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
-
-    // Crear nuevo observer
-    observerRef.current = new MutationObserver((mutations) => {
-      let shouldUpdate = false;
-      
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList' || mutation.type === 'characterData') {
-          shouldUpdate = true;
-        }
-      });
-
-      if (shouldUpdate) {
-        const newContent = editor.textContent || '';
-        onContentChange(newContent);
-      }
-    });
-
-    // Observar cambios en el editor
-    observerRef.current.observe(editor, {
-      childList: true,
-      subtree: true,
-      characterData: true
-    });
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [editorRef, onContentChange]);
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     const newContent = e.currentTarget.textContent || '';
@@ -118,6 +76,35 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const handleCancelEditInfo = () => {
     setEditingInfo(null);
     setInfoText('');
+  };
+
+  // Aplicar highlighting simple con CSS
+  const applyHighlighting = (content: string) => {
+    if (!content || section.segments.length === 0) {
+      return content;
+    }
+
+    let highlightedContent = content;
+    
+    // Ordenar segmentos por posición para evitar conflictos
+    const sortedSegments = [...section.segments].sort((a, b) => a.startIndex - b.startIndex);
+    
+    // Aplicar highlighting de atrás hacia adelante para mantener índices
+    for (let i = sortedSegments.length - 1; i >= 0; i--) {
+      const segment = sortedSegments[i];
+      if (segment.startIndex >= 0 && segment.endIndex <= content.length) {
+        const before = highlightedContent.substring(0, segment.startIndex);
+        const highlighted = highlightedContent.substring(segment.startIndex, segment.endIndex);
+        const after = highlightedContent.substring(segment.endIndex);
+        
+        const shotColor = getShotColor(segment.shotId);
+        const isRecorded = isShotRecorded(segment.shotId);
+        
+        highlightedContent = `${before}<span style="border-bottom: 3px solid ${shotColor}; background-color: ${shotColor}20; ${isRecorded ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${highlighted}</span>${after}`;
+      }
+    }
+    
+    return highlightedContent;
   };
 
   return (
@@ -181,7 +168,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
         {!section.collapsed && (
           <CardContent>
             <div className="relative">
-              {/* Editor contentEditable puro */}
+              {/* Editor contentEditable simple */}
               <div
                 ref={editorRef}
                 contentEditable
@@ -189,29 +176,22 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 onInput={handleInput}
                 onMouseUp={onTextSelection}
                 onKeyUp={onTextSelection}
-                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap relative bg-white"
+                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap bg-white"
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
                   fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
-                  zIndex: 2
+                  direction: 'ltr',
+                  textAlign: 'left'
                 }}
-                dangerouslySetInnerHTML={{ __html: section.content }}
-              />
-
-              {/* Overlay de highlighting */}
-              <HighlightOverlay
-                segments={section.segments}
-                content={section.content}
-                editorRef={editorRef}
-                shots={shots}
+                dangerouslySetInnerHTML={{ __html: applyHighlighting(section.content) }}
               />
               
               {/* Placeholder cuando está vacío */}
               {section.content === '' && (
                 <div 
                   className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base"
-                  style={{ fontSize: '16px', zIndex: 1 }}
+                  style={{ fontSize: '16px' }}
                 >
                   {sectionConfig.placeholder}
                 </div>

@@ -126,17 +126,17 @@ export const useTextEditor = () => {
     if (!editor || !range) return null;
 
     try {
-      const startRange = document.createRange();
-      startRange.setStart(editor, 0);
-      startRange.setEnd(range.startContainer, range.startOffset);
+      // Obtener el texto plano sin HTML
+      const textContent = editor.textContent || '';
+      const selectedText = range.toString();
       
-      const endRange = document.createRange();
-      endRange.setStart(editor, 0);
-      endRange.setEnd(range.endContainer, range.endOffset);
-
+      // Buscar la posición del texto seleccionado
+      const startIndex = textContent.indexOf(selectedText);
+      if (startIndex === -1) return null;
+      
       return {
-        start: startRange.toString().length,
-        end: endRange.toString().length
+        start: startIndex,
+        end: startIndex + selectedText.length
       };
     } catch (error) {
       console.log('Error getting text position:', error);
@@ -203,7 +203,7 @@ export const useTextEditor = () => {
     ));
   }, []);
 
-  // Sistema robusto de sincronización de segmentos
+  // Sistema simplificado de sincronización de segmentos
   const syncSegments = useCallback((sectionId: string, newContent: string) => {
     setSections(prev => prev.map(section => {
       if (section.id !== sectionId) return section;
@@ -212,9 +212,14 @@ export const useTextEditor = () => {
         return { ...section, content: newContent, segments: [] };
       }
 
+      // Extraer texto plano del contenido HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = newContent;
+      const plainText = tempDiv.textContent || '';
+
       // Filtrar segmentos que aún existen en el contenido
       const validSegments = section.segments.filter(segment => {
-        const segmentIndex = newContent.indexOf(segment.text);
+        const segmentIndex = plainText.indexOf(segment.text);
         if (segmentIndex !== -1) {
           // Actualizar posiciones
           segment.startIndex = segmentIndex;
@@ -226,17 +231,14 @@ export const useTextEditor = () => {
 
       return {
         ...section,
-        content: newContent,
+        content: plainText, // Guardar solo texto plano
         segments: validSegments
       };
     }));
   }, []);
 
   const updateSectionContent = useCallback((sectionId: string, content: string) => {
-    // Usar setTimeout para evitar conflictos con el DOM
-    setTimeout(() => {
-      syncSegments(sectionId, content);
-    }, 10);
+    syncSegments(sectionId, content);
   }, [syncSegments]);
 
   // Función para asignar toma al texto seleccionado
