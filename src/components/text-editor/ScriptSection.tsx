@@ -41,12 +41,13 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
   const [editingInfo, setEditingInfo] = useState<string | null>(null);
   const [infoText, setInfoText] = useState('');
+  const [showRecordedInText, setShowRecordedInText] = useState(true);
 
   useEffect(() => {
     if (contentRef.current && section.segments.length > 0) {
       renderStyledContent();
     }
-  }, [section.segments, section.content, hoveredSegment, showRecordedShots]);
+  }, [section.segments, section.content, hoveredSegment, showRecordedShots, showRecordedInText]);
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -141,6 +142,8 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
       
       // Determinar si debe mostrarse según el estado de grabación
       const shouldShow = showRecordedShots || !isRecorded;
+      // Determinar si debe mostrarse el tachado en el texto
+      const shouldShowStrikethrough = showRecordedInText && isRecorded;
       
       if (shouldShow) {
         // Usar el primer segmento del grupo para los datos
@@ -150,8 +153,8 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
           .filter(info => info && info.trim())
           .join(' | ');
 
-        // Aplicar tachado si está grabado
-        const strikethroughStyle = isRecorded ? 'text-decoration: line-through; opacity: 0.7;' : '';
+        // Aplicar tachado si está grabado y la opción está activada
+        const strikethroughStyle = shouldShowStrikethrough ? 'text-decoration: line-through; opacity: 0.7;' : '';
 
         html += `<span 
           class="segment-highlight relative cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm border-b-2" 
@@ -267,6 +270,25 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
             <div className="flex items-center gap-2">
               {section.segments.length > 0 && (
                 <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowRecordedInText(!showRecordedInText)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {showRecordedInText ? (
+                          <Eye className="h-4 w-4" />
+                        ) : (
+                          <EyeOff className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {showRecordedInText ? 'Ocultar tachado de grabadas' : 'Mostrar tachado de grabadas'}
+                    </TooltipContent>
+                  </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button

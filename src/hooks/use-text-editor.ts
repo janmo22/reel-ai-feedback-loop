@@ -153,48 +153,84 @@ export const useTextEditor = () => {
     ));
   }, []);
 
-  // Nueva función para actualizar segmentos cuando cambia el contenido
-  const updateSegmentsAfterContentChange = useCallback((sectionId: string, newContent: string) => {
+  // Función mejorada para actualizar segmentos cuando cambia el contenido
+  const updateSegmentsAfterContentChange = useCallback((sectionId: string, newContent: string, oldContent: string) => {
     setSections(prev => prev.map(section => {
       if (section.id !== sectionId) return section;
 
+      // Si no hay contenido nuevo, limpiar todos los segmentos
+      if (!newContent.trim()) {
+        return { ...section, segments: [] };
+      }
+
       const updatedSegments = section.segments.map(segment => {
-        // Buscar el texto del segmento en el nuevo contenido
-        const segmentIndex = newContent.indexOf(segment.text);
+        const oldText = segment.text;
         
-        if (segmentIndex !== -1) {
-          // Si el texto original del segmento sigue existiendo, actualizar posiciones
+        // Buscar el texto original del segmento en el nuevo contenido
+        let startIndex = newContent.indexOf(oldText);
+        
+        if (startIndex !== -1) {
+          // El texto original existe, actualizar posiciones
           return {
             ...segment,
-            startIndex: segmentIndex,
-            endIndex: segmentIndex + segment.text.length
+            startIndex,
+            endIndex: startIndex + oldText.length
           };
-        } else {
-          // Si el texto original no existe, intentar encontrar una coincidencia parcial
-          // o expandir el segmento para incluir texto adicional
-          const oldContent = section.content;
-          const oldStart = segment.startIndex;
-          const oldEnd = segment.endIndex;
-          
-          // Verificar si el usuario escribió dentro del segmento
-          if (newContent.length > oldContent.length) {
-            const insertionPoint = newContent.length - oldContent.length;
-            
-            // Si la inserción fue dentro del segmento, expandir el segmento
-            if (oldStart <= insertionPoint && insertionPoint <= oldEnd) {
-              const newText = newContent.slice(oldStart, oldEnd + (newContent.length - oldContent.length));
-              return {
-                ...segment,
-                text: newText,
-                endIndex: oldEnd + (newContent.length - oldContent.length)
-              };
-            }
-          }
-          
-          // Si no se puede actualizar automáticamente, mantener el segmento como está
-          return segment;
         }
-      }).filter(segment => segment.text.trim() !== ''); // Filtrar segmentos vacíos
+
+        // Si el texto original no se encuentra, buscar el contexto alrededor
+        const oldStart = segment.startIndex;
+        const oldEnd = segment.endIndex;
+        
+        // Buscar texto antes y después del segmento para detectar si se expandió
+        const beforeSegment = oldContent.slice(Math.max(0, oldStart - 10), oldStart);
+        const afterSegment = oldContent.slice(oldEnd, Math.min(oldContent.length, oldEnd + 10));
+        
+        const beforeIndex = beforeSegment ? newContent.indexOf(beforeSegment) : -1;
+        const afterIndex = afterSegment ? newContent.indexOf(afterSegment) : -1;
+        
+        if (beforeIndex !== -1 && afterIndex !== -1) {
+          // Encontramos el contexto, calcular nueva posición del segmento
+          const newStartIndex = beforeIndex + beforeSegment.length;
+          const newEndIndex = afterIndex;
+          
+          if (newStartIndex < newEndIndex && newEndIndex <= newContent.length) {
+            const newText = newContent.slice(newStartIndex, newEndIndex);
+            return {
+              ...segment,
+              text: newText,
+              startIndex: newStartIndex,
+              endIndex: newEndIndex
+            };
+          }
+        }
+
+        // Como último recurso, buscar partes del texto original
+        const words = oldText.split(' ').filter(w => w.length > 2);
+        if (words.length > 0) {
+          const firstWord = words[0];
+          const lastWord = words[words.length - 1];
+          
+          const firstWordIndex = newContent.indexOf(firstWord);
+          const lastWordIndex = newContent.lastIndexOf(lastWord);
+          
+          if (firstWordIndex !== -1 && lastWordIndex !== -1 && lastWordIndex >= firstWordIndex) {
+            const newStartIndex = firstWordIndex;
+            const newEndIndex = lastWordIndex + lastWord.length;
+            const newText = newContent.slice(newStartIndex, newEndIndex);
+            
+            return {
+              ...segment,
+              text: newText,
+              startIndex: newStartIndex,
+              endIndex: newEndIndex
+            };
+          }
+        }
+
+        // Si no se puede recuperar, marcar para eliminación
+        return null;
+      }).filter((segment): segment is TextSegment => segment !== null);
 
       return {
         ...section,
@@ -204,13 +240,15 @@ export const useTextEditor = () => {
   }, []);
 
   const updateSectionContent = useCallback((sectionId: string, content: string) => {
+    const oldContent = sections.find(s => s.id === sectionId)?.content || '';
+    
     setSections(prev => prev.map(section => 
       section.id === sectionId ? { ...section, content } : section
     ));
     
     // Actualizar segmentos después del cambio de contenido
-    updateSegmentsAfterContentChange(sectionId, content);
-  }, [updateSegmentsAfterContentChange]);
+    updateSegmentsAfterContentChange(sectionId, content, oldContent);
+  }, [sections, updateSegmentsAfterContentChange]);
 
   // Verificar si hay overlap con segmentos existentes
   const hasOverlap = useCallback((sectionId: string, startIndex: number, endIndex: number, excludeSegmentId?: string) => {
