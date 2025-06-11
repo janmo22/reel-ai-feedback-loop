@@ -43,7 +43,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
 
   // Función mejorada para renderizar contenido con subrayado exacto
   const renderStyledContent = useCallback(() => {
-    if (!contentRef.current) return;
+    if (!contentRef.current || !editorRef.current) return;
 
     const content = section.content;
     if (!content || section.segments.length === 0) {
@@ -241,47 +241,34 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 onInput={handleContentChange}
                 onMouseUp={onTextSelection}
                 onKeyUp={onTextSelection}
-                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap"
-                style={{ 
-                  fontSize: '16px',
-                  lineHeight: '1.6',
-                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
-                }}
-                data-placeholder={sectionConfig.placeholder}
-              />
-              
-              {/* Display styled content */}
-              <div
-                ref={contentRef}
-                className="absolute inset-0 pointer-events-auto p-4 text-base leading-relaxed whitespace-pre-wrap"
+                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap relative z-10"
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
                   fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
-                  color: 'transparent'
+                  backgroundColor: 'transparent'
+                }}
+                data-placeholder={sectionConfig.placeholder}
+              />
+              
+              {/* Display styled content - behind the editor */}
+              <div
+                ref={contentRef}
+                className="absolute inset-0 pointer-events-none p-4 text-base leading-relaxed whitespace-pre-wrap z-0"
+                style={{ 
+                  fontSize: '16px',
+                  lineHeight: '1.6',
+                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
+                  color: 'rgba(0,0,0,0.1)'
                 }}
               />
               
               {section.content === '' && (
                 <div 
-                  className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base"
+                  className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base z-5"
                   style={{ fontSize: '16px' }}
                 >
                   {sectionConfig.placeholder}
-                </div>
-              )}
-
-              {/* Tooltip para información sobre desasignar */}
-              {hoveredSegment && (
-                <div 
-                  className="absolute z-10 bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-none"
-                  style={{
-                    top: '-35px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                  }}
-                >
-                  Click para desasignar toma
                 </div>
               )}
             </div>
