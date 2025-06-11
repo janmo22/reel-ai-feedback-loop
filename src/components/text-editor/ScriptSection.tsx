@@ -1,10 +1,10 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, Plus, X, Check, Eye, EyeOff, Camera } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, X, Check, Camera } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScriptSection as ScriptSectionType, SECTION_TYPES } from '@/hooks/use-text-editor';
@@ -35,7 +35,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   const sectionConfig = SECTION_TYPES[section.type];
   const [editingInfo, setEditingInfo] = useState<string | null>(null);
   const [infoText, setInfoText] = useState('');
-  const [showRecordedInText, setShowRecordedInText] = useState(true);
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -78,35 +77,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     setInfoText('');
   };
 
-  // Aplicar highlighting simple con CSS
-  const applyHighlighting = (content: string) => {
-    if (!content || section.segments.length === 0) {
-      return content;
-    }
-
-    let highlightedContent = content;
-    
-    // Ordenar segmentos por posición para evitar conflictos
-    const sortedSegments = [...section.segments].sort((a, b) => a.startIndex - b.startIndex);
-    
-    // Aplicar highlighting de atrás hacia adelante para mantener índices
-    for (let i = sortedSegments.length - 1; i >= 0; i--) {
-      const segment = sortedSegments[i];
-      if (segment.startIndex >= 0 && segment.endIndex <= content.length) {
-        const before = highlightedContent.substring(0, segment.startIndex);
-        const highlighted = highlightedContent.substring(segment.startIndex, segment.endIndex);
-        const after = highlightedContent.substring(segment.endIndex);
-        
-        const shotColor = getShotColor(segment.shotId);
-        const isRecorded = isShotRecorded(segment.shotId);
-        
-        highlightedContent = `${before}<span style="border-bottom: 3px solid ${shotColor}; background-color: ${shotColor}20; ${isRecorded ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${highlighted}</span>${after}`;
-      }
-    }
-    
-    return highlightedContent;
-  };
-
   return (
     <TooltipProvider>
       <Card className="border-0 shadow-sm bg-white">
@@ -136,30 +106,9 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
             </div>
             <div className="flex items-center gap-2">
               {section.segments.length > 0 && (
-                <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowRecordedInText(!showRecordedInText)}
-                        className="h-8 w-8 p-0"
-                      >
-                        {showRecordedInText ? (
-                          <Eye className="h-4 w-4" />
-                        ) : (
-                          <EyeOff className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {showRecordedInText ? 'Ocultar tachado de grabadas' : 'Mostrar tachado de grabadas'}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Badge variant="outline" className="text-xs">
-                    {section.segments.length} {section.segments.length === 1 ? 'toma' : 'tomas'}
-                  </Badge>
-                </>
+                <Badge variant="outline" className="text-xs">
+                  {section.segments.length} {section.segments.length === 1 ? 'toma' : 'tomas'}
+                </Badge>
               )}
             </div>
           </div>
@@ -168,7 +117,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
         {!section.collapsed && (
           <CardContent>
             <div className="relative">
-              {/* Editor contentEditable simple */}
+              {/* Editor contentEditable simple y limpio */}
               <div
                 ref={editorRef}
                 contentEditable
@@ -180,12 +129,11 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
-                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
-                  direction: 'ltr',
-                  textAlign: 'left'
+                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
                 }}
-                dangerouslySetInnerHTML={{ __html: applyHighlighting(section.content) }}
-              />
+              >
+                {section.content}
+              </div>
               
               {/* Placeholder cuando está vacío */}
               {section.content === '' && (

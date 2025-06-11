@@ -120,31 +120,23 @@ export const useTextEditor = () => {
     ));
   }, []);
 
-  // Función simplificada para obtener posición del texto
-  const getTextPosition = useCallback((sectionId: string, range: Range): { start: number; end: number } | null => {
+  // Función simple para obtener posición del texto seleccionado
+  const getTextPosition = useCallback((sectionId: string, selectedText: string): { start: number; end: number } | null => {
     const editor = editorRefs.current[sectionId];
-    if (!editor || !range) return null;
+    if (!editor) return null;
 
-    try {
-      // Obtener el texto plano sin HTML
-      const textContent = editor.textContent || '';
-      const selectedText = range.toString();
-      
-      // Buscar la posición del texto seleccionado
-      const startIndex = textContent.indexOf(selectedText);
-      if (startIndex === -1) return null;
-      
-      return {
-        start: startIndex,
-        end: startIndex + selectedText.length
-      };
-    } catch (error) {
-      console.log('Error getting text position:', error);
-      return null;
-    }
+    const textContent = editor.textContent || '';
+    const startIndex = textContent.indexOf(selectedText);
+    
+    if (startIndex === -1) return null;
+    
+    return {
+      start: startIndex,
+      end: startIndex + selectedText.length
+    };
   }, []);
 
-  // Función mejorada para manejar selección de texto
+  // Función simplificada para manejar selección de texto
   const handleTextSelection = useCallback((sectionId: string) => {
     const selection = window.getSelection();
     const editorRef = editorRefs.current[sectionId];
@@ -166,7 +158,7 @@ export const useTextEditor = () => {
       return;
     }
 
-    const position = getTextPosition(sectionId, range);
+    const position = getTextPosition(sectionId, selectedText);
     if (!position) return;
 
     setSelectedText({ 
@@ -203,43 +195,23 @@ export const useTextEditor = () => {
     ));
   }, []);
 
-  // Sistema simplificado de sincronización de segmentos
-  const syncSegments = useCallback((sectionId: string, newContent: string) => {
+  // Función simple para actualizar contenido de sección
+  const updateSectionContent = useCallback((sectionId: string, content: string) => {
     setSections(prev => prev.map(section => {
       if (section.id !== sectionId) return section;
 
-      if (!newContent.trim()) {
-        return { ...section, content: newContent, segments: [] };
-      }
-
-      // Extraer texto plano del contenido HTML
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = newContent;
-      const plainText = tempDiv.textContent || '';
-
-      // Filtrar segmentos que aún existen en el contenido
+      // Filtrar segmentos que aún existen en el nuevo contenido
       const validSegments = section.segments.filter(segment => {
-        const segmentIndex = plainText.indexOf(segment.text);
-        if (segmentIndex !== -1) {
-          // Actualizar posiciones
-          segment.startIndex = segmentIndex;
-          segment.endIndex = segmentIndex + segment.text.length;
-          return true;
-        }
-        return false;
+        return content.includes(segment.text);
       });
 
       return {
         ...section,
-        content: plainText, // Guardar solo texto plano
+        content,
         segments: validSegments
       };
     }));
   }, []);
-
-  const updateSectionContent = useCallback((sectionId: string, content: string) => {
-    syncSegments(sectionId, content);
-  }, [syncSegments]);
 
   // Función para asignar toma al texto seleccionado
   const assignShotToText = useCallback((shotId: string) => {
