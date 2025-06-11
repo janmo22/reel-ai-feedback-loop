@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,18 +55,38 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     return shot?.recorded || false;
   };
 
+  // Función para validar que los segmentos existan en el contenido actual
+  const validateSegments = useCallback((content: string, segments: TextSegment[]) => {
+    return segments.filter(segment => {
+      const segmentText = content.slice(segment.startIndex, segment.endIndex);
+      return segmentText === segment.text && segment.startIndex < content.length && segment.endIndex <= content.length;
+    });
+  }, []);
+
   const applyHighlighting = useCallback(() => {
-    if (!editorRef.current || isUpdating || section.segments.length === 0) {
+    if (!editorRef.current || isUpdating) {
       return;
     }
 
     const content = section.content;
-    if (!content) return;
+    if (!content) {
+      editorRef.current.innerHTML = '';
+      return;
+    }
 
     setIsUpdating(true);
 
-    // Ordenar segmentos por posición
-    const sortedSegments = [...section.segments].sort((a, b) => a.startIndex - b.startIndex);
+    // Validar y filtrar segmentos que ya no existen en el contenido
+    const validSegments = validateSegments(content, section.segments);
+    
+    // Si hay segmentos que ya no son válidos, notificar para eliminarlos
+    const invalidSegments = section.segments.filter(seg => !validSegments.includes(seg));
+    invalidSegments.forEach(segment => {
+      onRemoveSegment(segment.id);
+    });
+
+    // Ordenar segmentos válidos por posición
+    const sortedSegments = [...validSegments].sort((a, b) => a.startIndex - b.startIndex);
 
     let html = '';
     let lastIndex = 0;
@@ -81,25 +102,30 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
       const isRecorded = isShotRecorded(segment.shotId);
       const segmentText = content.slice(segment.startIndex, segment.endIndex);
       
-      // Estilo de subrayado simple como Apple Notes
-      const textDecoration = showRecordedInText && isRecorded ? 'line-through' : 'none';
-      const opacity = showRecordedInText && isRecorded ? '0.6' : '1';
+      // Verificar que el texto del segmento coincide
+      if (segmentText === segment.text) {
+        const textDecoration = showRecordedInText && isRecorded ? 'line-through' : 'none';
+        const opacity = showRecordedInText && isRecorded ? '0.6' : '1';
 
-      html += `<span 
-        class="text-highlight"
-        style="
-          border-bottom: 2px solid ${shotColor};
-          background-color: ${shotColor}15;
-          padding: 1px 2px;
-          margin: 0 1px;
-          border-radius: 2px;
-          text-decoration: ${textDecoration};
-          opacity: ${opacity};
-          cursor: pointer;
-        "
-        data-segment-id="${segment.id}"
-        data-shot-color="${shotColor}"
-      >${segmentText.replace(/\n/g, '<br>')}</span>`;
+        html += `<span 
+          class="text-highlight"
+          style="
+            border-bottom: 2px solid ${shotColor};
+            background-color: ${shotColor}15;
+            padding: 1px 2px;
+            margin: 0 1px;
+            border-radius: 2px;
+            text-decoration: ${textDecoration};
+            opacity: ${opacity};
+            cursor: pointer;
+          "
+          data-segment-id="${segment.id}"
+          data-shot-color="${shotColor}"
+        >${segmentText.replace(/\n/g, '<br>')}</span>`;
+      } else {
+        // Si el texto no coincide, solo mostrar el texto sin highlighting
+        html += segmentText.replace(/\n/g, '<br>');
+      }
 
       lastIndex = segment.endIndex;
     });
@@ -128,7 +154,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     }
 
     setIsUpdating(false);
-  }, [section.segments, section.content, showRecordedInText, shots, onRemoveSegment, isUpdating]);
+  }, [section.segments, section.content, showRecordedInText, shots, onRemoveSegment, isUpdating, validateSegments]);
 
   useEffect(() => {
     if (!isUpdating) {
@@ -164,6 +190,13 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     setInfoText('');
   };
 
+  // Filtrar segmentos válidos para mostrar en la lista
+  const validSegmentsForDisplay = section.segments.filter(segment => {
+    if (!section.content) return false;
+    const segmentText = section.content.slice(segment.startIndex, segment.endIndex);
+    return segmentText === segment.text && segment.startIndex < section.content.length && segment.endIndex <= section.content.length;
+  });
+
   return (
     <TooltipProvider>
       <Card className="border-0 shadow-sm bg-white">
@@ -192,7 +225,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {section.segments.length > 0 && (
+              {validSegmentsForDisplay.length > 0 && (
                 <>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -214,7 +247,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                     </TooltipContent>
                   </Tooltip>
                   <Badge variant="outline" className="text-xs">
-                    {section.segments.length} {section.segments.length === 1 ? 'toma' : 'tomas'}
+                    {validSegmentsForDisplay.length} {validSegmentsForDisplay.length === 1 ? 'toma' : 'tomas'}
                   </Badge>
                 </>
               )}
@@ -251,11 +284,11 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
               )}
             </div>
 
-            {/* Gestión de segmentos */}
-            {section.segments.length > 0 && (
+            {/* Gestión de segmentos - solo mostrar segmentos válidos */}
+            {validSegmentsForDisplay.length > 0 && (
               <div className="mt-4 space-y-2">
                 <div className="text-sm font-medium text-gray-700 mb-2">Tomas en esta sección:</div>
-                {section.segments.map((segment) => {
+                {validSegmentsForDisplay.map((segment) => {
                   const shotColor = getShotColor(segment.shotId);
                   const shotName = getShotName(segment.shotId);
                   const isRecorded = isShotRecorded(segment.shotId);
