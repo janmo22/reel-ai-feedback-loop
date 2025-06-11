@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -34,20 +35,24 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   editorRef
 }) => {
   const sectionConfig = SECTION_TYPES[section.type];
-  const contentRef = useRef<HTMLDivElement>(null);
   const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
   const [editingInfo, setEditingInfo] = useState<string | null>(null);
   const [infoText, setInfoText] = useState('');
   const [showRecordedInText, setShowRecordedInText] = useState(true);
+  const [isUpdatingContent, setIsUpdatingContent] = useState(false);
 
-  // Función para renderizar contenido con subrayado exacto
-  const renderStyledContent = useCallback(() => {
-    if (!contentRef.current || !editorRef.current) return;
+  // Función para aplicar estilos directamente al editor
+  const applyStylesToEditor = useCallback(() => {
+    if (!editorRef.current || isUpdatingContent) return;
 
     const content = section.content;
     if (!content || section.segments.length === 0) {
-      // Si no hay segmentos, limpiar el overlay
-      contentRef.current.innerHTML = '';
+      // Si no hay segmentos, mostrar solo el texto plano
+      if (editorRef.current.innerHTML !== content) {
+        setIsUpdatingContent(true);
+        editorRef.current.innerHTML = content.replace(/\n/g, '<br>');
+        setIsUpdatingContent(false);
+      }
       return;
     }
 
@@ -58,12 +63,10 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     let lastIndex = 0;
 
     sortedSegments.forEach(segment => {
-      // Añadir espacios transparentes antes del segmento para mantener la posición
+      // Añadir texto antes del segmento (sin formato)
       if (segment.startIndex > lastIndex) {
         const beforeText = content.slice(lastIndex, segment.startIndex);
-        // Crear espacios invisibles para mantener la posición
-        const invisibleSpaces = beforeText.replace(/./g, ' ').replace(/\n/g, '<br>');
-        html += `<span style="color: transparent; user-select: none;">${invisibleSpaces}</span>`;
+        html += beforeText.replace(/\n/g, '<br>');
       }
 
       const shotColor = getShotColor(segment.shotId);
@@ -73,69 +76,66 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
       // Aplicar estilo de tachado si está grabado y la opción está activada
       const strikethroughStyle = showRecordedInText && isRecorded ? 'text-decoration: line-through; opacity: 0.7;' : '';
 
-      // Obtener el texto exacto del segmento y reemplazar saltos de línea
+      // Obtener el texto exacto del segmento
       const segmentText = content.slice(segment.startIndex, segment.endIndex);
-      const segmentTextWithBreaks = segmentText.replace(/\n/g, '<br>');
 
       html += `<span 
-        class="segment-highlight relative cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm border-b-2" 
+        class="segment-highlight" 
         style="
           background-color: ${shotColor}20;
-          border-bottom-color: ${shotColor};
-          border-bottom-width: 3px;
+          border-bottom: 3px solid ${shotColor};
           color: ${shotColor};
           font-weight: 500;
+          padding: 2px 4px;
+          border-radius: 3px;
+          cursor: pointer;
           ${strikethroughStyle}
         "
         data-segment-id="${segment.id}"
         data-shot-name="${shotName}"
         data-segment-info="${segment.information || ''}"
         data-recorded="${isRecorded}"
-        data-has-info="${segment.information ? 'true' : 'false'}"
         onmouseenter="this.style.backgroundColor = '${shotColor}40'"
         onmouseleave="this.style.backgroundColor = '${shotColor}20'"
-        title="Click para desasignar toma"
-      >${segmentTextWithBreaks}${segment.information ? '<sup style="color: ' + shotColor + '; font-weight: bold; margin-left: 2px;">+</sup>' : ''}</span>`;
+        onclick="event.preventDefault(); event.stopPropagation();"
+      >${segmentText.replace(/\n/g, '<br>')}${segment.information ? '<sup style="color: ' + shotColor + '; font-weight: bold; margin-left: 2px;">+</sup>' : ''}</span>`;
 
       lastIndex = segment.endIndex;
     });
 
-    // Añadir espacios invisibles al final si es necesario
+    // Añadir texto restante (sin formato)
     if (lastIndex < content.length) {
       const remainingText = content.slice(lastIndex);
-      const invisibleSpaces = remainingText.replace(/./g, ' ').replace(/\n/g, '<br>');
-      html += `<span style="color: transparent; user-select: none;">${invisibleSpaces}</span>`;
+      html += remainingText.replace(/\n/g, '<br>');
     }
 
-    contentRef.current.innerHTML = html;
-
-    // Añadir event listeners para desasignar tomas
-    const segmentElements = contentRef.current.querySelectorAll('.segment-highlight');
-    segmentElements.forEach(element => {
-      const segmentId = element.getAttribute('data-segment-id');
+    // Actualizar el contenido del editor solo si es diferente
+    if (editorRef.current.innerHTML !== html) {
+      setIsUpdatingContent(true);
+      editorRef.current.innerHTML = html;
       
-      element.addEventListener('mouseenter', () => {
-        setHoveredSegment(segmentId);
+      // Añadir event listeners para desasignar tomas
+      const segmentElements = editorRef.current.querySelectorAll('.segment-highlight');
+      segmentElements.forEach(element => {
+        const segmentId = element.getAttribute('data-segment-id');
+        
+        element.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (segmentId) {
+            onRemoveSegment(segmentId);
+          }
+        });
       });
       
-      element.addEventListener('mouseleave', () => {
-        setHoveredSegment(null);
-      });
+      setIsUpdatingContent(false);
+    }
+  }, [section.segments, section.content, showRecordedInText, shots, onRemoveSegment, isUpdatingContent]);
 
-      // Añadir click para desasignar
-      element.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (segmentId) {
-          onRemoveSegment(segmentId);
-        }
-      });
-    });
-  }, [section.segments, section.content, hoveredSegment, showRecordedInText, shots, onRemoveSegment]);
-
+  // Aplicar estilos cuando cambien los segmentos o el contenido
   useEffect(() => {
-    renderStyledContent();
-  }, [renderStyledContent]);
+    applyStylesToEditor();
+  }, [applyStylesToEditor]);
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -153,6 +153,9 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   };
 
   const handleContentChange = (e: React.FormEvent<HTMLDivElement>) => {
+    if (isUpdatingContent) return;
+    
+    // Obtener el texto plano sin HTML
     const newContent = e.currentTarget.textContent || '';
     onContentChange(newContent);
   };
@@ -247,33 +250,18 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 onInput={handleContentChange}
                 onMouseUp={onTextSelection}
                 onKeyUp={onTextSelection}
-                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap relative z-10"
+                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap"
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
-                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
-                  backgroundColor: 'white'
+                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
                 }}
                 data-placeholder={sectionConfig.placeholder}
               />
               
-              {/* Overlay solo para segmentos subrayados */}
-              {section.segments.length > 0 && (
-                <div
-                  ref={contentRef}
-                  className="absolute inset-0 pointer-events-auto p-4 text-base leading-relaxed whitespace-pre-wrap"
-                  style={{ 
-                    fontSize: '16px',
-                    lineHeight: '1.6',
-                    fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
-                    zIndex: 15
-                  }}
-                />
-              )}
-              
               {section.content === '' && (
                 <div 
-                  className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base z-20"
+                  className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base"
                   style={{ fontSize: '16px' }}
                 >
                   {sectionConfig.placeholder}
