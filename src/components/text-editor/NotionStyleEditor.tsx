@@ -22,7 +22,6 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     showShotMenu,
     menuPosition,
     editorRefs,
-    showRecordedShots,
     handleTextSelection,
     addShot,
     assignShotToText,
@@ -36,8 +35,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     getAllContent,
     getAllSegments,
     toggleSectionCollapse,
-    toggleShotRecorded,
-    toggleRecordedShotsVisibility
+    toggleShotRecorded
   } = useTextEditor();
 
   // Create refs for each section
@@ -91,8 +89,6 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
             onToggleShotRecorded={toggleShotRecorded}
             shots={shots}
             editorRef={sectionRefs[section.type as keyof typeof sectionRefs]}
-            showRecordedShots={showRecordedShots}
-            onToggleRecordedShotsVisibility={toggleRecordedShotsVisibility}
           />
         ))}
       </div>

@@ -1,10 +1,12 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, Plus, X, Check, Eye, EyeOff, Camera } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, X, Check, Eye, EyeOff, Camera, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScriptSection as ScriptSectionType, SECTION_TYPES, TextSegment } from '@/hooks/use-text-editor';
 
 interface ScriptSectionProps {
@@ -18,8 +20,6 @@ interface ScriptSectionProps {
   onToggleShotRecorded: (shotId: string) => void;
   shots: any[];
   editorRef: React.RefObject<HTMLDivElement>;
-  showRecordedShots: boolean;
-  onToggleRecordedShotsVisibility: () => void;
 }
 
 const ScriptSection: React.FC<ScriptSectionProps> = ({
@@ -32,9 +32,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   onRemoveSegment,
   onToggleShotRecorded,
   shots,
-  editorRef,
-  showRecordedShots,
-  onToggleRecordedShotsVisibility
+  editorRef
 }) => {
   const sectionConfig = SECTION_TYPES[section.type];
   const contentRef = useRef<HTMLDivElement>(null);
@@ -47,7 +45,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     if (contentRef.current && section.segments.length > 0) {
       renderStyledContent();
     }
-  }, [section.segments, section.content, hoveredSegment, showRecordedShots, showRecordedInText]);
+  }, [section.segments, section.content, hoveredSegment, showRecordedInText]);
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -90,7 +88,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
       
       // Si el segmento actual tiene la misma toma y es consecutivo (o muy cercano)
       if (segment.shotId === currentGroup.shotId && 
-          segment.startIndex <= currentGroup.endIndex + 2) { // Permitir hasta 2 caracteres de separación (espacios)
+          segment.startIndex <= currentGroup.endIndex + 2) {
         // Extender el grupo actual
         currentGroup.endIndex = Math.max(currentGroup.endIndex, segment.endIndex);
         currentGroup.segments.push(segment);
@@ -120,7 +118,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
 
     const content = section.content;
     if (!content || section.segments.length === 0) {
-      contentRef.current.innerHTML = content;
+      contentRef.current.innerHTML = content.replace(/\n/g, '<br>');
       return;
     }
 
@@ -133,54 +131,51 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     mergedGroups.forEach(group => {
       // Añadir texto antes del grupo
       if (group.startIndex > lastIndex) {
-        html += content.slice(lastIndex, group.startIndex);
+        const beforeText = content.slice(lastIndex, group.startIndex);
+        html += beforeText.replace(/\n/g, '<br>');
       }
 
       const shotColor = getShotColor(group.shotId);
       const shotName = getShotName(group.shotId);
       const isRecorded = isShotRecorded(group.shotId);
       
-      // Determinar si debe mostrarse según el estado de grabación
-      const shouldShow = showRecordedShots || !isRecorded;
-      // Determinar si debe mostrarse el tachado en el texto
-      const shouldShowStrikethrough = showRecordedInText && isRecorded;
-      
-      if (shouldShow) {
-        // Usar el primer segmento del grupo para los datos
-        const firstSegment = group.segments[0];
-        const allInfo = group.segments
-          .map(s => s.information)
-          .filter(info => info && info.trim())
-          .join(' | ');
+      // Usar el primer segmento del grupo para los datos
+      const firstSegment = group.segments[0];
+      const allInfo = group.segments
+        .map(s => s.information)
+        .filter(info => info && info.trim())
+        .join(' | ');
 
-        // Aplicar tachado si está grabado y la opción está activada
-        const strikethroughStyle = shouldShowStrikethrough ? 'text-decoration: line-through; opacity: 0.7;' : '';
+      // Aplicar tachado si está grabado y la opción está activada
+      const strikethroughStyle = showRecordedInText && isRecorded ? 'text-decoration: line-through; opacity: 0.7;' : '';
 
-        html += `<span 
-          class="segment-highlight relative cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm border-b-2" 
-          style="
-            background-color: ${shotColor}20;
-            border-bottom-color: ${shotColor};
-            border-bottom-width: 3px;
-            ${strikethroughStyle}
-          "
-          data-segment-id="${firstSegment.id}"
-          data-shot-name="${shotName}"
-          data-segment-info="${allInfo}"
-          data-recorded="${isRecorded}"
-          onmouseenter="this.style.backgroundColor = '${shotColor}40'"
-          onmouseleave="this.style.backgroundColor = '${shotColor}20'"
-        >${group.text}</span>`;
-      } else {
-        html += group.text;
-      }
+      // Escapar el texto del grupo y reemplazar saltos de línea
+      const groupTextWithBreaks = group.text.replace(/\n/g, '<br>');
+
+      html += `<span 
+        class="segment-highlight relative cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-sm border-b-2" 
+        style="
+          background-color: ${shotColor}20;
+          border-bottom-color: ${shotColor};
+          border-bottom-width: 3px;
+          ${strikethroughStyle}
+        "
+        data-segment-id="${firstSegment.id}"
+        data-shot-name="${shotName}"
+        data-segment-info="${allInfo}"
+        data-recorded="${isRecorded}"
+        data-has-info="${allInfo ? 'true' : 'false'}"
+        onmouseenter="this.style.backgroundColor = '${shotColor}40'"
+        onmouseleave="this.style.backgroundColor = '${shotColor}20'"
+      >${groupTextWithBreaks}${allInfo ? '<sup style="color: ' + shotColor + '; font-weight: bold; margin-left: 2px;">+</sup>' : ''}</span>`;
 
       lastIndex = group.endIndex;
     });
 
     // Añadir texto restante
     if (lastIndex < content.length) {
-      html += content.slice(lastIndex);
+      const remainingText = content.slice(lastIndex);
+      html += remainingText.replace(/\n/g, '<br>');
     }
 
     contentRef.current.innerHTML = html;
@@ -289,25 +284,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                       {showRecordedInText ? 'Ocultar tachado de grabadas' : 'Mostrar tachado de grabadas'}
                     </TooltipContent>
                   </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onToggleRecordedShotsVisibility}
-                        className="h-8 w-8 p-0"
-                      >
-                        {showRecordedShots ? (
-                          <Eye className="h-4 w-4" />
-                        ) : (
-                          <EyeOff className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {showRecordedShots ? 'Ocultar tomas grabadas' : 'Mostrar tomas grabadas'}
-                    </TooltipContent>
-                  </Tooltip>
                   <Badge variant="outline" className="text-xs">
                     {mergeConsecutiveSegments(section.segments).length} {mergeConsecutiveSegments(section.segments).length === 1 ? 'toma' : 'tomas'}
                   </Badge>
@@ -327,7 +303,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 onInput={handleContentChange}
                 onMouseUp={onTextSelection}
                 onKeyUp={onTextSelection}
-                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors"
+                className="min-h-[120px] focus:outline-none text-gray-900 leading-relaxed text-base p-4 border border-gray-200 rounded-lg focus:border-gray-400 transition-colors whitespace-pre-wrap"
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
@@ -339,7 +315,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
               {/* Display styled content */}
               <div
                 ref={contentRef}
-                className="absolute inset-0 pointer-events-none p-4 text-base leading-relaxed"
+                className="absolute inset-0 pointer-events-none p-4 text-base leading-relaxed whitespace-pre-wrap"
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
@@ -464,17 +440,25 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                             </TooltipContent>
                           </Tooltip>
 
+                          {/* Indicador de información adicional */}
                           {allInfo && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                  Info
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 w-6 p-0 text-blue-600 border-blue-600 hover:bg-blue-50"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80">
+                                <div className="space-y-2">
+                                  <h4 className="font-medium text-sm">Información adicional</h4>
+                                  <p className="text-sm text-gray-600">{allInfo}</p>
                                 </div>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{allInfo}</p>
-                              </TooltipContent>
-                            </Tooltip>
+                              </PopoverContent>
+                            </Popover>
                           )}
                           
                           <Button
