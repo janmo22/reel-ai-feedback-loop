@@ -117,7 +117,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
             border-radius: 2px;
             text-decoration: ${textDecoration};
             opacity: ${opacity};
-            cursor: pointer;
           "
           data-segment-id="${segment.id}"
           data-shot-color="${shotColor}"
@@ -138,19 +137,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
 
     if (editorRef.current.innerHTML !== html) {
       editorRef.current.innerHTML = html;
-      
-      // Agregar event listeners para desasignar al hacer click
-      const highlights = editorRef.current.querySelectorAll('.text-highlight');
-      highlights.forEach(element => {
-        const segmentId = element.getAttribute('data-segment-id');
-        element.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (segmentId) {
-            onRemoveSegment(segmentId);
-          }
-        });
-      });
     }
 
     setIsUpdating(false);
