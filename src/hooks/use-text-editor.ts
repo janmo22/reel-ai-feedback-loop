@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback } from 'react';
 
 export interface TextSegment {
@@ -108,6 +107,14 @@ export const useTextEditor = () => {
     setSections(prev => prev.map(section => 
       section.id === sectionId 
         ? { ...section, collapsed: !section.collapsed }
+        : section
+    ));
+  }, []);
+
+  const updateSectionSegments = useCallback((sectionId: string, segments: TextSegment[]) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId 
+        ? { ...section, segments }
         : section
     ));
   }, []);
@@ -350,6 +357,7 @@ export const useTextEditor = () => {
     addSegmentInfo,
     removeSegment,
     updateSectionContent,
+    updateSectionSegments,
     setShowShotMenu,
     getAllContent,
     getAllSegments,

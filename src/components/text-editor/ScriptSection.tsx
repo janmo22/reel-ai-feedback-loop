@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,7 @@ interface ScriptSectionProps {
   onAddSegmentInfo: (segmentId: string, info: string) => void;
   onRemoveSegment: (segmentId: string) => void;
   onToggleShotRecorded: (shotId: string) => void;
+  onSegmentsUpdate: (segments: any[]) => void;
   shots: any[];
   editorRef: React.RefObject<HTMLDivElement>;
 }
@@ -29,14 +29,15 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
   onAddSegmentInfo,
   onRemoveSegment,
   onToggleShotRecorded,
+  onSegmentsUpdate,
   shots,
   editorRef
 }) => {
   const sectionConfig = SECTION_TYPES[section.type];
   const [editingInfo, setEditingInfo] = useState<string | null>(null);
   const [infoText, setInfoText] = useState('');
-  const lastContentRef = useRef(section.content);
-  const isComposingRef = useRef(false);
+  const isUpdatingRef = useRef(false);
+  const lastCaretPositionRef = useRef<{node: Node | null, offset: number}>({ node: null, offset: 0 });
 
   const getShotColor = (shotId?: string) => {
     const shot = shots.find(s => s.id === shotId);
@@ -53,163 +54,284 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
     return shot?.recorded || false;
   };
 
-  // Aplicar estilos sin perder el cursor
-  const applyHighlights = () => {
-    if (!editorRef.current) return;
-
+  // Guardar la posición del cursor
+  const saveCaretPosition = useCallback(() => {
     const selection = window.getSelection();
-    const currentRange = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-    const cursorOffset = currentRange ? {
-      startContainer: currentRange.startContainer,
-      startOffset: currentRange.startOffset,
-      endContainer: currentRange.endContainer,
-      endOffset: currentRange.endOffset
-    } : null;
-
-    // Obtener texto plano del editor
-    const plainText = editorRef.current.textContent || '';
-    
-    // Crear estructura de nodos
-    const nodes: (string | { text: string; segment: any })[] = [];
-    let lastIndex = 0;
-
-    // Ordenar segmentos por posición
-    const sortedSegments = [...section.segments].sort((a, b) => a.startIndex - b.startIndex);
-
-    sortedSegments.forEach(segment => {
-      if (segment.startIndex > lastIndex) {
-        nodes.push(plainText.substring(lastIndex, segment.startIndex));
-      }
-      
-      nodes.push({
-        text: plainText.substring(segment.startIndex, segment.endIndex),
-        segment
-      });
-      
-      lastIndex = segment.endIndex;
-    });
-
-    if (lastIndex < plainText.length) {
-      nodes.push(plainText.substring(lastIndex));
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      lastCaretPositionRef.current = {
+        node: range.startContainer,
+        offset: range.startOffset
+      };
     }
+  }, []);
 
-    // Limpiar y reconstruir el contenido
+  // Restaurar la posición del cursor
+  const restoreCaretPosition = useCallback(() => {
+    if (!editorRef.current || !lastCaretPositionRef.current.node) return;
+
+    try {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      
+      // Verificar si el nodo aún existe en el DOM
+      if (editorRef.current.contains(lastCaretPositionRef.current.node)) {
+        range.setStart(lastCaretPositionRef.current.node, lastCaretPositionRef.current.offset);
+        range.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
+    } catch (e) {
+      // Si falla, no hacer nada
+    }
+  }, []);
+
+  // Obtener el offset absoluto en el texto plano
+  const getAbsoluteOffset = useCallback((container: Node, offset: number): number => {
+    if (!editorRef.current) return 0;
+    
+    let absoluteOffset = 0;
+    let currentNode: Node | null = editorRef.current.firstChild;
+    let found = false;
+
+    const walkNodes = (node: Node | null) => {
+      if (!node || found) return;
+
+      if (node === container) {
+        absoluteOffset += offset;
+        found = true;
+        return;
+      }
+
+      if (node.nodeType === Node.TEXT_NODE) {
+        absoluteOffset += node.textContent?.length || 0;
+      } else if (node.nodeName === 'BR') {
+        absoluteOffset += 1;
+      }
+
+      if (node.firstChild) {
+        walkNodes(node.firstChild);
+      }
+      if (!found && node.nextSibling) {
+        walkNodes(node.nextSibling);
+      }
+    };
+
+    walkNodes(currentNode);
+    return absoluteOffset;
+  }, []);
+
+  // Aplicar highlights al contenido
+  const applyHighlights = useCallback(() => {
+    if (!editorRef.current || isUpdatingRef.current) return;
+
+    isUpdatingRef.current = true;
+    saveCaretPosition();
+
+    const content = section.content;
+    const segments = [...section.segments].sort((a, b) => a.startIndex - b.startIndex);
+
+    // Limpiar el editor
     editorRef.current.innerHTML = '';
 
-    nodes.forEach(node => {
-      if (typeof node === 'string') {
-        // Texto normal - preservar saltos de línea
-        const lines = node.split('\n');
-        lines.forEach((line, index) => {
+    let lastIndex = 0;
+
+    segments.forEach(segment => {
+      // Agregar texto antes del segmento
+      if (segment.startIndex > lastIndex) {
+        const textBefore = content.substring(lastIndex, segment.startIndex);
+        const lines = textBefore.split('\n');
+        lines.forEach((line, idx) => {
           if (line) {
             editorRef.current!.appendChild(document.createTextNode(line));
           }
-          if (index < lines.length - 1) {
+          if (idx < lines.length - 1) {
             editorRef.current!.appendChild(document.createElement('br'));
           }
         });
-      } else {
-        // Texto con highlight
-        const span = document.createElement('span');
-        const shotColor = getShotColor(node.segment.shotId);
-        const isRecorded = isShotRecorded(node.segment.shotId);
-        
-        span.style.backgroundColor = `${shotColor}30`;
-        span.style.borderBottom = `3px solid ${shotColor}`;
-        span.style.padding = '1px 2px';
-        span.style.borderRadius = '2px';
-        span.style.fontWeight = '500';
-        
-        if (isRecorded) {
-          span.style.textDecoration = 'line-through';
-          span.style.opacity = '0.7';
-        }
-        
-        span.dataset.segmentId = node.segment.id;
-        span.className = 'segment-highlight';
-        
-        // Preservar saltos de línea dentro del segmento
-        const lines = node.text.split('\n');
-        lines.forEach((line, index) => {
-          if (line) {
-            span.appendChild(document.createTextNode(line));
-          }
-          if (index < lines.length - 1) {
-            span.appendChild(document.createElement('br'));
-          }
-        });
-        
-        editorRef.current!.appendChild(span);
       }
+
+      // Crear el span con highlight
+      const span = document.createElement('span');
+      const shotColor = getShotColor(segment.shotId);
+      const isRecorded = isShotRecorded(segment.shotId);
+      
+      span.style.backgroundColor = `${shotColor}30`;
+      span.style.borderBottom = `3px solid ${shotColor}`;
+      span.style.padding = '1px 2px';
+      span.style.borderRadius = '2px';
+      span.style.fontWeight = '500';
+      
+      if (isRecorded) {
+        span.style.textDecoration = 'line-through';
+        span.style.opacity = '0.7';
+      }
+      
+      span.dataset.segmentId = segment.id;
+      span.dataset.shotId = segment.shotId || '';
+      span.className = 'segment-highlight';
+      
+      // Agregar el texto del segmento
+      const segmentText = content.substring(segment.startIndex, segment.endIndex);
+      const lines = segmentText.split('\n');
+      lines.forEach((line, idx) => {
+        if (line) {
+          span.appendChild(document.createTextNode(line));
+        }
+        if (idx < lines.length - 1) {
+          span.appendChild(document.createElement('br'));
+        }
+      });
+      
+      editorRef.current!.appendChild(span);
+      lastIndex = segment.endIndex;
     });
 
-    // Restaurar cursor
-    if (cursorOffset && selection) {
-      try {
-        const newRange = document.createRange();
-        
-        // Función para encontrar el nodo y offset correcto
-        const findNodeAndOffset = (container: Node, offset: number) => {
-          let currentNode: Node | null = editorRef.current!.firstChild;
-          let currentOffset = 0;
-          
-          while (currentNode) {
-            const nodeLength = currentNode.textContent?.length || 0;
-            
-            if (currentOffset + nodeLength >= offset) {
-              if (currentNode.nodeType === Node.TEXT_NODE) {
-                return { node: currentNode, offset: offset - currentOffset };
-              } else if (currentNode.firstChild) {
-                return findNodeAndOffset(currentNode.firstChild, offset - currentOffset);
-              }
-            }
-            
-            currentOffset += nodeLength;
-            currentNode = currentNode.nextSibling;
-          }
-          
-          return { node: editorRef.current!, offset: 0 };
-        };
-        
-        const startPos = findNodeAndOffset(editorRef.current!, cursorOffset.startOffset);
-        const endPos = findNodeAndOffset(editorRef.current!, cursorOffset.endOffset);
-        
-        newRange.setStart(startPos.node, startPos.offset);
-        newRange.setEnd(endPos.node, endPos.offset);
-        
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-      } catch (e) {
-        // Si falla la restauración del cursor, no hacer nada
-      }
+    // Agregar texto restante
+    if (lastIndex < content.length) {
+      const remainingText = content.substring(lastIndex);
+      const lines = remainingText.split('\n');
+      lines.forEach((line, idx) => {
+        if (line) {
+          editorRef.current!.appendChild(document.createTextNode(line));
+        }
+        if (idx < lines.length - 1) {
+          editorRef.current!.appendChild(document.createElement('br'));
+        }
+      });
     }
-  };
 
-  // Efecto para aplicar highlights cuando cambian los segmentos
+    // Si no hay contenido, asegurar que haya al menos un nodo de texto
+    if (!editorRef.current.firstChild) {
+      editorRef.current.appendChild(document.createTextNode(''));
+    }
+
+    setTimeout(() => {
+      restoreCaretPosition();
+      isUpdatingRef.current = false;
+    }, 0);
+  }, [section.content, section.segments, getShotColor, isShotRecorded, saveCaretPosition, restoreCaretPosition]);
+
+  // Aplicar highlights cuando cambien los segmentos o el contenido
   useEffect(() => {
-    if (editorRef.current && section.content) {
+    if (editorRef.current && !isUpdatingRef.current) {
       applyHighlights();
     }
-  }, [section.segments]);
+  }, [section.segments, applyHighlights]);
 
-  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    if (isComposingRef.current) return;
-    
+  // Detectar si el cursor está dentro de un segmento
+  const getCurrentSegment = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+
+    const range = selection.getRangeAt(0);
+    let node = range.startContainer;
+
+    // Buscar el span padre si estamos en un nodo de texto
+    while (node && node !== editorRef.current) {
+      if (node.nodeType === Node.ELEMENT_NODE && 
+          (node as HTMLElement).classList?.contains('segment-highlight')) {
+        return {
+          element: node as HTMLElement,
+          segmentId: (node as HTMLElement).dataset.segmentId,
+          shotId: (node as HTMLElement).dataset.shotId
+        };
+      }
+      node = node.parentNode as Node;
+    }
+
+    return null;
+  }, []);
+
+  const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    if (isUpdatingRef.current) return;
+
     const newContent = e.currentTarget.textContent || '';
-    lastContentRef.current = newContent;
     onContentChange(newContent);
-  };
 
-  const handleCompositionStart = () => {
-    isComposingRef.current = true;
-  };
+    // Verificar si estamos escribiendo dentro de un segmento
+    const currentSegment = getCurrentSegment();
+    if (currentSegment && currentSegment.segmentId) {
+      // Actualizar el segmento para incluir el nuevo texto
+      const segmentElement = currentSegment.element;
+      const segmentText = segmentElement.textContent || '';
+      
+      // Calcular la nueva posición del segmento
+      const absoluteStart = getAbsoluteOffset(segmentElement, 0);
+      const absoluteEnd = absoluteStart + segmentText.length;
 
-  const handleCompositionEnd = (e: React.CompositionEvent<HTMLDivElement>) => {
-    isComposingRef.current = false;
-    handleInput(e as any);
-  };
+      // Actualizar el segmento
+      const updatedSegments = section.segments.map(seg => {
+        if (seg.id === currentSegment.segmentId) {
+          return {
+            ...seg,
+            text: segmentText,
+            startIndex: absoluteStart,
+            endIndex: absoluteEnd
+          };
+        }
+        return seg;
+      });
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+      onSegmentsUpdate(updatedSegments);
+    }
+  }, [getCurrentSegment, getAbsoluteOffset, section.segments, onContentChange, onSegmentsUpdate]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+
+      const range = selection.getRangeAt(0);
+      const currentSegment = getCurrentSegment();
+
+      // Insertar un salto de línea
+      const br = document.createElement('br');
+      range.deleteContents();
+      range.insertNode(br);
+
+      // Si estamos dentro de un segmento, mantenerlo
+      if (currentSegment && currentSegment.element) {
+        // Crear un nodo de texto vacío después del br para poder posicionar el cursor
+        const emptyText = document.createTextNode('');
+        if (br.nextSibling) {
+          br.parentNode?.insertBefore(emptyText, br.nextSibling);
+        } else {
+          br.parentNode?.appendChild(emptyText);
+        }
+
+        // Mover el cursor después del br
+        const newRange = document.createRange();
+        newRange.setStart(emptyText, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      } else {
+        // Si no estamos en un segmento, crear un nodo de texto después del br
+        const textNode = document.createTextNode('\u200B'); // Zero-width space
+        if (br.nextSibling) {
+          br.parentNode?.insertBefore(textNode, br.nextSibling);
+        } else {
+          editorRef.current?.appendChild(textNode);
+        }
+
+        // Mover el cursor
+        const newRange = document.createRange();
+        newRange.setStart(textNode, 0);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
+
+      // Actualizar el contenido
+      const newContent = editorRef.current?.textContent || '';
+      onContentChange(newContent);
+    }
+  }, [getCurrentSegment, onContentChange]);
+
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
     const text = e.clipboardData.getData('text/plain');
     const selection = window.getSelection();
@@ -230,32 +352,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
       const newContent = editorRef.current?.textContent || '';
       onContentChange(newContent);
     }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Manejar Enter para preservar el formato
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount) {
-        const br = document.createElement('br');
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(br);
-        
-        // Mover cursor después del br
-        const newRange = document.createRange();
-        newRange.setStartAfter(br);
-        newRange.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-        
-        // Actualizar contenido
-        const newContent = editorRef.current?.textContent || '';
-        onContentChange(newContent);
-      }
-    }
-  };
+  }, [onContentChange]);
 
   const handleStartEditInfo = (segmentId: string) => {
     const segment = section.segments.find(s => s.id === segmentId);
@@ -323,8 +420,6 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 contentEditable
                 suppressContentEditableWarning
                 onInput={handleInput}
-                onCompositionStart={handleCompositionStart}
-                onCompositionEnd={handleCompositionEnd}
                 onPaste={handlePaste}
                 onKeyDown={handleKeyDown}
                 onMouseUp={onTextSelection}
@@ -333,10 +428,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
                 style={{ 
                   fontSize: '16px',
                   lineHeight: '1.6',
-                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)',
-                  direction: 'ltr',
-                  textAlign: 'left',
-                  unicodeBidi: 'normal'
+                  fontFamily: 'var(--font-satoshi, system-ui, sans-serif)'
                 }}
               />
               
@@ -344,11 +436,7 @@ const ScriptSection: React.FC<ScriptSectionProps> = ({
               {(!section.content || section.content === '') && (
                 <div 
                   className="absolute top-4 left-4 text-gray-400 pointer-events-none text-base"
-                  style={{ 
-                    fontSize: '16px',
-                    direction: 'ltr',
-                    textAlign: 'left'
-                  }}
+                  style={{ fontSize: '16px' }}
                 >
                   {sectionConfig.placeholder}
                 </div>

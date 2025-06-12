@@ -30,6 +30,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     addSegmentInfo,
     removeSegment,
     updateSectionContent,
+    updateSectionSegments,
     setShowShotMenu,
     getAllContent,
     getAllSegments,
@@ -85,6 +86,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
             onAddSegmentInfo={(segmentId, info) => addSegmentInfo(section.id, segmentId, info)}
             onRemoveSegment={(segmentId) => removeSegment(section.id, segmentId)}
             onToggleShotRecorded={toggleShotRecorded}
+            onSegmentsUpdate={(segments) => updateSectionSegments(section.id, segments)}
             shots={shots}
             editorRef={sectionRefs[section.type as keyof typeof sectionRefs]}
           />
