@@ -19,6 +19,14 @@ interface AdvancedTextEditorProps {
   showCreativeZone?: boolean;
 }
 
+interface HoveredSegment {
+  id: string;
+  x: number;
+  y: number;
+  shotName?: string;
+  additionalInfo?: string;
+}
+
 export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   title,
   description,
@@ -30,7 +38,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const [showShotSelector, setShowShotSelector] = useState(false);
   const [shotsVisible, setShotsVisible] = useState(true);
-  const [hoveredSegment, setHoveredSegment] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [hoveredSegment, setHoveredSegment] = useState<HoveredSegment | null>(null);
   
   const {
     content: editorContent,
