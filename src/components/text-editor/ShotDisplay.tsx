@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, X, Plus, Edit, Trash2, ChevronDown, ChevronUp, Minus, MessageSquare } from 'lucide-react';
+import { Check, X, Plus, Edit, Trash2, ChevronDown, ChevronUp, Eye, EyeOff, MessageSquare, Film } from 'lucide-react';
 import { Shot, ShotInfo } from '@/hooks/use-advanced-editor';
 
 interface ShotDisplayProps {
@@ -29,7 +29,7 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
   onRemoveSegmentInfo
 }) => {
   const [expandedShots, setExpandedShots] = useState<Set<string>>(new Set());
-  const [collapsedShots, setCollapsedShots] = useState<Set<string>>(new Set());
+  const [shotsVisible, setShotsVisible] = useState(true);
   const [editingInfo, setEditingInfo] = useState<{ shotId: string; infoId: string | null }>({ shotId: '', infoId: null });
   const [editingSegmentInfo, setEditingSegmentInfo] = useState<{ segmentId: string; isEditing: boolean }>({ segmentId: '', isEditing: false });
   const [newInfoLabel, setNewInfoLabel] = useState('');
@@ -38,18 +38,6 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
 
   const toggleShotExpanded = (shotId: string) => {
     setExpandedShots(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(shotId)) {
-        newSet.delete(shotId);
-      } else {
-        newSet.add(shotId);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleShotCollapsed = (shotId: string) => {
-    setCollapsedShots(prev => {
       const newSet = new Set(prev);
       if (newSet.has(shotId)) {
         newSet.delete(shotId);
@@ -119,261 +107,275 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
 
   if (shots.length === 0) {
     return (
-      <div className="text-xs text-gray-500 text-center py-3">
-        Selecciona texto para crear tomas
+      <div className="text-center py-6 text-gray-500">
+        <Film className="h-8 w-8 mx-auto mb-2 opacity-40" />
+        <p className="text-sm">Selecciona texto para crear tomas</p>
+        <p className="text-xs mt-1">Organiza tu guión por escenas y planos</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <div className="text-xs font-medium text-gray-700 flex items-center justify-between">
-        <span>Tomas ({shots.length})</span>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              const allExpanded = shots.every(shot => expandedShots.has(shot.id));
-              if (allExpanded) {
-                setExpandedShots(new Set());
-              } else {
-                setExpandedShots(new Set(shots.map(shot => shot.id)));
-              }
-            }}
-            className="h-5 text-xs px-2"
-          >
-            {shots.every(shot => expandedShots.has(shot.id)) ? 'Contraer' : 'Expandir'}
-          </Button>
+    <div className="space-y-3">
+      {/* Header with toggle */}
+      <div className="flex items-center justify-between py-2">
+        <div className="flex items-center gap-2">
+          <Film className="h-4 w-4 text-gray-600" />
+          <h3 className="text-sm font-medium text-gray-800">
+            Tomas del Guión
+          </h3>
+          <Badge variant="secondary" className="text-xs">
+            {shots.length}
+          </Badge>
         </div>
-      </div>
-      {shots.map((shot) => (
-        <Card 
-          key={shot.id} 
-          className={`border-l-4 transition-all ${collapsedShots.has(shot.id) ? 'opacity-50' : ''}`} 
-          style={{ borderLeftColor: shot.color }}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShotsVisible(!shotsVisible)}
+          className="text-xs h-7"
         >
-          <CardHeader className="pb-1">
-            <CardTitle className="text-xs flex items-center gap-2">
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: shot.color }}
-              />
-              {shot.name}
-              <div className="ml-auto flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleShotExpanded(shot.id)}
-                  className="h-5 w-5 p-0"
-                >
-                  {expandedShots.has(shot.id) ? (
-                    <ChevronUp className="h-3 w-3" />
-                  ) : (
-                    <ChevronDown className="h-3 w-3" />
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleShotCollapsed(shot.id)}
-                  className="h-5 w-5 p-0"
-                >
-                  {collapsedShots.has(shot.id) ? (
-                    <Plus className="h-3 w-3" />
-                  ) : (
-                    <Minus className="h-3 w-3" />
-                  )}
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          
-          {!collapsedShots.has(shot.id) && (
-            <CardContent className="pt-0 pb-2">
-              <div className="space-y-1">
-                {/* Text segments */}
-                {shot.textSegments.map((segment) => (
-                  <div key={segment.id} className="space-y-1">
+          {shotsVisible ? (
+            <>
+              <EyeOff className="h-3 w-3 mr-1" />
+              Ocultar
+            </>
+          ) : (
+            <>
+              <Eye className="h-3 w-3 mr-1" />
+              Mostrar
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Shots list */}
+      {shotsVisible && (
+        <div className="space-y-2 max-h-96 overflow-y-auto">
+          {shots.map((shot) => (
+            <Card 
+              key={shot.id} 
+              className="border-l-3 shadow-sm hover:shadow-md transition-shadow"
+              style={{ borderLeftColor: shot.color }}
+            >
+              <CardHeader className="pb-2 pt-3">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <div className="flex items-center gap-2">
                     <div
-                      className="flex items-center justify-between gap-2 text-xs p-1 rounded border-l-2"
-                      style={{ 
-                        borderLeftColor: shot.color,
-                        backgroundColor: `${shot.color}08`
-                      }}
-                    >
-                      <div 
-                        className={`flex-1 font-medium ${segment.isStrikethrough ? 'line-through opacity-60' : ''}`}
-                      >
-                        "{segment.text}"
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startEditingSegmentInfo(segment.id, segment.additionalInfo)}
-                          className="h-4 w-4 p-0 text-gray-400 hover:text-gray-600"
-                          title="Añadir información"
-                        >
-                          <MessageSquare className="h-3 w-3" />
-                        </Button>
-                        {onToggleStrikethrough && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onToggleStrikethrough(segment.id)}
-                            className={`h-4 w-4 p-0 ${
-                              segment.isStrikethrough 
-                                ? 'text-green-600 hover:text-green-700' 
-                                : 'text-gray-400 hover:text-gray-600'
-                            }`}
-                          >
-                            {segment.isStrikethrough ? <X className="h-3 w-3" /> : <Check className="h-3 w-3" />}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Segment additional info form */}
-                    {editingSegmentInfo.segmentId === segment.id && editingSegmentInfo.isEditing && (
-                      <div className="ml-2 p-2 bg-gray-50 rounded text-xs">
-                        <Textarea
-                          placeholder="Información adicional (estilo, emoción, instrucciones...)"
-                          value={segmentInfoText}
-                          onChange={(e) => setSegmentInfoText(e.target.value)}
-                          rows={2}
-                          className="text-xs mb-2"
-                        />
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              if (segment.additionalInfo) {
-                                handleUpdateSegmentInfo(segment.id);
-                              } else {
-                                handleAddSegmentInfo(segment.id);
-                              }
-                            }}
-                            className="h-5 text-xs px-2"
-                          >
-                            {segment.additionalInfo ? 'Actualizar' : 'Añadir'}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingSegmentInfo({ segmentId: '', isEditing: false })}
-                            className="h-5 text-xs px-2"
-                          >
-                            Cancelar
-                          </Button>
-                          {segment.additionalInfo && onRemoveSegmentInfo && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                onRemoveSegmentInfo(segment.id);
-                                setEditingSegmentInfo({ segmentId: '', isEditing: false });
-                              }}
-                              className="h-5 text-xs px-2 text-red-500"
-                            >
-                              Eliminar
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                      className="w-3 h-3 rounded-full border-2 border-white shadow-sm"
+                      style={{ backgroundColor: shot.color }}
+                    />
+                    <span className="font-medium">{shot.name}</span>
+                    <Badge variant="outline" className="text-xs h-5">
+                      {shot.textSegments.length}
+                    </Badge>
                   </div>
-                ))}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleShotExpanded(shot.id)}
+                    className="h-6 w-6 p-0"
+                  >
+                    {expandedShots.has(shot.id) ? (
+                      <ChevronUp className="h-3 w-3" />
+                    ) : (
+                      <ChevronDown className="h-3 w-3" />
+                    )}
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              
+              <CardContent className="pt-0 pb-3">
+                {/* Preview text (always visible) */}
+                <div className="mb-2">
+                  <p className="text-xs text-gray-600 line-clamp-2">
+                    {shot.textSegments.map(s => s.text).join(' ').slice(0, 120)}...
+                  </p>
+                </div>
 
-                {/* Shot-level additional info */}
+                {/* Expanded content */}
                 {expandedShots.has(shot.id) && (
-                  <div className="mt-2 pt-2 border-t space-y-1">
-                    <div className="text-xs font-medium text-gray-600 flex items-center justify-between">
-                      <span>Info del grupo:</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => startEditingInfo(shot.id)}
-                        className="h-4 text-xs px-2"
-                      >
-                        <Plus className="h-2 w-2 mr-1" />
-                        Añadir
-                      </Button>
-                    </div>
-
-                    {/* Existing shot info items */}
-                    {shot.additionalInfo.map((info) => (
-                      <div key={info.id} className="flex items-center gap-1 text-xs">
-                        <div className="flex-1 bg-gray-50 p-1 rounded">
-                          <span className="font-medium">{info.label}:</span> {info.value}
+                  <div className="space-y-2 border-t pt-2">
+                    {/* Text segments */}
+                    {shot.textSegments.map((segment) => (
+                      <div key={segment.id} className="space-y-1">
+                        <div
+                          className="flex items-start justify-between gap-2 text-xs p-2 rounded bg-gray-50 border-l-2"
+                          style={{ borderLeftColor: shot.color }}
+                        >
+                          <div 
+                            className={`flex-1 ${segment.isStrikethrough ? 'line-through opacity-60' : ''}`}
+                          >
+                            "{segment.text}"
+                          </div>
+                          <div className="flex gap-1 mt-0.5">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => startEditingSegmentInfo(segment.id, segment.additionalInfo)}
+                              className="h-5 w-5 p-0 text-gray-400 hover:text-blue-600"
+                              title="Añadir información"
+                            >
+                              <MessageSquare className="h-3 w-3" />
+                            </Button>
+                            {onToggleStrikethrough && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onToggleStrikethrough(segment.id)}
+                                className={`h-5 w-5 p-0 ${
+                                  segment.isStrikethrough 
+                                    ? 'text-green-600 hover:text-green-700' 
+                                    : 'text-gray-400 hover:text-red-600'
+                                }`}
+                                title={segment.isStrikethrough ? 'Restaurar' : 'Marcar como usado'}
+                              >
+                                {segment.isStrikethrough ? <X className="h-3 w-3" /> : <Check className="h-3 w-3" />}
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => startEditingInfo(shot.id, info)}
-                          className="h-4 w-4 p-0"
-                        >
-                          <Edit className="h-2 w-2" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onRemoveShotInfo?.(shot.id, info.id)}
-                          className="h-4 w-4 p-0 text-red-500"
-                        >
-                          <Trash2 className="h-2 w-2" />
-                        </Button>
+
+                        {/* Segment additional info form */}
+                        {editingSegmentInfo.segmentId === segment.id && editingSegmentInfo.isEditing && (
+                          <div className="ml-2 p-2 bg-blue-50 rounded text-xs border">
+                            <Textarea
+                              placeholder="Información adicional (estilo, emoción, instrucciones...)"
+                              value={segmentInfoText}
+                              onChange={(e) => setSegmentInfoText(e.target.value)}
+                              rows={2}
+                              className="text-xs mb-2"
+                            />
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  if (segment.additionalInfo) {
+                                    handleUpdateSegmentInfo(segment.id);
+                                  } else {
+                                    handleAddSegmentInfo(segment.id);
+                                  }
+                                }}
+                                className="h-6 text-xs px-2"
+                              >
+                                {segment.additionalInfo ? 'Actualizar' : 'Añadir'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setEditingSegmentInfo({ segmentId: '', isEditing: false })}
+                                className="h-6 text-xs px-2"
+                              >
+                                Cancelar
+                              </Button>
+                              {segment.additionalInfo && onRemoveSegmentInfo && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    onRemoveSegmentInfo(segment.id);
+                                    setEditingSegmentInfo({ segmentId: '', isEditing: false });
+                                  }}
+                                  className="h-6 text-xs px-2 text-red-500 hover:text-red-700"
+                                >
+                                  Eliminar
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
 
-                    {/* Add/Edit shot info form */}
-                    {editingInfo.shotId === shot.id && (
-                      <div className="space-y-1 p-2 bg-gray-50 rounded">
-                        <Input
-                          placeholder="Etiqueta"
-                          value={newInfoLabel}
-                          onChange={(e) => setNewInfoLabel(e.target.value)}
-                          className="text-xs h-6"
-                        />
-                        <Input
-                          placeholder="Valor"
-                          value={newInfoValue}
-                          onChange={(e) => setNewInfoValue(e.target.value)}
-                          className="text-xs h-6"
-                        />
-                        <div className="flex gap-1">
+                    {/* Shot-level additional info */}
+                    <div className="pt-2 border-t space-y-1">
+                      <div className="text-xs font-medium text-gray-600 flex items-center justify-between">
+                        <span>Información del plano:</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startEditingInfo(shot.id)}
+                          className="h-5 text-xs px-2"
+                        >
+                          <Plus className="h-2 w-2 mr-1" />
+                          Añadir
+                        </Button>
+                      </div>
+
+                      {/* Existing shot info items */}
+                      {shot.additionalInfo.map((info) => (
+                        <div key={info.id} className="flex items-center gap-1 text-xs">
+                          <div className="flex-1 bg-gray-50 p-1.5 rounded border">
+                            <span className="font-medium text-gray-700">{info.label}:</span> 
+                            <span className="text-gray-600">{info.value}</span>
+                          </div>
                           <Button
+                            variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              if (editingInfo.infoId) {
-                                handleUpdateInfo(shot.id, editingInfo.infoId);
-                              } else {
-                                handleAddInfo(shot.id);
-                              }
-                            }}
-                            disabled={!newInfoLabel.trim() || !newInfoValue.trim()}
-                            className="h-5 text-xs px-2"
+                            onClick={() => startEditingInfo(shot.id, info)}
+                            className="h-5 w-5 p-0 text-gray-400 hover:text-blue-600"
                           >
-                            {editingInfo.infoId ? 'Actualizar' : 'Añadir'}
+                            <Edit className="h-2 w-2" />
                           </Button>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
-                            onClick={cancelEditing}
-                            className="h-5 text-xs px-2"
+                            onClick={() => onRemoveShotInfo?.(shot.id, info.id)}
+                            className="h-5 w-5 p-0 text-gray-400 hover:text-red-600"
                           >
-                            Cancelar
+                            <Trash2 className="h-2 w-2" />
                           </Button>
                         </div>
-                      </div>
-                    )}
+                      ))}
+
+                      {/* Add/Edit shot info form */}
+                      {editingInfo.shotId === shot.id && (
+                        <div className="space-y-1 p-2 bg-blue-50 rounded border">
+                          <Input
+                            placeholder="Etiqueta (ej: Ángulo, Duración...)"
+                            value={newInfoLabel}
+                            onChange={(e) => setNewInfoLabel(e.target.value)}
+                            className="text-xs h-7"
+                          />
+                          <Input
+                            placeholder="Valor (ej: Primer plano, 5 segundos...)"
+                            value={newInfoValue}
+                            onChange={(e) => setNewInfoValue(e.target.value)}
+                            className="text-xs h-7"
+                          />
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (editingInfo.infoId) {
+                                  handleUpdateInfo(shot.id, editingInfo.infoId);
+                                } else {
+                                  handleAddInfo(shot.id);
+                                }
+                              }}
+                              disabled={!newInfoLabel.trim() || !newInfoValue.trim()}
+                              className="h-6 text-xs px-2"
+                            >
+                              {editingInfo.infoId ? 'Actualizar' : 'Añadir'}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={cancelEditing}
+                              className="h-6 text-xs px-2"
+                            >
+                              Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
-              </div>
-            </CardContent>
-          )}
-        </Card>
-      ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

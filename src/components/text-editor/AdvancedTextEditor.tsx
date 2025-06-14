@@ -253,26 +253,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                   <p className="text-sm text-gray-600">{description}</p>
                 )}
               </div>
-              {!collapsed && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShotsVisible(!shotsVisible)}
-                  className="text-xs"
-                >
-                  {shotsVisible ? (
-                    <>
-                      <EyeOff className="h-4 w-4 mr-1" />
-                      Ocultar tomas
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-4 w-4 mr-1" />
-                      Mostrar tomas
-                    </>
-                  )}
-                </Button>
-              )}
             </div>
           </div>
         </CardHeader>
@@ -337,22 +317,17 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
               )}
             </div>
 
-            {/* Shot Display - only show if visible */}
-            {shotsVisible && (
-              <ShotDisplay 
-                shots={shots} 
-                onToggleStrikethrough={toggleTextStrikethrough}
-                onAddShotInfo={addShotInfo}
-                onUpdateShotInfo={updateShotInfo}
-                onRemoveShotInfo={removeShotInfo}
-                onAddSegmentInfo={addSegmentInfo}
-                onUpdateSegmentInfo={updateSegmentInfo}
-                onRemoveSegmentInfo={removeSegmentInfo}
-              />
-            )}
-
-            {/* Shot Summary */}
-            <ShotSummary shots={shots} />
+            {/* Shot Display */}
+            <ShotDisplay 
+              shots={shots} 
+              onToggleStrikethrough={toggleTextStrikethrough}
+              onAddShotInfo={addShotInfo}
+              onUpdateShotInfo={updateShotInfo}
+              onRemoveShotInfo={removeShotInfo}
+              onAddSegmentInfo={addSegmentInfo}
+              onUpdateSegmentInfo={updateSegmentInfo}
+              onRemoveSegmentInfo={removeSegmentInfo}
+            />
           </CardContent>
         )}
       </Card>
@@ -376,6 +351,9 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
           onRemoveItem={removeCreativeItem}
         />
       )}
+
+      {/* Shot Summary - moved to the bottom */}
+      <ShotSummary shots={shots} />
     </div>
   );
 };

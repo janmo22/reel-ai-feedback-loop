@@ -72,49 +72,70 @@ export const useAdvancedEditor = (initialContent = '') => {
     return overlapping;
   }, [shots]);
 
-  // Helper function to expand shot boundaries when text is added within
-  const expandShotBoundaries = useCallback((newContent: string) => {
+  // Improved shot boundary expansion that tracks changes properly
+  const updateShotBoundaries = useCallback((newContent: string, oldContent: string) => {
+    if (newContent === oldContent) return;
+
     setShots(prevShots => {
       return prevShots.map(shot => ({
         ...shot,
         textSegments: shot.textSegments.map(segment => {
-          // Find the actual boundaries of the shot in the new content
-          let expandedStart = segment.startIndex;
-          let expandedEnd = segment.endIndex;
+          // Calculate the change in content length
+          const lengthDiff = newContent.length - oldContent.length;
           
-          // Expand backwards to include any new text at the beginning
-          while (expandedStart > 0 && /\S/.test(newContent[expandedStart - 1])) {
-            // Check if this character belongs to another shot
-            const hasOtherShot = prevShots.some(otherShot => 
-              otherShot.id !== shot.id && 
-              otherShot.textSegments.some(otherSegment => 
-                expandedStart - 1 >= otherSegment.startIndex && 
-                expandedStart - 1 <= otherSegment.endIndex
-              )
-            );
-            if (hasOtherShot) break;
-            expandedStart--;
+          // If text was added/removed before this segment, adjust indices
+          let adjustedStart = segment.startIndex;
+          let adjustedEnd = segment.endIndex;
+          
+          // Find where the change occurred
+          let changeStart = 0;
+          while (changeStart < Math.min(oldContent.length, newContent.length) && 
+                 oldContent[changeStart] === newContent[changeStart]) {
+            changeStart++;
           }
           
-          // Expand forwards to include any new text at the end
-          while (expandedEnd < newContent.length - 1 && /\S/.test(newContent[expandedEnd + 1])) {
-            // Check if this character belongs to another shot
-            const hasOtherShot = prevShots.some(otherShot => 
-              otherShot.id !== shot.id && 
-              otherShot.textSegments.some(otherSegment => 
-                expandedEnd + 1 >= otherSegment.startIndex && 
-                expandedEnd + 1 <= otherSegment.endIndex
-              )
-            );
-            if (hasOtherShot) break;
-            expandedEnd++;
+          // If change occurred before this segment, shift the entire segment
+          if (changeStart <= segment.startIndex) {
+            adjustedStart = Math.max(0, segment.startIndex + lengthDiff);
+            adjustedEnd = Math.max(adjustedStart, segment.endIndex + lengthDiff);
           }
+          // If change occurred within the segment, expand to include new content
+          else if (changeStart >= segment.startIndex && changeStart <= segment.endIndex + 1) {
+            // Keep start the same, but adjust end to include new content
+            adjustedEnd = Math.min(newContent.length - 1, segment.endIndex + lengthDiff);
+            
+            // Expand to include any new non-whitespace content within the segment boundaries
+            let expandStart = adjustedStart;
+            let expandEnd = adjustedEnd;
+            
+            // Expand backwards if new content was added at the beginning
+            while (expandStart > 0 && 
+                   expandStart > changeStart - Math.abs(lengthDiff) && 
+                   /\S/.test(newContent[expandStart - 1])) {
+              expandStart--;
+            }
+            
+            // Expand forwards if new content was added
+            while (expandEnd < newContent.length - 1 && 
+                   /\S/.test(newContent[expandEnd + 1])) {
+              expandEnd++;
+            }
+            
+            adjustedStart = expandStart;
+            adjustedEnd = expandEnd;
+          }
+          
+          // Ensure indices are within bounds
+          adjustedStart = Math.max(0, Math.min(adjustedStart, newContent.length - 1));
+          adjustedEnd = Math.max(adjustedStart, Math.min(adjustedEnd, newContent.length - 1));
+          
+          const segmentText = newContent.slice(adjustedStart, adjustedEnd + 1);
           
           return {
             ...segment,
-            startIndex: expandedStart,
-            endIndex: expandedEnd,
-            text: newContent.slice(expandedStart, expandedEnd + 1)
+            startIndex: adjustedStart,
+            endIndex: adjustedEnd,
+            text: segmentText
           };
         }).filter(segment => 
           segment.startIndex >= 0 && 
@@ -216,24 +237,8 @@ export const useAdvancedEditor = (initialContent = '') => {
   }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments]);
 
   const updateShotSegments = useCallback((newContent: string) => {
-    setShots(prevShots => {
-      return prevShots.map(shot => ({
-        ...shot,
-        textSegments: shot.textSegments.map(segment => {
-          // Update segment text based on current indices
-          const currentText = newContent.slice(segment.startIndex, segment.endIndex + 1);
-          return {
-            ...segment,
-            text: currentText
-          };
-        }).filter(segment => 
-          // Remove segments that are out of bounds
-          segment.startIndex >= 0 && 
-          segment.endIndex < newContent.length &&
-          segment.startIndex <= segment.endIndex
-        )
-      })).filter(shot => shot.textSegments.length > 0); // Remove shots with no segments
-    });
+    // This is now handled by updateShotBoundaries
+    return;
   }, []);
 
   const toggleTextStrikethrough = useCallback((segmentId: string) => {
@@ -342,9 +347,10 @@ export const useAdvancedEditor = (initialContent = '') => {
   }, [content, isOnlyWhitespace]);
 
   const updateContent = useCallback((newContent: string) => {
+    const oldContent = content;
     setContent(newContent);
-    expandShotBoundaries(newContent);
-  }, [expandShotBoundaries]);
+    updateShotBoundaries(newContent, oldContent);
+  }, [content, updateShotBoundaries]);
 
   const addCreativeItem = useCallback((type: CreativeItem['type'], content: string, url?: string, file?: File) => {
     const newItem: CreativeItem = {
