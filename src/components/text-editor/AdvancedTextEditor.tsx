@@ -161,7 +161,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
         {!collapsed && (
           <CardContent className="space-y-4">
             <div className="relative">
-              {/* Hidden textarea for editing */}
+              {/* Editable textarea */}
               <Textarea
                 ref={textareaRef}
                 placeholder={placeholder}
@@ -169,16 +169,18 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                 onChange={(e) => updateContent(e.target.value)}
                 onMouseUp={handleTextSelectionEvent}
                 onKeyUp={handleTextSelectionEvent}
-                className="min-h-[150px] text-base leading-relaxed resize-none opacity-0 absolute top-0 left-0 w-full h-full z-10"
+                className="min-h-[150px] text-base leading-relaxed resize-none bg-transparent border rounded-md"
                 style={{
                   direction: 'ltr',
-                  textAlign: 'left'
+                  textAlign: 'left',
+                  color: 'transparent',
+                  caretColor: 'black'
                 }}
               />
 
               {/* Visual overlay with highlighting */}
               <div 
-                className="min-h-[150px] text-base leading-relaxed p-3 border rounded-md bg-white relative z-0"
+                className="min-h-[150px] text-base leading-relaxed p-3 border rounded-md bg-white absolute top-0 left-0 w-full h-full pointer-events-none"
                 style={{
                   direction: 'ltr',
                   textAlign: 'left',
@@ -190,16 +192,11 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                   renderHighlightedText().map((segment) => (
                     <span
                       key={segment.key}
-                      className={`${segment.type === 'shot' ? 'px-1 rounded cursor-pointer' : ''}`}
+                      className={`${segment.type === 'shot' ? 'px-1 rounded' : ''}`}
                       style={{
                         backgroundColor: segment.type === 'shot' ? `${segment.color}30` : 'transparent',
                         borderBottom: segment.type === 'shot' ? `2px solid ${segment.color}` : 'none',
                         textDecoration: segment.type === 'shot' && segment.isStrikethrough ? 'line-through' : 'none'
-                      }}
-                      onClick={() => {
-                        if (segment.type === 'shot' && segment.segmentId) {
-                          toggleTextStrikethrough(segment.segmentId);
-                        }
                       }}
                     >
                       {segment.text}
