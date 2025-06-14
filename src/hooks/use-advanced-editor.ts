@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef } from 'react';
 
 export interface ShotInfo {
@@ -51,8 +50,100 @@ export const useAdvancedEditor = (initialContent = '') => {
   const [creativeItems, setCreativeItems] = useState<CreativeItem[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Helper function to check if text contains only whitespace
+  const isOnlyWhitespace = useCallback((text: string) => {
+    return /^\s*$/.test(text);
+  }, []);
+
+  // Helper function to find overlapping segments
+  const findOverlappingSegments = useCallback((startIndex: number, endIndex: number) => {
+    const overlapping: { shot: Shot; segment: TextSegment }[] = [];
+    
+    shots.forEach(shot => {
+      shot.textSegments.forEach(segment => {
+        if (!(endIndex <= segment.startIndex || startIndex >= segment.endIndex + 1)) {
+          overlapping.push({ shot, segment });
+        }
+      });
+    });
+    
+    return overlapping;
+  }, [shots]);
+
+  // Helper function to expand shot boundaries when text is added within
+  const expandShotBoundaries = useCallback((newContent: string) => {
+    setShots(prevShots => {
+      return prevShots.map(shot => ({
+        ...shot,
+        textSegments: shot.textSegments.map(segment => {
+          // Find the actual boundaries of the shot in the new content
+          let expandedStart = segment.startIndex;
+          let expandedEnd = segment.endIndex;
+          
+          // Expand backwards to include any new text at the beginning
+          while (expandedStart > 0 && /\S/.test(newContent[expandedStart - 1])) {
+            // Check if this character belongs to another shot
+            const hasOtherShot = prevShots.some(otherShot => 
+              otherShot.id !== shot.id && 
+              otherShot.textSegments.some(otherSegment => 
+                expandedStart - 1 >= otherSegment.startIndex && 
+                expandedStart - 1 <= otherSegment.endIndex
+              )
+            );
+            if (hasOtherShot) break;
+            expandedStart--;
+          }
+          
+          // Expand forwards to include any new text at the end
+          while (expandedEnd < newContent.length - 1 && /\S/.test(newContent[expandedEnd + 1])) {
+            // Check if this character belongs to another shot
+            const hasOtherShot = prevShots.some(otherShot => 
+              otherShot.id !== shot.id && 
+              otherShot.textSegments.some(otherSegment => 
+                expandedEnd + 1 >= otherSegment.startIndex && 
+                expandedEnd + 1 <= otherSegment.endIndex
+              )
+            );
+            if (hasOtherShot) break;
+            expandedEnd++;
+          }
+          
+          return {
+            ...segment,
+            startIndex: expandedStart,
+            endIndex: expandedEnd,
+            text: newContent.slice(expandedStart, expandedEnd + 1)
+          };
+        }).filter(segment => 
+          segment.startIndex >= 0 && 
+          segment.endIndex < newContent.length &&
+          segment.startIndex <= segment.endIndex &&
+          !isOnlyWhitespace(segment.text)
+        )
+      })).filter(shot => shot.textSegments.length > 0);
+    });
+  }, [isOnlyWhitespace]);
+
   const createShot = useCallback((name: string, color: string) => {
-    if (!selectedText || !selectionRange) return null;
+    if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) return null;
+
+    const start = selectionRange.start;
+    const end = selectionRange.end - 1;
+
+    // Remove overlapping segments from other shots
+    const overlapping = findOverlappingSegments(start, end);
+    if (overlapping.length > 0) {
+      setShots(prevShots => 
+        prevShots.map(shot => ({
+          ...shot,
+          textSegments: shot.textSegments.filter(segment => 
+            !overlapping.some(overlap => 
+              overlap.shot.id === shot.id && overlap.segment.id === segment.id
+            )
+          )
+        })).filter(shot => shot.textSegments.length > 0)
+      );
+    }
 
     const newShot: Shot = {
       id: `shot-${Date.now()}`,
@@ -66,8 +157,8 @@ export const useAdvancedEditor = (initialContent = '') => {
       id: `segment-${Date.now()}`,
       text: selectedText,
       shotId: newShot.id,
-      startIndex: selectionRange.start,
-      endIndex: selectionRange.end - 1,
+      startIndex: start,
+      endIndex: end,
       isStrikethrough: false
     };
 
@@ -79,17 +170,35 @@ export const useAdvancedEditor = (initialContent = '') => {
     setSelectionRange(null);
     
     return newShot;
-  }, [selectedText, selectionRange]);
+  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments]);
 
   const assignToExistingShot = useCallback((shotId: string) => {
-    if (!selectedText || !selectionRange) return;
+    if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) return;
+
+    const start = selectionRange.start;
+    const end = selectionRange.end - 1;
+
+    // Remove overlapping segments from other shots
+    const overlapping = findOverlappingSegments(start, end);
+    if (overlapping.length > 0) {
+      setShots(prevShots => 
+        prevShots.map(shot => ({
+          ...shot,
+          textSegments: shot.textSegments.filter(segment => 
+            !overlapping.some(overlap => 
+              overlap.shot.id === shot.id && overlap.segment.id === segment.id
+            )
+          )
+        })).filter(shot => shot.textSegments.length > 0)
+      );
+    }
 
     const newSegment: TextSegment = {
       id: `segment-${Date.now()}`,
       text: selectedText,
       shotId,
-      startIndex: selectionRange.start,
-      endIndex: selectionRange.end - 1,
+      startIndex: start,
+      endIndex: end,
       isStrikethrough: false
     };
 
@@ -102,7 +211,7 @@ export const useAdvancedEditor = (initialContent = '') => {
     // Clear selection
     setSelectedText('');
     setSelectionRange(null);
-  }, [selectedText, selectionRange]);
+  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments]);
 
   const updateShotSegments = useCallback((newContent: string) => {
     setShots(prevShots => {
@@ -183,17 +292,24 @@ export const useAdvancedEditor = (initialContent = '') => {
     
     if (start !== end) {
       const selected = content.substring(start, end);
-      setSelectedText(selected);
-      setSelectionRange({ start, end });
+      // Only allow selection of non-whitespace text
+      if (!isOnlyWhitespace(selected)) {
+        setSelectedText(selected);
+        setSelectionRange({ start, end });
+      } else {
+        setSelectedText('');
+        setSelectionRange(null);
+      }
     } else {
       setSelectedText('');
       setSelectionRange(null);
     }
-  }, [content]);
+  }, [content, isOnlyWhitespace]);
 
   const updateContent = useCallback((newContent: string) => {
     setContent(newContent);
-  }, []);
+    expandShotBoundaries(newContent);
+  }, [expandShotBoundaries]);
 
   const addCreativeItem = useCallback((type: CreativeItem['type'], content: string, url?: string) => {
     const newItem: CreativeItem = {
