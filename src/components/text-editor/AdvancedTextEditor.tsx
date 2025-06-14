@@ -79,7 +79,11 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   // Render text with highlighting for shots
   const renderHighlightedText = () => {
     if (shots.length === 0) {
-      return editorContent;
+      return [{
+        text: editorContent,
+        type: 'normal' as const,
+        key: 'normal-all'
+      }];
     }
 
     let result = [];
@@ -93,7 +97,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       if (segment.startIndex > lastIndex) {
         result.push({
           text: editorContent.substring(lastIndex, segment.startIndex),
-          type: 'normal',
+          type: 'normal' as const,
           key: `normal-${index}`
         });
       }
@@ -101,10 +105,11 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       // Add highlighted segment
       result.push({
         text: segment.text,
-        type: 'shot',
+        type: 'shot' as const,
         color: segment.shotColor,
         shotId: segment.shotId,
         segmentId: segment.id,
+        isStrikethrough: segment.isStrikethrough,
         key: `shot-${segment.id}`
       });
 
@@ -115,7 +120,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     if (lastIndex < editorContent.length) {
       result.push({
         text: editorContent.substring(lastIndex),
-        type: 'normal',
+        type: 'normal' as const,
         key: 'normal-end'
       });
     }
@@ -185,14 +190,14 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                   renderHighlightedText().map((segment) => (
                     <span
                       key={segment.key}
-                      className={`${segment.type === 'shot' ? 'px-1 rounded' : ''}`}
+                      className={`${segment.type === 'shot' ? 'px-1 rounded cursor-pointer' : ''}`}
                       style={{
                         backgroundColor: segment.type === 'shot' ? `${segment.color}30` : 'transparent',
                         borderBottom: segment.type === 'shot' ? `2px solid ${segment.color}` : 'none',
                         textDecoration: segment.type === 'shot' && segment.isStrikethrough ? 'line-through' : 'none'
                       }}
                       onClick={() => {
-                        if (segment.type === 'shot') {
+                        if (segment.type === 'shot' && segment.segmentId) {
                           toggleTextStrikethrough(segment.segmentId);
                         }
                       }}
