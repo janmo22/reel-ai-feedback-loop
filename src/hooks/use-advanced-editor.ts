@@ -6,6 +6,16 @@ export interface ShotInfo {
   value: string;
 }
 
+export interface TextSegment {
+  id: string;
+  text: string;
+  shotId: string;
+  startIndex: number;
+  endIndex: number;
+  isStrikethrough?: boolean;
+  additionalInfo?: string;
+}
+
 export interface Shot {
   id: string;
   name: string;
@@ -14,20 +24,12 @@ export interface Shot {
   additionalInfo: ShotInfo[];
 }
 
-export interface TextSegment {
-  id: string;
-  text: string;
-  shotId: string;
-  startIndex: number;
-  endIndex: number;
-  isStrikethrough?: boolean;
-}
-
 export interface CreativeItem {
   id: string;
   type: 'note' | 'image' | 'video';
   content: string;
   url?: string;
+  file?: File;
   timestamp: number;
 }
 
@@ -283,6 +285,39 @@ export const useAdvancedEditor = (initialContent = '') => {
     ));
   }, []);
 
+  const addSegmentInfo = useCallback((segmentId: string, info: string) => {
+    setShots(prev => prev.map(shot => ({
+      ...shot,
+      textSegments: shot.textSegments.map(segment =>
+        segment.id === segmentId
+          ? { ...segment, additionalInfo: info }
+          : segment
+      )
+    })));
+  }, []);
+
+  const updateSegmentInfo = useCallback((segmentId: string, info: string) => {
+    setShots(prev => prev.map(shot => ({
+      ...shot,
+      textSegments: shot.textSegments.map(segment =>
+        segment.id === segmentId
+          ? { ...segment, additionalInfo: info }
+          : segment
+      )
+    })));
+  }, []);
+
+  const removeSegmentInfo = useCallback((segmentId: string) => {
+    setShots(prev => prev.map(shot => ({
+      ...shot,
+      textSegments: shot.textSegments.map(segment =>
+        segment.id === segmentId
+          ? { ...segment, additionalInfo: undefined }
+          : segment
+      )
+    })));
+  }, []);
+
   const handleTextSelection = useCallback(() => {
     if (!textareaRef.current) return;
     
@@ -311,12 +346,13 @@ export const useAdvancedEditor = (initialContent = '') => {
     expandShotBoundaries(newContent);
   }, [expandShotBoundaries]);
 
-  const addCreativeItem = useCallback((type: CreativeItem['type'], content: string, url?: string) => {
+  const addCreativeItem = useCallback((type: CreativeItem['type'], content: string, url?: string, file?: File) => {
     const newItem: CreativeItem = {
       id: `creative-${Date.now()}`,
       type,
       content,
       url,
+      file,
       timestamp: Date.now()
     };
     setCreativeItems(prev => [...prev, newItem]);
@@ -356,6 +392,9 @@ export const useAdvancedEditor = (initialContent = '') => {
     updateShotSegments,
     addShotInfo,
     updateShotInfo,
-    removeShotInfo
+    removeShotInfo,
+    addSegmentInfo,
+    updateSegmentInfo,
+    removeSegmentInfo
   };
 };

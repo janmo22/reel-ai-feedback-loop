@@ -1,13 +1,14 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eye, EyeOff } from 'lucide-react';
 import { useAdvancedEditor } from '@/hooks/use-advanced-editor';
 import { ShotSelector } from './ShotSelector';
 import { ShotDisplay } from './ShotDisplay';
 import { CreativeZone } from './CreativeZone';
+import { ShotSummary } from './ShotSummary';
+import { InfoTooltip } from './InfoTooltip';
 
 interface AdvancedTextEditorProps {
   title: string;
@@ -28,6 +29,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [showShotSelector, setShowShotSelector] = useState(false);
+  const [shotsVisible, setShotsVisible] = useState(true);
+  const [hoveredSegment, setHoveredSegment] = useState<{ id: string; x: number; y: number } | null>(null);
   
   const {
     content: editorContent,
@@ -47,7 +50,10 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     updateShotSegments,
     addShotInfo,
     updateShotInfo,
-    removeShotInfo
+    removeShotInfo,
+    addSegmentInfo,
+    updateSegmentInfo,
+    removeSegmentInfo
   } = useAdvancedEditor(content);
 
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -98,6 +104,19 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     }
   };
 
+  const handleMouseEnter = (segmentId: string, event: React.MouseEvent) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setHoveredSegment({
+      id: segmentId,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 10
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredSegment(null);
+  };
+
   const renderHighlightedContent = () => {
     if (!editorContent) return '';
     
@@ -112,6 +131,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       shotColor: string;
       segmentId: string;
       isStrikethrough: boolean;
+      shotName: string;
+      additionalInfo: string;
     }> = [];
     
     shots.forEach(shot => {
@@ -122,7 +143,9 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
           shotId: shot.id,
           shotColor: shot.color,
           segmentId: segment.id,
-          isStrikethrough: segment.isStrikethrough || false
+          isStrikethrough: segment.isStrikethrough || false,
+          shotName: shot.name,
+          additionalInfo: segment.additionalInfo || ''
         });
       });
     });
@@ -130,16 +153,31 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     // Sort by start index
     allSegments.sort((a, b) => a.startIndex - b.startIndex);
     
-    // Build highlighted content
+    // Build highlighted content with precise character highlighting
     allSegments.forEach(segment => {
       // Add text before this segment
       if (lastIndex < segment.startIndex) {
         renderedContent += editorContent.slice(lastIndex, segment.startIndex);
       }
       
-      // Add highlighted segment
+      // Add highlighted segment with precise character-level highlighting
       const segmentText = editorContent.slice(segment.startIndex, segment.endIndex + 1);
-      renderedContent += `<span class="shot-highlight" style="background: linear-gradient(to bottom, ${segment.shotColor}25 0%, ${segment.shotColor}35 100%); border-bottom: 2px solid ${segment.shotColor}; border-radius: 3px; padding: 1px 2px; margin: 0 1px; ${segment.isStrikethrough ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${segmentText}</span>`;
+      renderedContent += `<span 
+        class="shot-highlight" 
+        data-segment-id="${segment.segmentId}"
+        style="
+          background: linear-gradient(to bottom, ${segment.shotColor}20 0%, ${segment.shotColor}30 100%); 
+          border-bottom: 2px solid ${segment.shotColor}; 
+          border-radius: 2px; 
+          padding: 0px 1px; 
+          margin: 0; 
+          display: inline;
+          line-height: inherit;
+          ${segment.isStrikethrough ? 'text-decoration: line-through; opacity: 0.6;' : ''}
+        "
+        onmouseenter="this.dispatchEvent(new CustomEvent('segment-hover', { detail: { segmentId: '${segment.segmentId}', shotName: '${segment.shotName}', additionalInfo: '${segment.additionalInfo}' } }))"
+        onmouseleave="this.dispatchEvent(new CustomEvent('segment-leave'))"
+      >${segmentText}</span>`;
       
       lastIndex = segment.endIndex + 1;
     });
@@ -152,8 +190,37 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     return renderedContent;
   };
 
+  // Add event listeners for segment hover
+  useEffect(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+
+    const handleSegmentHover = (e: CustomEvent) => {
+      const rect = overlay.getBoundingClientRect();
+      setHoveredSegment({
+        id: e.detail.segmentId,
+        x: rect.left + rect.width / 2,
+        y: rect.top,
+        shotName: e.detail.shotName,
+        additionalInfo: e.detail.additionalInfo
+      });
+    };
+
+    const handleSegmentLeave = () => {
+      setHoveredSegment(null);
+    };
+
+    overlay.addEventListener('segment-hover', handleSegmentHover);
+    overlay.addEventListener('segment-leave', handleSegmentLeave);
+
+    return () => {
+      overlay.removeEventListener('segment-hover', handleSegmentHover);
+      overlay.removeEventListener('segment-leave', handleSegmentLeave);
+    };
+  }, []);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Card className="border-0 shadow-sm bg-white">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -178,6 +245,26 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                   <p className="text-sm text-gray-600">{description}</p>
                 )}
               </div>
+              {!collapsed && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShotsVisible(!shotsVisible)}
+                  className="text-xs"
+                >
+                  {shotsVisible ? (
+                    <>
+                      <EyeOff className="h-4 w-4 mr-1" />
+                      Ocultar tomas
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4 mr-1" />
+                      Mostrar tomas
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -242,17 +329,36 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
               )}
             </div>
 
-            {/* Shot Display */}
-            <ShotDisplay 
-              shots={shots} 
-              onToggleStrikethrough={toggleTextStrikethrough}
-              onAddShotInfo={addShotInfo}
-              onUpdateShotInfo={updateShotInfo}
-              onRemoveShotInfo={removeShotInfo}
-            />
+            {/* Shot Display - only show if visible */}
+            {shotsVisible && (
+              <ShotDisplay 
+                shots={shots} 
+                onToggleStrikethrough={toggleTextStrikethrough}
+                onAddShotInfo={addShotInfo}
+                onUpdateShotInfo={updateShotInfo}
+                onRemoveShotInfo={removeShotInfo}
+                onAddSegmentInfo={addSegmentInfo}
+                onUpdateSegmentInfo={updateSegmentInfo}
+                onRemoveSegmentInfo={removeSegmentInfo}
+              />
+            )}
+
+            {/* Shot Summary */}
+            <ShotSummary shots={shots} />
           </CardContent>
         )}
       </Card>
+
+      {/* Tooltip for segment info */}
+      {hoveredSegment && (
+        <InfoTooltip
+          segmentId={hoveredSegment.id}
+          x={hoveredSegment.x}
+          y={hoveredSegment.y}
+          shotName={hoveredSegment.shotName}
+          additionalInfo={hoveredSegment.additionalInfo}
+        />
+      )}
 
       {/* Creative Zone - only show if enabled */}
       {showCreativeZone && (
