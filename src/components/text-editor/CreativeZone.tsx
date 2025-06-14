@@ -12,12 +12,16 @@ interface CreativeZoneProps {
   items: CreativeItem[];
   onAddItem: (type: CreativeItem['type'], content: string, url?: string) => void;
   onRemoveItem: (id: string) => void;
+  title?: string;
+  description?: string;
 }
 
 export const CreativeZone: React.FC<CreativeZoneProps> = ({
   items,
   onAddItem,
-  onRemoveItem
+  onRemoveItem,
+  title = "Zona Creativa",
+  description = "Guarda ideas, referencias e inspiración para tu video"
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [activeType, setActiveType] = useState<CreativeItem['type']>('note');
@@ -60,13 +64,13 @@ export const CreativeZone: React.FC<CreativeZoneProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Lightbulb className="h-5 w-5 text-yellow-500" />
-          Zona Creativa
+          {title}
           <Badge variant="secondary" className="text-xs">
             {items.length} {items.length === 1 ? 'elemento' : 'elementos'}
           </Badge>
         </CardTitle>
         <p className="text-sm text-gray-600">
-          Guarda ideas, referencias e inspiración para tu video
+          {description}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">

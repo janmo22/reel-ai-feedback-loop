@@ -2,13 +2,16 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Check, X } from 'lucide-react';
 import { Shot } from '@/hooks/use-advanced-editor';
 
 interface ShotDisplayProps {
   shots: Shot[];
+  onToggleStrikethrough?: (segmentId: string) => void;
 }
 
-export const ShotDisplay: React.FC<ShotDisplayProps> = ({ shots }) => {
+export const ShotDisplay: React.FC<ShotDisplayProps> = ({ shots, onToggleStrikethrough }) => {
   if (shots.length === 0) {
     return (
       <div className="text-sm text-gray-500 text-center py-4">
@@ -41,13 +44,32 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({ shots }) => {
               {shot.textSegments.map((segment) => (
                 <div
                   key={segment.id}
-                  className="text-xs p-2 rounded border-l-2"
+                  className="flex items-center justify-between gap-2 text-xs p-2 rounded border-l-2"
                   style={{ 
                     borderLeftColor: shot.color,
                     backgroundColor: `${shot.color}10`
                   }}
                 >
-                  "{segment.text}"
+                  <div 
+                    className={`flex-1 ${segment.isStrikethrough ? 'line-through opacity-60' : ''}`}
+                  >
+                    "{segment.text}"
+                  </div>
+                  {onToggleStrikethrough && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onToggleStrikethrough(segment.id)}
+                      className={`h-6 w-6 p-0 ${
+                        segment.isStrikethrough 
+                          ? 'text-green-600 hover:text-green-700' 
+                          : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                      title={segment.isStrikethrough ? 'Marcar como no grabado' : 'Marcar como grabado'}
+                    >
+                      {segment.isStrikethrough ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>

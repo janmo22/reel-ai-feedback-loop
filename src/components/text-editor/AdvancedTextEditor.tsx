@@ -15,6 +15,7 @@ interface AdvancedTextEditorProps {
   placeholder: string;
   content: string;
   onContentChange: (content: string) => void;
+  showCreativeZone?: boolean;
 }
 
 export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
@@ -22,7 +23,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   description,
   placeholder,
   content,
-  onContentChange
+  onContentChange,
+  showCreativeZone = true
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [showShotSelector, setShowShotSelector] = useState(false);
@@ -39,7 +41,9 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     assignToExistingShot,
     handleTextSelection,
     addCreativeItem,
-    removeCreativeItem
+    removeCreativeItem,
+    getShotForText,
+    toggleTextStrikethrough
   } = useAdvancedEditor(content);
 
   // Sync with parent component
@@ -70,6 +74,53 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   const handleAssignToShot = (shotId: string) => {
     assignToExistingShot(shotId);
     setShowShotSelector(false);
+  };
+
+  // Render text with highlighting for shots
+  const renderHighlightedText = () => {
+    if (shots.length === 0) {
+      return editorContent;
+    }
+
+    let result = [];
+    let lastIndex = 0;
+    const allSegments = shots.flatMap(shot => 
+      shot.textSegments.map(segment => ({ ...segment, shotColor: shot.color }))
+    ).sort((a, b) => a.startIndex - b.startIndex);
+
+    allSegments.forEach((segment, index) => {
+      // Add text before this segment
+      if (segment.startIndex > lastIndex) {
+        result.push({
+          text: editorContent.substring(lastIndex, segment.startIndex),
+          type: 'normal',
+          key: `normal-${index}`
+        });
+      }
+
+      // Add highlighted segment
+      result.push({
+        text: segment.text,
+        type: 'shot',
+        color: segment.shotColor,
+        shotId: segment.shotId,
+        segmentId: segment.id,
+        key: `shot-${segment.id}`
+      });
+
+      lastIndex = segment.endIndex;
+    });
+
+    // Add remaining text
+    if (lastIndex < editorContent.length) {
+      result.push({
+        text: editorContent.substring(lastIndex),
+        type: 'normal',
+        key: 'normal-end'
+      });
+    }
+
+    return result;
   };
 
   return (
@@ -105,6 +156,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
         {!collapsed && (
           <CardContent className="space-y-4">
             <div className="relative">
+              {/* Hidden textarea for editing */}
               <Textarea
                 ref={textareaRef}
                 placeholder={placeholder}
@@ -112,16 +164,50 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                 onChange={(e) => updateContent(e.target.value)}
                 onMouseUp={handleTextSelectionEvent}
                 onKeyUp={handleTextSelectionEvent}
-                className="min-h-[150px] text-base leading-relaxed resize-none"
+                className="min-h-[150px] text-base leading-relaxed resize-none opacity-0 absolute top-0 left-0 w-full h-full z-10"
                 style={{
                   direction: 'ltr',
                   textAlign: 'left'
                 }}
               />
 
+              {/* Visual overlay with highlighting */}
+              <div 
+                className="min-h-[150px] text-base leading-relaxed p-3 border rounded-md bg-white relative z-0"
+                style={{
+                  direction: 'ltr',
+                  textAlign: 'left',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word'
+                }}
+              >
+                {editorContent ? (
+                  renderHighlightedText().map((segment) => (
+                    <span
+                      key={segment.key}
+                      className={`${segment.type === 'shot' ? 'px-1 rounded' : ''}`}
+                      style={{
+                        backgroundColor: segment.type === 'shot' ? `${segment.color}30` : 'transparent',
+                        borderBottom: segment.type === 'shot' ? `2px solid ${segment.color}` : 'none',
+                        textDecoration: segment.type === 'shot' && segment.isStrikethrough ? 'line-through' : 'none'
+                      }}
+                      onClick={() => {
+                        if (segment.type === 'shot') {
+                          toggleTextStrikethrough(segment.segmentId);
+                        }
+                      }}
+                    >
+                      {segment.text}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-gray-400">{placeholder}</span>
+                )}
+              </div>
+
               {/* Shot Selector */}
               {showShotSelector && selectedText && (
-                <div className="absolute top-full mt-2 left-0 z-10">
+                <div className="absolute top-full mt-2 left-0 z-20">
                   <ShotSelector
                     selectedText={selectedText}
                     existingShots={shots}
@@ -134,17 +220,19 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
             </div>
 
             {/* Shot Display */}
-            <ShotDisplay shots={shots} />
+            <ShotDisplay shots={shots} onToggleStrikethrough={toggleTextStrikethrough} />
           </CardContent>
         )}
       </Card>
 
-      {/* Creative Zone */}
-      <CreativeZone
-        items={creativeItems}
-        onAddItem={addCreativeItem}
-        onRemoveItem={removeCreativeItem}
-      />
+      {/* Creative Zone - only show if enabled */}
+      {showCreativeZone && (
+        <CreativeZone
+          items={creativeItems}
+          onAddItem={addCreativeItem}
+          onRemoveItem={removeCreativeItem}
+        />
+      )}
     </div>
   );
 };

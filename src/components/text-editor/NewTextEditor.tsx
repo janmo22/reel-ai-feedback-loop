@@ -2,6 +2,8 @@
 import React from 'react';
 import { useSimpleEditor } from '@/hooks/use-simple-editor';
 import { AdvancedTextEditor } from './AdvancedTextEditor';
+import { CreativeZone } from './CreativeZone';
+import { useAdvancedEditor } from '@/hooks/use-advanced-editor';
 
 interface NewTextEditorProps {
   onContentChange?: (content: string) => void;
@@ -12,6 +14,13 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
     sections,
     getAllContent
   } = useSimpleEditor();
+
+  // Global creative zone for the entire video
+  const {
+    creativeItems,
+    addCreativeItem,
+    removeCreativeItem
+  } = useAdvancedEditor();
 
   React.useEffect(() => {
     onContentChange?.(getAllContent());
@@ -37,8 +46,20 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
             // Update the section content in the simple editor
             // This is a simplified version - you may want to add this method to useSimpleEditor
           }}
+          showCreativeZone={false} // Disable individual creative zones
         />
       ))}
+
+      {/* Global Creative Zone for the entire video */}
+      <div className="mt-8">
+        <CreativeZone
+          items={creativeItems}
+          onAddItem={addCreativeItem}
+          onRemoveItem={removeCreativeItem}
+          title="Zona Creativa del Video"
+          description="Ideas, referencias e inspiración para todo tu video"
+        />
+      </div>
     </div>
   );
 };

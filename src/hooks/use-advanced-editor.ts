@@ -14,6 +14,7 @@ export interface TextSegment {
   shotId: string;
   startIndex: number;
   endIndex: number;
+  isStrikethrough?: boolean;
 }
 
 export interface CreativeItem {
@@ -58,7 +59,8 @@ export const useAdvancedEditor = (initialContent = '') => {
       text: selectedText,
       shotId: newShot.id,
       startIndex: selectionRange.start,
-      endIndex: selectionRange.end
+      endIndex: selectionRange.end,
+      isStrikethrough: false
     };
 
     newShot.textSegments.push(newSegment);
@@ -79,7 +81,8 @@ export const useAdvancedEditor = (initialContent = '') => {
       text: selectedText,
       shotId,
       startIndex: selectionRange.start,
-      endIndex: selectionRange.end
+      endIndex: selectionRange.end,
+      isStrikethrough: false
     };
 
     setShots(prev => prev.map(shot => 
@@ -92,6 +95,17 @@ export const useAdvancedEditor = (initialContent = '') => {
     setSelectedText('');
     setSelectionRange(null);
   }, [selectedText, selectionRange]);
+
+  const toggleTextStrikethrough = useCallback((segmentId: string) => {
+    setShots(prev => prev.map(shot => ({
+      ...shot,
+      textSegments: shot.textSegments.map(segment =>
+        segment.id === segmentId
+          ? { ...segment, isStrikethrough: !segment.isStrikethrough }
+          : segment
+      )
+    })));
+  }, []);
 
   const handleTextSelection = useCallback(() => {
     if (!textareaRef.current) return;
@@ -156,6 +170,7 @@ export const useAdvancedEditor = (initialContent = '') => {
     handleTextSelection,
     addCreativeItem,
     removeCreativeItem,
-    getShotForText
+    getShotForText,
+    toggleTextStrikethrough
   };
 };
