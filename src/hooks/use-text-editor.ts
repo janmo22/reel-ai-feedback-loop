@@ -121,24 +121,21 @@ export const useTextEditor = () => {
     const shot = shots.find(s => s.id === shotId);
     if (!shot) return;
 
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
+    const section = sections.find(s => s.id === selectedText.sectionId);
+    if (!section) return;
 
-    const range = selection.getRangeAt(0);
-    const content = sections.find(s => s.id === selectedText.sectionId)?.content || '';
+    const content = section.content;
+    const textIndex = content.indexOf(selectedText.text);
     
-    // Calcular posiciones en el texto
-    const textBeforeSelection = content.substring(0, content.indexOf(selectedText.text));
-    const startIndex = textBeforeSelection.length;
-    const endIndex = startIndex + selectedText.text.length;
+    if (textIndex === -1) return;
 
     const newSegment: TextSegment = {
       id: `segment-${Date.now()}`,
       text: selectedText.text,
       shotId,
       color: shot.color,
-      startIndex,
-      endIndex
+      startIndex: textIndex,
+      endIndex: textIndex + selectedText.text.length
     };
 
     setSections(prev => prev.map(section => 
@@ -146,7 +143,7 @@ export const useTextEditor = () => {
         ? { 
             ...section, 
             segments: [...section.segments.filter(seg => 
-              seg.endIndex <= startIndex || seg.startIndex >= endIndex
+              seg.endIndex <= textIndex || seg.startIndex >= textIndex + selectedText.text.length
             ), newSegment] 
           }
         : section
