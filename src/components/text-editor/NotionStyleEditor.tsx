@@ -1,9 +1,9 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { useTextEditor, SECTION_TYPES } from '@/hooks/use-text-editor';
 import ShotSelectionMenu from './ShotSelectionMenu';
 import TextSegmentInfo from './TextSegmentInfo';
-import ScriptSection from './ScriptSection';
+import SimpleTextEditor from './SimpleTextEditor';
 import CreativeZone from './CreativeZone';
 
 interface NotionStyleEditorProps {
@@ -21,14 +21,10 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     selectedText,
     showShotMenu,
     menuPosition,
-    editorRefs,
     handleTextSelection,
     addShot,
     assignShotToText,
     addInspiration,
-    updateSegmentInfo,
-    addSegmentInfo,
-    removeSegment,
     updateSectionContent,
     updateSectionSegments,
     setShowShotMenu,
@@ -38,32 +34,9 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
     toggleShotRecorded
   } = useTextEditor();
 
-  // Create refs for each section
-  const hookRef = useRef<HTMLDivElement>(null);
-  const buildupRef = useRef<HTMLDivElement>(null);
-  const valueRef = useRef<HTMLDivElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
-
-  // Store refs in the hook
-  useEffect(() => {
-    editorRefs.current = {
-      hook: hookRef.current,
-      buildup: buildupRef.current,
-      value: valueRef.current,
-      cta: ctaRef.current
-    };
-  }, [editorRefs]);
-
   useEffect(() => {
     onContentChange?.(getAllContent());
   }, [sections, onContentChange, getAllContent]);
-
-  const sectionRefs = {
-    hook: hookRef,
-    buildup: buildupRef,
-    value: valueRef,
-    cta: ctaRef
-  };
 
   return (
     <div className="space-y-6">
@@ -77,18 +50,19 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
         </div>
 
         {sections.map((section) => (
-          <ScriptSection
+          <SimpleTextEditor
             key={section.id}
-            section={section}
+            title={SECTION_TYPES[section.type].label}
+            description={SECTION_TYPES[section.type].description}
+            placeholder={SECTION_TYPES[section.type].placeholder}
+            content={section.content}
+            segments={section.segments}
+            collapsed={section.collapsed}
+            shots={shots}
             onContentChange={(content) => updateSectionContent(section.id, content)}
+            onSegmentsChange={(segments) => updateSectionSegments(section.id, segments)}
             onTextSelection={() => handleTextSelection(section.id)}
             onToggleCollapse={() => toggleSectionCollapse(section.id)}
-            onAddSegmentInfo={(segmentId, info) => addSegmentInfo(section.id, segmentId, info)}
-            onRemoveSegment={(segmentId) => removeSegment(section.id, segmentId)}
-            onToggleShotRecorded={toggleShotRecorded}
-            onSegmentsUpdate={(segments) => updateSectionSegments(section.id, segments)}
-            shots={shots}
-            editorRef={sectionRefs[section.type as keyof typeof sectionRefs]}
           />
         ))}
       </div>
@@ -110,12 +84,7 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
         <TextSegmentInfo
           segments={getAllSegments()}
           shots={shots}
-          onUpdateInfo={(segmentId, information) => {
-            const segment = getAllSegments().find(s => s.id === segmentId);
-            if (segment && 'sectionId' in segment) {
-              updateSegmentInfo(segment.sectionId, segmentId, information);
-            }
-          }}
+          onUpdateInfo={() => {}} // Simplificado por ahora
           onToggleRecorded={toggleShotRecorded}
         />
       )}

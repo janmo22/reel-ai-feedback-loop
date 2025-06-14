@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback } from 'react';
 
 export interface TextSegment {
@@ -69,104 +70,28 @@ export const useTextEditor = () => {
   ]);
   const [shots, setShots] = useState<Shot[]>([]);
   const [inspirations, setInspirations] = useState<Inspiration[]>([]);
-  const [selectedText, setSelectedText] = useState<{ text: string; range: Range | null; sectionId: string | null }>({ 
+  const [selectedText, setSelectedText] = useState<{ 
+    text: string; 
+    range: Range | null; 
+    sectionId: string | null 
+  }>({ 
     text: '', 
     range: null, 
     sectionId: null 
   });
   const [showShotMenu, setShowShotMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  
-  const editorRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-
-  const addSegmentInfo = useCallback((sectionId: string, segmentId: string, info: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? {
-            ...section,
-            segments: section.segments.map(segment => 
-              segment.id === segmentId ? { ...segment, information: info } : segment
-            )
-          }
-        : section
-    ));
-  }, []);
-
-  const removeSegment = useCallback((sectionId: string, segmentId: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? {
-            ...section,
-            segments: section.segments.filter(segment => segment.id !== segmentId)
-          }
-        : section
-    ));
-  }, []);
-
-  const toggleSectionCollapse = useCallback((sectionId: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? { ...section, collapsed: !section.collapsed }
-        : section
-    ));
-  }, []);
-
-  const updateSectionSegments = useCallback((sectionId: string, segments: TextSegment[]) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? { ...section, segments }
-        : section
-    ));
-  }, []);
-
-  const getTextPositionInEditor = useCallback((editorElement: HTMLElement, node: Node, offset: number): number => {
-    let position = 0;
-    let currentNode = editorElement.firstChild;
-    let found = false;
-
-    const walkNodes = (n: Node | null) => {
-      if (!n || found) return;
-
-      if (n === node) {
-        position += offset;
-        found = true;
-        return;
-      }
-
-      if (n.nodeType === Node.TEXT_NODE) {
-        position += n.textContent?.length || 0;
-      } else if (n.nodeName === 'BR') {
-        position += 1; // Contar salto de línea
-      }
-
-      if (n.firstChild) {
-        walkNodes(n.firstChild);
-      }
-
-      if (!found && n.nextSibling) {
-        walkNodes(n.nextSibling);
-      }
-    };
-
-    walkNodes(currentNode);
-    return position;
-  }, []);
 
   const handleTextSelection = useCallback((sectionId: string) => {
     const selection = window.getSelection();
-    const editorRef = editorRefs.current[sectionId];
     
-    if (selection && selection.toString().trim() && editorRef?.contains(selection.anchorNode)) {
+    if (selection && selection.toString().trim()) {
       const text = selection.toString();
       const range = selection.getRangeAt(0);
       
-      // Calcular las posiciones absolutas en el texto plano
-      const startPos = getTextPositionInEditor(editorRef, range.startContainer, range.startOffset);
-      const endPos = getTextPositionInEditor(editorRef, range.endContainer, range.endOffset);
-      
       setSelectedText({ text, range, sectionId });
       
-      // Get position for menu
+      // Posición del menú
       const rect = range.getBoundingClientRect();
       setMenuPosition({
         x: rect.left + rect.width / 2,
@@ -176,7 +101,7 @@ export const useTextEditor = () => {
     } else {
       setShowShotMenu(false);
     }
-  }, [getTextPositionInEditor]);
+  }, []);
 
   const addShot = useCallback((name: string, color: string, description?: string) => {
     const newShot: Shot = {
@@ -190,125 +115,70 @@ export const useTextEditor = () => {
     return newShot;
   }, []);
 
-  const toggleShotRecorded = useCallback((shotId: string) => {
-    setShots(prev => prev.map(shot => 
-      shot.id === shotId ? { ...shot, recorded: !shot.recorded } : shot
-    ));
-  }, []);
-
-  const calculateTextPosition = useCallback((element: HTMLElement): { start: number, end: number } => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return { start: 0, end: 0 };
-
-    const range = selection.getRangeAt(0);
-    const preCaretRange = range.cloneRange();
-    preCaretRange.selectNodeContents(element);
-    preCaretRange.setEnd(range.startContainer, range.startOffset);
-    
-    const start = preCaretRange.toString().length;
-    const end = start + range.toString().length;
-    
-    return { start, end };
-  }, []);
-
-  const updateSectionContent = useCallback((sectionId: string, content: string) => {
-    setSections(prev => prev.map(section => {
-      if (section.id !== sectionId) return section;
-
-      // Actualizar contenido
-      const updatedSection = { ...section, content };
-
-      // Si no hay contenido, limpiar segmentos
-      if (!content.trim()) {
-        return { ...updatedSection, segments: [] };
-      }
-
-      // Actualizar las posiciones de los segmentos existentes
-      const updatedSegments: TextSegment[] = [];
-      
-      section.segments.forEach(segment => {
-        // Buscar el texto del segmento en el nuevo contenido
-        const segmentText = segment.text;
-        let searchStart = 0;
-        let found = false;
-
-        // Intentar encontrar el texto cerca de su posición original
-        const searchRange = 50; // Buscar dentro de 50 caracteres de la posición original
-        const minStart = Math.max(0, segment.startIndex - searchRange);
-        const maxStart = Math.min(content.length, segment.startIndex + searchRange);
-
-        for (let i = minStart; i <= maxStart && !found; i++) {
-          const possibleMatch = content.substr(i, segmentText.length);
-          if (possibleMatch === segmentText) {
-            updatedSegments.push({
-              ...segment,
-              startIndex: i,
-              endIndex: i + segmentText.length
-            });
-            found = true;
-          }
-        }
-
-        // Si no se encontró cerca, buscar en todo el contenido
-        if (!found) {
-          const index = content.indexOf(segmentText);
-          if (index !== -1) {
-            updatedSegments.push({
-              ...segment,
-              startIndex: index,
-              endIndex: index + segmentText.length
-            });
-          }
-        }
-      });
-
-      return { ...updatedSection, segments: updatedSegments };
-    }));
-  }, []);
-
   const assignShotToText = useCallback((shotId: string) => {
     if (!selectedText.range || !selectedText.text || !selectedText.sectionId) return;
     
     const shot = shots.find(s => s.id === shotId);
     if (!shot) return;
 
-    const section = sections.find(s => s.id === selectedText.sectionId);
-    if (!section || !editorRefs.current[selectedText.sectionId]) return;
-
-    const editorElement = editorRefs.current[selectedText.sectionId]!;
     const selection = window.getSelection();
-    
     if (!selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
+    const content = sections.find(s => s.id === selectedText.sectionId)?.content || '';
     
-    // Calcular las posiciones en el texto plano
-    const startPos = getTextPositionInEditor(editorElement, range.startContainer, range.startOffset);
-    const endPos = getTextPositionInEditor(editorElement, range.endContainer, range.endOffset);
-
-    // Verificar y remover segmentos superpuestos
-    const filteredSegments = section.segments.filter(segment => 
-      segment.endIndex <= startPos || segment.startIndex >= endPos
-    );
+    // Calcular posiciones en el texto
+    const textBeforeSelection = content.substring(0, content.indexOf(selectedText.text));
+    const startIndex = textBeforeSelection.length;
+    const endIndex = startIndex + selectedText.text.length;
 
     const newSegment: TextSegment = {
       id: `segment-${Date.now()}`,
       text: selectedText.text,
       shotId,
       color: shot.color,
-      startIndex: startPos,
-      endIndex: endPos
+      startIndex,
+      endIndex
     };
 
-    setSections(prev => prev.map(s => 
-      s.id === selectedText.sectionId 
-        ? { ...s, segments: [...filteredSegments, newSegment] }
-        : s
+    setSections(prev => prev.map(section => 
+      section.id === selectedText.sectionId 
+        ? { 
+            ...section, 
+            segments: [...section.segments.filter(seg => 
+              seg.endIndex <= startIndex || seg.startIndex >= endIndex
+            ), newSegment] 
+          }
+        : section
     ));
 
     setShowShotMenu(false);
     setSelectedText({ text: '', range: null, sectionId: null });
-  }, [selectedText, shots, sections, getTextPositionInEditor]);
+  }, [selectedText, shots, sections]);
+
+  const updateSectionContent = useCallback((sectionId: string, content: string) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId ? { ...section, content } : section
+    ));
+  }, []);
+
+  const updateSectionSegments = useCallback((sectionId: string, segments: TextSegment[]) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId ? { ...section, segments } : section
+    ));
+  }, []);
+
+  const toggleSectionCollapse = useCallback((sectionId: string) => {
+    setSections(prev => prev.map(section => 
+      section.id === sectionId ? { ...section, collapsed: !section.collapsed } : section
+    ));
+  }, []);
+
+  const toggleShotRecorded = useCallback((shotId: string) => {
+    setShots(prev => prev.map(shot => 
+      shot.id === shotId ? { ...shot, recorded: !shot.recorded } : shot
+    ));
+  }, []);
 
   const addInspiration = useCallback((inspiration: Omit<Inspiration, 'id'>) => {
     const newInspiration: Inspiration = {
@@ -316,19 +186,6 @@ export const useTextEditor = () => {
       ...inspiration
     };
     setInspirations(prev => [...prev, newInspiration]);
-  }, []);
-
-  const updateSegmentInfo = useCallback((sectionId: string, segmentId: string, information: string) => {
-    setSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? {
-            ...section,
-            segments: section.segments.map(segment => 
-              segment.id === segmentId ? { ...segment, information } : segment
-            )
-          }
-        : section
-    ));
   }, []);
 
   const getAllContent = useCallback(() => {
@@ -348,14 +205,10 @@ export const useTextEditor = () => {
     selectedText,
     showShotMenu,
     menuPosition,
-    editorRefs,
     handleTextSelection,
     addShot,
     assignShotToText,
     addInspiration,
-    updateSegmentInfo,
-    addSegmentInfo,
-    removeSegment,
     updateSectionContent,
     updateSectionSegments,
     setShowShotMenu,
