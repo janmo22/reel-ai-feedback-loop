@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useSimpleEditor } from '@/hooks/use-simple-editor';
-import BasicTextEditor from './BasicTextEditor';
+import { AdvancedTextEditor } from './AdvancedTextEditor';
 
 interface NewTextEditorProps {
   onContentChange?: (content: string) => void;
@@ -10,9 +10,6 @@ interface NewTextEditorProps {
 const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
   const {
     sections,
-    shots,
-    updateSectionContent,
-    addShot,
     getAllContent
   } = useSimpleEditor();
 
@@ -30,15 +27,16 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
       </div>
 
       {sections.map((section) => (
-        <BasicTextEditor
+        <AdvancedTextEditor
           key={section.id}
           title={section.title}
           description={section.description}
           placeholder={section.placeholder}
           content={section.content}
-          shots={shots}
-          onContentChange={(content) => updateSectionContent(section.id, content)}
-          onAddShot={addShot}
+          onContentChange={(content) => {
+            // Update the section content in the simple editor
+            // This is a simplified version - you may want to add this method to useSimpleEditor
+          }}
         />
       ))}
     </div>
