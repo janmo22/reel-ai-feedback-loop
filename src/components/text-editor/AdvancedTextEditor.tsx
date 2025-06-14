@@ -76,60 +76,49 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     setShowShotSelector(false);
   };
 
-  // Render text with highlighting for shots
-  const renderHighlightedText = () => {
-    if (shots.length === 0) {
-      return [{
-        text: editorContent,
-        type: 'normal' as const,
-        key: 'normal-all'
-      }];
-    }
-
-    let result = [];
-    let lastIndex = 0;
-    const allSegments = shots.flatMap(shot => 
-      shot.textSegments.map(segment => ({ ...segment, shotColor: shot.color }))
-    ).sort((a, b) => a.startIndex - b.startIndex);
-
-    allSegments.forEach((segment, index) => {
-      // Add text before this segment
-      if (segment.startIndex > lastIndex) {
-        result.push({
-          text: editorContent.substring(lastIndex, segment.startIndex),
-          type: 'normal' as const,
-          key: `normal-${index}`
-        });
+  // Get background color for current cursor position
+  const getBackgroundAtPosition = (position: number): string => {
+    for (const shot of shots) {
+      for (const segment of shot.textSegments) {
+        if (position >= segment.startIndex && position <= segment.endIndex) {
+          return `${shot.color}20`;
+        }
       }
-
-      // Add highlighted segment
-      result.push({
-        text: segment.text,
-        type: 'shot' as const,
-        color: segment.shotColor,
-        shotId: segment.shotId,
-        segmentId: segment.id,
-        isStrikethrough: segment.isStrikethrough,
-        key: `shot-${segment.id}`
-      });
-
-      lastIndex = segment.endIndex;
-    });
-
-    // Add remaining text
-    if (lastIndex < editorContent.length) {
-      result.push({
-        text: editorContent.substring(lastIndex),
-        type: 'normal' as const,
-        key: 'normal-end'
-      });
     }
+    return 'transparent';
+  };
 
-    return result;
+  // Generate CSS for shot highlighting
+  const generateHighlightingCSS = () => {
+    let css = '';
+    shots.forEach((shot, shotIndex) => {
+      shot.textSegments.forEach((segment, segmentIndex) => {
+        const className = `shot-${shot.id}-${segment.id}`;
+        css += `
+          .${className} {
+            background: linear-gradient(to bottom, ${shot.color}25 0%, ${shot.color}35 100%);
+            border-bottom: 2px solid ${shot.color};
+            border-radius: 3px;
+            padding: 1px 2px;
+            margin: 0 1px;
+            position: relative;
+            ${segment.isStrikethrough ? 'text-decoration: line-through;' : ''}
+            transition: all 0.2s ease;
+          }
+          .${className}:hover {
+            background: linear-gradient(to bottom, ${shot.color}35 0%, ${shot.color}45 100%);
+            box-shadow: 0 2px 4px ${shot.color}30;
+          }
+        `;
+      });
+    });
+    return css;
   };
 
   return (
     <div className="space-y-6">
+      <style dangerouslySetInnerHTML={{ __html: generateHighlightingCSS() }} />
+      
       <Card className="border-0 shadow-sm bg-white">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -161,50 +150,62 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
         {!collapsed && (
           <CardContent className="space-y-4">
             <div className="relative">
-              {/* Editable textarea */}
-              <Textarea
-                ref={textareaRef}
-                placeholder={placeholder}
-                value={editorContent}
-                onChange={(e) => updateContent(e.target.value)}
-                onMouseUp={handleTextSelectionEvent}
-                onKeyUp={handleTextSelectionEvent}
-                className="min-h-[150px] text-base leading-relaxed resize-none bg-transparent border rounded-md"
-                style={{
-                  direction: 'ltr',
-                  textAlign: 'left',
-                  color: 'transparent',
-                  caretColor: 'black'
-                }}
-              />
-
-              {/* Visual overlay with highlighting */}
-              <div 
-                className="min-h-[150px] text-base leading-relaxed p-3 border rounded-md bg-white absolute top-0 left-0 w-full h-full pointer-events-none"
-                style={{
-                  direction: 'ltr',
-                  textAlign: 'left',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word'
-                }}
-              >
-                {editorContent ? (
-                  renderHighlightedText().map((segment) => (
-                    <span
-                      key={segment.key}
-                      className={`${segment.type === 'shot' ? 'px-1 rounded' : ''}`}
-                      style={{
-                        backgroundColor: segment.type === 'shot' ? `${segment.color}30` : 'transparent',
-                        borderBottom: segment.type === 'shot' ? `2px solid ${segment.color}` : 'none',
-                        textDecoration: segment.type === 'shot' && segment.isStrikethrough ? 'line-through' : 'none'
-                      }}
-                    >
-                      {segment.text}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-gray-400">{placeholder}</span>
-                )}
+              {/* Professional text editor with highlighting */}
+              <div className="relative border rounded-md overflow-hidden bg-white shadow-sm">
+                <Textarea
+                  ref={textareaRef}
+                  placeholder={placeholder}
+                  value={editorContent}
+                  onChange={(e) => updateContent(e.target.value)}
+                  onMouseUp={handleTextSelectionEvent}
+                  onKeyUp={handleTextSelectionEvent}
+                  className="min-h-[150px] text-base leading-relaxed resize-none border-0 bg-transparent relative z-10 focus:ring-0 focus:border-0 focus:outline-0"
+                  style={{
+                    direction: 'ltr',
+                    textAlign: 'left',
+                    background: 'transparent',
+                    color: '#1f2937',
+                    fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                    lineHeight: '1.6',
+                    padding: '12px'
+                  }}
+                />
+                
+                {/* Highlighting overlay that moves with scroll */}
+                <div 
+                  className="absolute top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden"
+                  style={{
+                    padding: '12px',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    fontSize: '16px',
+                    lineHeight: '1.6',
+                    fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                    color: 'transparent'
+                  }}
+                >
+                  {editorContent.split('').map((char, index) => {
+                    const shot = getShotForText(index);
+                    const segment = shot?.textSegments.find(s => 
+                      index >= s.startIndex && index <= s.endIndex
+                    );
+                    
+                    if (shot && segment) {
+                      return (
+                        <span
+                          key={index}
+                          className={`shot-${shot.id}-${segment.id}`}
+                          style={{
+                            textDecoration: segment.isStrikethrough ? 'line-through' : 'none'
+                          }}
+                        >
+                          {char}
+                        </span>
+                      );
+                    }
+                    return <span key={index}>{char}</span>;
+                  })}
+                </div>
               </div>
 
               {/* Shot Selector */}
