@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -43,17 +43,28 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     addCreativeItem,
     removeCreativeItem,
     getShotForText,
-    toggleTextStrikethrough
+    toggleTextStrikethrough,
+    updateShotSegments,
+    addShotInfo,
+    updateShotInfo,
+    removeShotInfo
   } = useAdvancedEditor(content);
 
+  const overlayRef = useRef<HTMLDivElement>(null);
+
   // Sync with parent component
-  React.useEffect(() => {
+  useEffect(() => {
     onContentChange(editorContent);
   }, [editorContent, onContentChange]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     updateContent(content);
   }, [content, updateContent]);
+
+  // Update shot segments when content changes
+  useEffect(() => {
+    updateShotSegments(editorContent);
+  }, [editorContent, updateShotSegments]);
 
   const handleTextSelectionEvent = () => {
     handleTextSelection();
@@ -76,49 +87,73 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     setShowShotSelector(false);
   };
 
-  // Get background color for current cursor position
-  const getBackgroundAtPosition = (position: number): string => {
-    for (const shot of shots) {
-      for (const segment of shot.textSegments) {
-        if (position >= segment.startIndex && position <= segment.endIndex) {
-          return `${shot.color}20`;
-        }
-      }
-    }
-    return 'transparent';
+  const handleContentChange = (newContent: string) => {
+    updateContent(newContent);
   };
 
-  // Generate CSS for shot highlighting
-  const generateHighlightingCSS = () => {
-    let css = '';
-    shots.forEach((shot, shotIndex) => {
-      shot.textSegments.forEach((segment, segmentIndex) => {
-        const className = `shot-${shot.id}-${segment.id}`;
-        css += `
-          .${className} {
-            background: linear-gradient(to bottom, ${shot.color}25 0%, ${shot.color}35 100%);
-            border-bottom: 2px solid ${shot.color};
-            border-radius: 3px;
-            padding: 1px 2px;
-            margin: 0 1px;
-            position: relative;
-            ${segment.isStrikethrough ? 'text-decoration: line-through;' : ''}
-            transition: all 0.2s ease;
-          }
-          .${className}:hover {
-            background: linear-gradient(to bottom, ${shot.color}35 0%, ${shot.color}45 100%);
-            box-shadow: 0 2px 4px ${shot.color}30;
-          }
-        `;
+  const syncScroll = () => {
+    if (textareaRef.current && overlayRef.current) {
+      overlayRef.current.scrollTop = textareaRef.current.scrollTop;
+      overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
+    }
+  };
+
+  const renderHighlightedContent = () => {
+    if (!editorContent) return '';
+    
+    let renderedContent = '';
+    let lastIndex = 0;
+    
+    // Get all segments sorted by start index
+    const allSegments: Array<{
+      startIndex: number;
+      endIndex: number;
+      shotId: string;
+      shotColor: string;
+      segmentId: string;
+      isStrikethrough: boolean;
+    }> = [];
+    
+    shots.forEach(shot => {
+      shot.textSegments.forEach(segment => {
+        allSegments.push({
+          startIndex: segment.startIndex,
+          endIndex: segment.endIndex,
+          shotId: shot.id,
+          shotColor: shot.color,
+          segmentId: segment.id,
+          isStrikethrough: segment.isStrikethrough || false
+        });
       });
     });
-    return css;
+    
+    // Sort by start index
+    allSegments.sort((a, b) => a.startIndex - b.startIndex);
+    
+    // Build highlighted content
+    allSegments.forEach(segment => {
+      // Add text before this segment
+      if (lastIndex < segment.startIndex) {
+        renderedContent += editorContent.slice(lastIndex, segment.startIndex);
+      }
+      
+      // Add highlighted segment
+      const segmentText = editorContent.slice(segment.startIndex, segment.endIndex + 1);
+      renderedContent += `<span class="shot-highlight" style="background: linear-gradient(to bottom, ${segment.shotColor}25 0%, ${segment.shotColor}35 100%); border-bottom: 2px solid ${segment.shotColor}; border-radius: 3px; padding: 1px 2px; margin: 0 1px; ${segment.isStrikethrough ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${segmentText}</span>`;
+      
+      lastIndex = segment.endIndex + 1;
+    });
+    
+    // Add remaining text
+    if (lastIndex < editorContent.length) {
+      renderedContent += editorContent.slice(lastIndex);
+    }
+    
+    return renderedContent;
   };
 
   return (
     <div className="space-y-6">
-      <style dangerouslySetInnerHTML={{ __html: generateHighlightingCSS() }} />
-      
       <Card className="border-0 shadow-sm bg-white">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -150,15 +185,35 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
         {!collapsed && (
           <CardContent className="space-y-4">
             <div className="relative">
-              {/* Professional text editor with highlighting */}
+              {/* Editor container */}
               <div className="relative border rounded-md overflow-hidden bg-white shadow-sm">
+                {/* Background highlighting layer */}
+                <div 
+                  ref={overlayRef}
+                  className="absolute top-0 left-0 w-full h-full pointer-events-none z-0 overflow-auto"
+                  style={{
+                    padding: '12px',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    fontSize: '16px',
+                    lineHeight: '1.6',
+                    fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                    color: 'transparent',
+                    border: 'none',
+                    outline: 'none'
+                  }}
+                  dangerouslySetInnerHTML={{ __html: renderHighlightedContent() }}
+                />
+                
+                {/* Editable textarea */}
                 <Textarea
                   ref={textareaRef}
                   placeholder={placeholder}
                   value={editorContent}
-                  onChange={(e) => updateContent(e.target.value)}
+                  onChange={(e) => handleContentChange(e.target.value)}
                   onMouseUp={handleTextSelectionEvent}
                   onKeyUp={handleTextSelectionEvent}
+                  onScroll={syncScroll}
                   className="min-h-[150px] text-base leading-relaxed resize-none border-0 bg-transparent relative z-10 focus:ring-0 focus:border-0 focus:outline-0"
                   style={{
                     direction: 'ltr',
@@ -167,45 +222,10 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                     color: '#1f2937',
                     fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                     lineHeight: '1.6',
-                    padding: '12px'
+                    padding: '12px',
+                    caretColor: '#1f2937'
                   }}
                 />
-                
-                {/* Highlighting overlay that moves with scroll */}
-                <div 
-                  className="absolute top-0 left-0 w-full h-full pointer-events-none z-0 overflow-hidden"
-                  style={{
-                    padding: '12px',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    fontSize: '16px',
-                    lineHeight: '1.6',
-                    fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                    color: 'transparent'
-                  }}
-                >
-                  {editorContent.split('').map((char, index) => {
-                    const shot = getShotForText(index);
-                    const segment = shot?.textSegments.find(s => 
-                      index >= s.startIndex && index <= s.endIndex
-                    );
-                    
-                    if (shot && segment) {
-                      return (
-                        <span
-                          key={index}
-                          className={`shot-${shot.id}-${segment.id}`}
-                          style={{
-                            textDecoration: segment.isStrikethrough ? 'line-through' : 'none'
-                          }}
-                        >
-                          {char}
-                        </span>
-                      );
-                    }
-                    return <span key={index}>{char}</span>;
-                  })}
-                </div>
               </div>
 
               {/* Shot Selector */}
@@ -223,7 +243,13 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
             </div>
 
             {/* Shot Display */}
-            <ShotDisplay shots={shots} onToggleStrikethrough={toggleTextStrikethrough} />
+            <ShotDisplay 
+              shots={shots} 
+              onToggleStrikethrough={toggleTextStrikethrough}
+              onAddShotInfo={addShotInfo}
+              onUpdateShotInfo={updateShotInfo}
+              onRemoveShotInfo={removeShotInfo}
+            />
           </CardContent>
         )}
       </Card>

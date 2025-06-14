@@ -1,11 +1,18 @@
 
 import { useState, useCallback, useRef } from 'react';
 
+export interface ShotInfo {
+  id: string;
+  label: string;
+  value: string;
+}
+
 export interface Shot {
   id: string;
   name: string;
   color: string;
   textSegments: TextSegment[];
+  additionalInfo: ShotInfo[];
 }
 
 export interface TextSegment {
@@ -51,7 +58,8 @@ export const useAdvancedEditor = (initialContent = '') => {
       id: `shot-${Date.now()}`,
       name,
       color,
-      textSegments: []
+      textSegments: [],
+      additionalInfo: []
     };
 
     const newSegment: TextSegment = {
@@ -59,7 +67,7 @@ export const useAdvancedEditor = (initialContent = '') => {
       text: selectedText,
       shotId: newShot.id,
       startIndex: selectionRange.start,
-      endIndex: selectionRange.end,
+      endIndex: selectionRange.end - 1,
       isStrikethrough: false
     };
 
@@ -81,7 +89,7 @@ export const useAdvancedEditor = (initialContent = '') => {
       text: selectedText,
       shotId,
       startIndex: selectionRange.start,
-      endIndex: selectionRange.end,
+      endIndex: selectionRange.end - 1,
       isStrikethrough: false
     };
 
@@ -96,6 +104,27 @@ export const useAdvancedEditor = (initialContent = '') => {
     setSelectionRange(null);
   }, [selectedText, selectionRange]);
 
+  const updateShotSegments = useCallback((newContent: string) => {
+    setShots(prevShots => {
+      return prevShots.map(shot => ({
+        ...shot,
+        textSegments: shot.textSegments.map(segment => {
+          // Update segment text based on current indices
+          const currentText = newContent.slice(segment.startIndex, segment.endIndex + 1);
+          return {
+            ...segment,
+            text: currentText
+          };
+        }).filter(segment => 
+          // Remove segments that are out of bounds
+          segment.startIndex >= 0 && 
+          segment.endIndex < newContent.length &&
+          segment.startIndex <= segment.endIndex
+        )
+      })).filter(shot => shot.textSegments.length > 0); // Remove shots with no segments
+    });
+  }, []);
+
   const toggleTextStrikethrough = useCallback((segmentId: string) => {
     setShots(prev => prev.map(shot => ({
       ...shot,
@@ -105,6 +134,44 @@ export const useAdvancedEditor = (initialContent = '') => {
           : segment
       )
     })));
+  }, []);
+
+  const addShotInfo = useCallback((shotId: string, label: string, value: string) => {
+    const newInfo: ShotInfo = {
+      id: `info-${Date.now()}`,
+      label,
+      value
+    };
+
+    setShots(prev => prev.map(shot => 
+      shot.id === shotId 
+        ? { ...shot, additionalInfo: [...shot.additionalInfo, newInfo] }
+        : shot
+    ));
+  }, []);
+
+  const updateShotInfo = useCallback((shotId: string, infoId: string, label: string, value: string) => {
+    setShots(prev => prev.map(shot => 
+      shot.id === shotId 
+        ? {
+            ...shot,
+            additionalInfo: shot.additionalInfo.map(info =>
+              info.id === infoId ? { ...info, label, value } : info
+            )
+          }
+        : shot
+    ));
+  }, []);
+
+  const removeShotInfo = useCallback((shotId: string, infoId: string) => {
+    setShots(prev => prev.map(shot => 
+      shot.id === shotId 
+        ? {
+            ...shot,
+            additionalInfo: shot.additionalInfo.filter(info => info.id !== infoId)
+          }
+        : shot
+    ));
   }, []);
 
   const handleTextSelection = useCallback(() => {
@@ -126,8 +193,6 @@ export const useAdvancedEditor = (initialContent = '') => {
 
   const updateContent = useCallback((newContent: string) => {
     setContent(newContent);
-    // Update segment indices based on content changes
-    // This is a simplified version - in production you'd want more sophisticated tracking
   }, []);
 
   const addCreativeItem = useCallback((type: CreativeItem['type'], content: string, url?: string) => {
@@ -171,6 +236,10 @@ export const useAdvancedEditor = (initialContent = '') => {
     addCreativeItem,
     removeCreativeItem,
     getShotForText,
-    toggleTextStrikethrough
+    toggleTextStrikethrough,
+    updateShotSegments,
+    addShotInfo,
+    updateShotInfo,
+    removeShotInfo
   };
 };
