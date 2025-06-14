@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,7 +8,6 @@ import { useAdvancedEditor } from '@/hooks/use-advanced-editor';
 import { ShotSelector } from './ShotSelector';
 import { ShotDisplay } from './ShotDisplay';
 import { CreativeZone } from './CreativeZone';
-import { ShotSummary } from './ShotSummary';
 import { InfoTooltip } from './InfoTooltip';
 
 interface AdvancedTextEditorProps {
@@ -17,6 +17,7 @@ interface AdvancedTextEditorProps {
   content: string;
   onContentChange: (content: string) => void;
   showCreativeZone?: boolean;
+  hideEmptyShots?: boolean;
 }
 
 interface HoveredSegment {
@@ -33,11 +34,11 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   placeholder,
   content,
   onContentChange,
-  showCreativeZone = true
+  showCreativeZone = true,
+  hideEmptyShots = false
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [showShotSelector, setShowShotSelector] = useState(false);
-  const [shotsVisible, setShotsVisible] = useState(true);
   const [hoveredSegment, setHoveredSegment] = useState<HoveredSegment | null>(null);
   
   const {
@@ -55,7 +56,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     removeCreativeItem,
     getShotForText,
     toggleTextStrikethrough,
-    updateShotSegments,
     addShotInfo,
     updateShotInfo,
     removeShotInfo,
@@ -75,17 +75,12 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     updateContent(content);
   }, [content, updateContent]);
 
-  // Update shot segments when content changes
-  useEffect(() => {
-    updateShotSegments(editorContent);
-  }, [editorContent, updateShotSegments]);
-
   const handleTextSelectionEvent = () => {
     handleTextSelection();
     if (textareaRef.current) {
       const start = textareaRef.current.selectionStart;
       const end = textareaRef.current.selectionEnd;
-      if (start !== end) {
+      if (start !== end && editorContent.trim().length > 0) {
         setShowShotSelector(true);
       }
     }
@@ -110,19 +105,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       overlayRef.current.scrollTop = textareaRef.current.scrollTop;
       overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
     }
-  };
-
-  const handleMouseEnter = (segmentId: string, event: React.MouseEvent) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setHoveredSegment({
-      id: segmentId,
-      x: rect.left + rect.width / 2,
-      y: rect.top - 10
-    });
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredSegment(null);
   };
 
   const renderHighlightedContent = () => {
@@ -227,6 +209,9 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     };
   }, []);
 
+  // Check if should show shots
+  const shouldShowShots = !hideEmptyShots || (editorContent.trim().length > 0 && shots.length > 0);
+
   return (
     <div className="space-y-4">
       <Card className="border-0 shadow-sm bg-white">
@@ -303,8 +288,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                 />
               </div>
 
-              {/* Shot Selector */}
-              {showShotSelector && selectedText && (
+              {/* Shot Selector - only show if there's content */}
+              {showShotSelector && selectedText && editorContent.trim().length > 0 && (
                 <div className="absolute top-full mt-2 left-0 z-20">
                   <ShotSelector
                     selectedText={selectedText}
@@ -317,17 +302,19 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
               )}
             </div>
 
-            {/* Shot Display */}
-            <ShotDisplay 
-              shots={shots} 
-              onToggleStrikethrough={toggleTextStrikethrough}
-              onAddShotInfo={addShotInfo}
-              onUpdateShotInfo={updateShotInfo}
-              onRemoveShotInfo={removeShotInfo}
-              onAddSegmentInfo={addSegmentInfo}
-              onUpdateSegmentInfo={updateSegmentInfo}
-              onRemoveSegmentInfo={removeSegmentInfo}
-            />
+            {/* Shot Display - only show if should show shots */}
+            {shouldShowShots && (
+              <ShotDisplay 
+                shots={shots} 
+                onToggleStrikethrough={toggleTextStrikethrough}
+                onAddShotInfo={addShotInfo}
+                onUpdateShotInfo={updateShotInfo}
+                onRemoveShotInfo={removeShotInfo}
+                onAddSegmentInfo={addSegmentInfo}
+                onUpdateSegmentInfo={updateSegmentInfo}
+                onRemoveSegmentInfo={removeSegmentInfo}
+              />
+            )}
           </CardContent>
         )}
       </Card>
@@ -351,9 +338,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
           onRemoveItem={removeCreativeItem}
         />
       )}
-
-      {/* Shot Summary - moved to the bottom */}
-      <ShotSummary shots={shots} />
     </div>
   );
 };

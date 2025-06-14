@@ -72,80 +72,72 @@ export const useAdvancedEditor = (initialContent = '') => {
     return overlapping;
   }, [shots]);
 
-  // Improved shot boundary expansion that tracks changes properly
+  // Improved shot boundary update that preserves content better
   const updateShotBoundaries = useCallback((newContent: string, oldContent: string) => {
-    if (newContent === oldContent) return;
+    if (newContent === oldContent || shots.length === 0) return;
 
     setShots(prevShots => {
       return prevShots.map(shot => ({
         ...shot,
         textSegments: shot.textSegments.map(segment => {
-          // Calculate the change in content length
           const lengthDiff = newContent.length - oldContent.length;
-          
-          // If text was added/removed before this segment, adjust indices
-          let adjustedStart = segment.startIndex;
-          let adjustedEnd = segment.endIndex;
           
           // Find where the change occurred
           let changeStart = 0;
-          while (changeStart < Math.min(oldContent.length, newContent.length) && 
+          const minLength = Math.min(oldContent.length, newContent.length);
+          while (changeStart < minLength && 
                  oldContent[changeStart] === newContent[changeStart]) {
             changeStart++;
           }
-          
+
+          let adjustedStart = segment.startIndex;
+          let adjustedEnd = segment.endIndex;
+
           // If change occurred before this segment, shift the entire segment
           if (changeStart <= segment.startIndex) {
             adjustedStart = Math.max(0, segment.startIndex + lengthDiff);
             adjustedEnd = Math.max(adjustedStart, segment.endIndex + lengthDiff);
           }
-          // If change occurred within the segment, expand to include new content
+          // If change occurred within the segment
           else if (changeStart >= segment.startIndex && changeStart <= segment.endIndex + 1) {
-            // Keep start the same, but adjust end to include new content
-            adjustedEnd = Math.min(newContent.length - 1, segment.endIndex + lengthDiff);
-            
-            // Expand to include any new non-whitespace content within the segment boundaries
-            let expandStart = adjustedStart;
-            let expandEnd = adjustedEnd;
-            
-            // Expand backwards if new content was added at the beginning
-            while (expandStart > 0 && 
-                   expandStart > changeStart - Math.abs(lengthDiff) && 
-                   /\S/.test(newContent[expandStart - 1])) {
-              expandStart--;
+            // For additions within segment, expand the segment
+            if (lengthDiff > 0) {
+              adjustedEnd = segment.endIndex + lengthDiff;
             }
-            
-            // Expand forwards if new content was added
-            while (expandEnd < newContent.length - 1 && 
-                   /\S/.test(newContent[expandEnd + 1])) {
-              expandEnd++;
+            // For deletions within segment, contract but preserve some content
+            else if (lengthDiff < 0) {
+              const deletedCount = Math.abs(lengthDiff);
+              const newEnd = segment.endIndex - deletedCount;
+              adjustedEnd = Math.max(adjustedStart, newEnd);
             }
-            
-            adjustedStart = expandStart;
-            adjustedEnd = expandEnd;
           }
-          
+
           // Ensure indices are within bounds
           adjustedStart = Math.max(0, Math.min(adjustedStart, newContent.length - 1));
           adjustedEnd = Math.max(adjustedStart, Math.min(adjustedEnd, newContent.length - 1));
           
+          // Only keep segment if it has valid content
+          if (adjustedStart >= newContent.length || adjustedEnd >= newContent.length) {
+            return null; // Mark for removal
+          }
+
           const segmentText = newContent.slice(adjustedStart, adjustedEnd + 1);
           
+          // Keep segment only if it has meaningful content
+          if (isOnlyWhitespace(segmentText)) {
+            return null; // Mark for removal
+          }
+
           return {
             ...segment,
             startIndex: adjustedStart,
             endIndex: adjustedEnd,
             text: segmentText
           };
-        }).filter(segment => 
-          segment.startIndex >= 0 && 
-          segment.endIndex < newContent.length &&
-          segment.startIndex <= segment.endIndex &&
-          !isOnlyWhitespace(segment.text)
-        )
+        }).filter(segment => segment !== null)
       })).filter(shot => shot.textSegments.length > 0);
     });
-  }, [isOnlyWhitespace]);
+  }, [shots, isOnlyWhitespace]);
 
   const createShot = useCallback((name: string, color: string) => {
     if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) return null;
