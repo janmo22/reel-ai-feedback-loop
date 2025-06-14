@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 export interface ShotInfo {
   id: string;
@@ -52,6 +52,13 @@ export const useAdvancedEditor = (initialContent = '') => {
   const [creativeItems, setCreativeItems] = useState<CreativeItem[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Sync with initial content only when it actually changes from parent
+  useEffect(() => {
+    if (initialContent !== content) {
+      setContent(initialContent);
+    }
+  }, [initialContent]); // Remove content from dependencies to prevent loop
+
   // Helper function to check if text contains only whitespace
   const isOnlyWhitespace = useCallback((text: string) => {
     return /^\s*$/.test(text);
@@ -72,72 +79,43 @@ export const useAdvancedEditor = (initialContent = '') => {
     return overlapping;
   }, [shots]);
 
-  // Improved shot boundary update that preserves content better
-  const updateShotBoundaries = useCallback((newContent: string, oldContent: string) => {
-    if (newContent === oldContent || shots.length === 0) return;
-
-    setShots(prevShots => {
-      return prevShots.map(shot => ({
-        ...shot,
-        textSegments: shot.textSegments.map(segment => {
-          const lengthDiff = newContent.length - oldContent.length;
-          
-          // Find where the change occurred
-          let changeStart = 0;
-          const minLength = Math.min(oldContent.length, newContent.length);
-          while (changeStart < minLength && 
-                 oldContent[changeStart] === newContent[changeStart]) {
-            changeStart++;
-          }
-
-          let adjustedStart = segment.startIndex;
-          let adjustedEnd = segment.endIndex;
-
-          // If change occurred before this segment, shift the entire segment
-          if (changeStart <= segment.startIndex) {
-            adjustedStart = Math.max(0, segment.startIndex + lengthDiff);
-            adjustedEnd = Math.max(adjustedStart, segment.endIndex + lengthDiff);
-          }
-          // If change occurred within the segment
-          else if (changeStart >= segment.startIndex && changeStart <= segment.endIndex + 1) {
-            // For additions within segment, expand the segment
-            if (lengthDiff > 0) {
-              adjustedEnd = segment.endIndex + lengthDiff;
+  // Improved updateContent function that doesn't trigger infinite loops
+  const updateContent = useCallback((newContent: string) => {
+    setContent(newContent);
+    
+    // Update shot boundaries when content changes
+    if (shots.length > 0) {
+      setShots(prevShots => {
+        return prevShots.map(shot => ({
+          ...shot,
+          textSegments: shot.textSegments.map(segment => {
+            // Ensure segment indices are within bounds
+            const adjustedStart = Math.max(0, Math.min(segment.startIndex, newContent.length - 1));
+            const adjustedEnd = Math.max(adjustedStart, Math.min(segment.endIndex, newContent.length - 1));
+            
+            // Only keep segment if it has valid content
+            if (adjustedStart >= newContent.length || adjustedEnd >= newContent.length) {
+              return null;
             }
-            // For deletions within segment, contract but preserve some content
-            else if (lengthDiff < 0) {
-              const deletedCount = Math.abs(lengthDiff);
-              const newEnd = segment.endIndex - deletedCount;
-              adjustedEnd = Math.max(adjustedStart, newEnd);
+
+            const segmentText = newContent.slice(adjustedStart, adjustedEnd + 1);
+            
+            // Keep segment only if it has meaningful content
+            if (isOnlyWhitespace(segmentText)) {
+              return null;
             }
-          }
 
-          // Ensure indices are within bounds
-          adjustedStart = Math.max(0, Math.min(adjustedStart, newContent.length - 1));
-          adjustedEnd = Math.max(adjustedStart, Math.min(adjustedEnd, newContent.length - 1));
-          
-          // Only keep segment if it has valid content
-          if (adjustedStart >= newContent.length || adjustedEnd >= newContent.length) {
-            return null; // Mark for removal
-          }
-
-          const segmentText = newContent.slice(adjustedStart, adjustedEnd + 1);
-          
-          // Keep segment only if it has meaningful content
-          if (isOnlyWhitespace(segmentText)) {
-            return null; // Mark for removal
-          }
-
-          return {
-            ...segment,
-            startIndex: adjustedStart,
-            endIndex: adjustedEnd,
-            text: segmentText
-          };
-        }).filter(segment => segment !== null)
-      })).filter(shot => shot.textSegments.length > 0);
-    });
-  }, [shots, isOnlyWhitespace]);
+            return {
+              ...segment,
+              startIndex: adjustedStart,
+              endIndex: adjustedEnd,
+              text: segmentText
+            };
+          }).filter(segment => segment !== null)
+        })).filter(shot => shot.textSegments.length > 0);
+      });
+    }
+  }, [shots.length, isOnlyWhitespace]);
 
   const createShot = useCallback((name: string, color: string) => {
     if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) return null;
@@ -337,12 +315,6 @@ export const useAdvancedEditor = (initialContent = '') => {
       setSelectionRange(null);
     }
   }, [content, isOnlyWhitespace]);
-
-  const updateContent = useCallback((newContent: string) => {
-    const oldContent = content;
-    setContent(newContent);
-    updateShotBoundaries(newContent, oldContent);
-  }, [content, updateShotBoundaries]);
 
   const addCreativeItem = useCallback((type: CreativeItem['type'], content: string, url?: string, file?: File) => {
     const newItem: CreativeItem = {

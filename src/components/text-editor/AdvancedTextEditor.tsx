@@ -1,9 +1,8 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useAdvancedEditor } from '@/hooks/use-advanced-editor';
 import { ShotSelector } from './ShotSelector';
 import { ShotDisplay } from './ShotDisplay';
@@ -98,6 +97,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
 
   const handleContentChange = (newContent: string) => {
     updateContent(newContent);
+    onContentChange(newContent); // Notify parent immediately
   };
 
   const syncScroll = () => {
