@@ -66,8 +66,7 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
                       alt={competitor.display_name || competitor.instagram_username}
                       className="w-full h-full object-cover object-center transition-all duration-300 group-hover:scale-110"
                       style={{
-                        imageRendering: 'crisp-edges',
-                        WebkitImageSmoothing: 'true'
+                        imageRendering: 'crisp-edges'
                       }}
                       onError={(e) => {
                         console.log('Profile image failed to load:', competitor.profile_picture_url);
