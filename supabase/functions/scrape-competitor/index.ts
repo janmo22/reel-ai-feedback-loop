@@ -101,7 +101,7 @@ serve(async (req) => {
 
     let profileId = existingProfile?.id
 
-    // Enhanced profile data from instagram-profile-scraper
+    // Enhanced profile data from instagram-profile-scraper - FIXED COLUMN NAME
     const enhancedProfileData = {
       instagram_username: profile.username || username,
       display_name: profile.fullName || null,
@@ -116,7 +116,7 @@ serve(async (req) => {
       business_category: profile.businessCategoryName || null,
       is_private: profile.private || false,
       highlight_reel_count: profile.highlightReelCount || 0,
-      igtvVideoCount: profile.igtvVideoCount || 0,
+      igtvvideocount: profile.igtvVideoCount || 0, // FIXED: changed from igtvVideoCount to igtvvideocount
       last_scraped_at: new Date().toISOString()
     }
 

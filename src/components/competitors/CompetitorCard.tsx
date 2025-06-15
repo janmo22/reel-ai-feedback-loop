@@ -57,6 +57,10 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
                   src={competitor.profile_picture_url || ''} 
                   alt={competitor.display_name || competitor.instagram_username}
                   className="object-cover"
+                  onError={(e) => {
+                    console.log('Avatar image failed to load:', competitor.profile_picture_url);
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
                 <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-lg">
                   {competitor.instagram_username.substring(0, 2).toUpperCase()}
@@ -167,8 +171,8 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
           </div>
         </div>
 
-        {/* Additional Stats */}
-        {(competitor.highlight_reel_count > 0 || competitor.igtvVideoCount > 0) && (
+        {/* Additional Stats - FIXED: using correct field name */}
+        {(competitor.highlight_reel_count > 0 || competitor.igtvvideocount > 0) && (
           <div className="grid grid-cols-2 gap-3">
             {competitor.highlight_reel_count > 0 && (
               <div className="text-center p-2 bg-yellow-50 rounded-lg">
@@ -178,10 +182,10 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
                 <div className="text-xs text-yellow-700">Highlights</div>
               </div>
             )}
-            {competitor.igtvVideoCount > 0 && (
+            {competitor.igtvvideocount > 0 && (
               <div className="text-center p-2 bg-pink-50 rounded-lg">
                 <div className="text-sm font-bold text-pink-900">
-                  {competitor.igtvVideoCount}
+                  {competitor.igtvvideocount}
                 </div>
                 <div className="text-xs text-pink-700">IGTV</div>
               </div>

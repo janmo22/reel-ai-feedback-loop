@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,7 +18,7 @@ export interface CompetitorData {
   business_category: string | null;
   is_private: boolean;
   highlight_reel_count: number | null;
-  igtvVideoCount: number | null;
+  igtvvideocount: number | null;
   last_scraped_at: string | null;
   competitor_videos: CompetitorVideo[];
   isLoading?: boolean;
@@ -57,7 +56,7 @@ const ensureCompetitorData = (data: any): CompetitorData => ({
   business_category: data.business_category || null,
   is_private: data.is_private || false,
   highlight_reel_count: data.highlight_reel_count || null,
-  igtvVideoCount: data.igtvVideoCount || null,
+  igtvvideocount: data.igtvvideocount || null,
   last_scraped_at: data.last_scraped_at || null,
   competitor_videos: data.competitor_videos || [],
   isLoading: data.isLoading || false
@@ -97,7 +96,7 @@ export const useCompetitorScraping = () => {
       business_category: null,
       is_private: false,
       highlight_reel_count: null,
-      igtvVideoCount: null,
+      igtvvideocount: null,
       last_scraped_at: null,
       competitor_videos: [],
       isLoading: true
