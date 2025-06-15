@@ -1,10 +1,10 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Save, AlertCircle } from 'lucide-react';
 import { useAdvancedEditor } from '@/hooks/use-advanced-editor';
+import { useSupabaseAutosave } from '@/hooks/use-supabase-autosave';
 import { ShotSelector } from './ShotSelector';
 import { ShotDisplay } from './ShotDisplay';
 import { CreativeZone } from './CreativeZone';
@@ -18,6 +18,7 @@ interface AdvancedTextEditorProps {
   onContentChange: (content: string) => void;
   showCreativeZone?: boolean;
   hideEmptyShots?: boolean;
+  sectionId?: string;
 }
 
 interface HoveredSegment {
@@ -35,7 +36,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   content,
   onContentChange,
   showCreativeZone = true,
-  hideEmptyShots = false
+  hideEmptyShots = false,
+  sectionId = 'default'
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [showShotSelector, setShowShotSelector] = useState(false);
@@ -62,43 +64,69 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     loadFromLocalStorage
   } = useAdvancedEditor(content);
 
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const {
+    saveState,
+    markAsChanged,
+    manualSave,
+    loadSection
+  } = useSupabaseAutosave();
 
-  // Load autosaved content on mount
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const hasUnsavedChangesRef = useRef(false);
+
+  // Load saved section on mount
   useEffect(() => {
-    const hasAutosave = loadFromLocalStorage();
-    if (hasAutosave) {
-      console.log('Contenido autoguardado cargado');
+    const loadSavedSection = async () => {
+      const savedSection = await loadSection(sectionId);
+      if (savedSection) {
+        updateContent(savedSection.content);
+        console.log('Sección cargada:', savedSection.title);
+      }
+    };
+
+    loadSavedSection();
+  }, [sectionId, loadSection, updateContent]);
+
+  // Track changes
+  useEffect(() => {
+    if (editorContent !== content) {
+      markAsChanged();
+      hasUnsavedChangesRef.current = true;
     }
-  }, [loadFromLocalStorage]);
+  }, [editorContent, content, markAsChanged]);
+
+  // Warning before leaving page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (saveState.hasUnsavedChanges || hasUnsavedChangesRef.current) {
+        e.preventDefault();
+        e.returnValue = '¿Estás seguro de que quieres salir? Tienes cambios sin guardar.';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [saveState.hasUnsavedChanges]);
 
   // Auto-resize textarea function
   const autoResizeTextarea = () => {
     if (textareaRef.current) {
       const textarea = textareaRef.current;
-      
-      // Reset height to auto to get the correct scrollHeight
       textarea.style.height = 'auto';
-      
-      // Calculate the new height based on content, with no maximum limit
       const newHeight = Math.max(150, textarea.scrollHeight);
-      
-      // Set the new height
       textarea.style.height = `${newHeight}px`;
       
-      // Also update the overlay height
       if (overlayRef.current) {
         overlayRef.current.style.height = `${newHeight}px`;
       }
     }
   };
 
-  // Auto-resize on content change
   useEffect(() => {
     autoResizeTextarea();
   }, [editorContent]);
 
-  // Sync with parent component only when there are actual changes
   useEffect(() => {
     if (editorContent !== content) {
       onContentChange(editorContent);
@@ -119,17 +147,25 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   const handleCreateShot = (name: string, color: string) => {
     createShot(name, color);
     setShowShotSelector(false);
+    markAsChanged();
   };
 
   const handleAssignToShot = (shotId: string) => {
     assignToExistingShot(shotId);
     setShowShotSelector(false);
+    markAsChanged();
   };
 
   const handleContentChange = (newContent: string) => {
     updateContent(newContent);
-    // Auto-resize after content update
     setTimeout(autoResizeTextarea, 0);
+  };
+
+  const handleManualSave = async () => {
+    const success = await manualSave(sectionId, editorContent, shots, title);
+    if (success) {
+      hasUnsavedChangesRef.current = false;
+    }
   };
 
   const syncScroll = () => {
@@ -145,7 +181,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     let renderedContent = '';
     let lastIndex = 0;
     
-    // Get all segments sorted by start index
     const allSegments: Array<{
       startIndex: number;
       endIndex: number;
@@ -172,17 +207,13 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       });
     });
     
-    // Sort by start index
     allSegments.sort((a, b) => a.startIndex - b.startIndex);
     
-    // Build highlighted content with precise character highlighting
     allSegments.forEach(segment => {
-      // Add text before this segment
       if (lastIndex < segment.startIndex) {
         renderedContent += editorContent.slice(lastIndex, segment.startIndex);
       }
       
-      // Add highlighted segment with precise character-level highlighting
       const segmentText = editorContent.slice(segment.startIndex, segment.endIndex + 1);
       const commentsData = JSON.stringify(segment.comments).replace(/"/g, '&quot;');
       
@@ -206,7 +237,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       lastIndex = segment.endIndex + 1;
     });
     
-    // Add remaining text
     if (lastIndex < editorContent.length) {
       renderedContent += editorContent.slice(lastIndex);
     }
@@ -214,7 +244,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     return renderedContent;
   };
 
-  // Add event listeners for segment hover
   useEffect(() => {
     const overlay = overlayRef.current;
     if (!overlay) return;
@@ -243,7 +272,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     };
   }, []);
 
-  // Check if should show shots
   const shouldShowShots = !hideEmptyShots || (editorContent.trim().length > 0 && shots.length > 0);
 
   return (
@@ -273,15 +301,44 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                 )}
               </div>
             </div>
+            
+            {/* Save button and status */}
+            <div className="flex items-center gap-2">
+              {(saveState.hasUnsavedChanges || hasUnsavedChangesRef.current) && (
+                <div className="flex items-center gap-1 text-xs text-amber-600">
+                  <AlertCircle className="h-3 w-3" />
+                  <span>Sin guardar</span>
+                </div>
+              )}
+              
+              {saveState.lastSaved && (
+                <span className="text-xs text-green-600">
+                  Guardado: {saveState.lastSaved.toLocaleTimeString()}
+                </span>
+              )}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManualSave}
+                disabled={saveState.isSaving}
+                className="flex items-center gap-2"
+              >
+                {saveState.isSaving ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                {saveState.isSaving ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
         {!collapsed && (
           <CardContent className="space-y-4">
             <div className="relative">
-              {/* Editor container */}
               <div className="relative border rounded-md overflow-hidden bg-white shadow-sm">
-                {/* Background highlighting layer */}
                 <div 
                   ref={overlayRef}
                   className="absolute top-0 left-0 w-full pointer-events-none z-0 overflow-hidden"
@@ -300,7 +357,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                   dangerouslySetInnerHTML={{ __html: renderHighlightedContent() }}
                 />
                 
-                {/* Editable textarea */}
                 <Textarea
                   ref={textareaRef}
                   placeholder={placeholder}
@@ -325,7 +381,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                 />
               </div>
 
-              {/* Shot Selector - only show if there's content */}
               {showShotSelector && selectedText && editorContent.trim().length > 0 && (
                 <div className="absolute top-full mt-2 left-0 z-20">
                   <ShotSelector
@@ -339,7 +394,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
               )}
             </div>
 
-            {/* Shot Display - only show if should show shots */}
             {shouldShowShots && (
               <ShotDisplay 
                 shots={shots} 
@@ -353,7 +407,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
         )}
       </Card>
 
-      {/* Tooltip for segment comments */}
       {hoveredSegment && hoveredSegment.comments && hoveredSegment.comments.length > 0 && (
         <InfoTooltip
           segmentId={hoveredSegment.id}
@@ -364,7 +417,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
         />
       )}
 
-      {/* Creative Zone - only show if enabled */}
       {showCreativeZone && (
         <CreativeZone
           items={creativeItems}

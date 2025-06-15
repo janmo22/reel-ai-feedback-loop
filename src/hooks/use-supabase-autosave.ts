@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Shot, CreativeItem } from './use-advanced-editor';
 import { Section } from './use-simple-editor';
 
-interface AutosaveState {
+interface SaveState {
   draftId: string | null;
   lastSaved: Date | null;
   isSaving: boolean;
@@ -16,129 +16,144 @@ interface AutosaveState {
 export const useSupabaseAutosave = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [autosaveState, setAutosaveState] = useState<AutosaveState>({
+  const [saveState, setSaveState] = useState<SaveState>({
     draftId: null,
     lastSaved: null,
     isSaving: false,
     hasUnsavedChanges: false
   });
 
-  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSavedDataRef = useRef<string>('');
+  // Track changes to detect unsaved content
+  const markAsChanged = useCallback(() => {
+    setSaveState(prev => ({ ...prev, hasUnsavedChanges: true }));
+  }, []);
 
-  // Save to Supabase
-  const saveToSupabase = useCallback(async (
+  // Save specific section to Supabase
+  const saveSection = useCallback(async (
+    sectionId: string,
     content: string,
-    editorMode: 'structured' | 'free',
-    sections: Section[],
-    shots: Shot[],
-    creativeItems: CreativeItem[],
+    sectionShots: Shot[],
     title?: string
   ) => {
     if (!user) return null;
 
     try {
-      setAutosaveState(prev => ({ ...prev, isSaving: true }));
+      setSaveState(prev => ({ ...prev, isSaving: true }));
 
-      const draftData = {
+      const sectionData = {
         user_id: user.id,
-        title: title || 'Guión sin título',
+        section_id: sectionId,
+        title: title || 'Sección sin título',
         content,
-        editor_mode: editorMode,
-        sections: JSON.stringify(sections),
-        shots: JSON.stringify(shots),
-        creative_items: JSON.stringify(creativeItems)
+        shots: JSON.stringify(sectionShots)
       };
 
-      // If we have an existing draft, update it; otherwise create new
-      if (autosaveState.draftId) {
+      // Check if this section already exists
+      const { data: existingSection, error: fetchError } = await supabase
+        .from('section_drafts')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('section_id', sectionId)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (existingSection) {
+        // Update existing section
         const { error } = await supabase
-          .from('script_drafts')
-          .update(draftData)
-          .eq('id', autosaveState.draftId);
+          .from('section_drafts')
+          .update({
+            content,
+            shots: JSON.stringify(sectionShots),
+            title: title || 'Sección sin título'
+          })
+          .eq('id', existingSection.id);
 
         if (error) throw error;
       } else {
+        // Create new section
         const { data, error } = await supabase
-          .from('script_drafts')
-          .insert(draftData)
+          .from('section_drafts')
+          .insert(sectionData)
           .select('id')
           .single();
 
         if (error) throw error;
-        
-        setAutosaveState(prev => ({ ...prev, draftId: data.id }));
       }
 
       const now = new Date();
-      setAutosaveState(prev => ({
+      setSaveState(prev => ({
         ...prev,
         isSaving: false,
         lastSaved: now,
         hasUnsavedChanges: false
       }));
 
-      console.log('Autoguardado en Supabase realizado');
-      return autosaveState.draftId;
+      console.log('Sección guardada en Supabase');
+      return true;
 
     } catch (error: any) {
-      console.error('Error en autoguardado:', error);
-      setAutosaveState(prev => ({ ...prev, isSaving: false }));
+      console.error('Error guardando sección:', error);
+      setSaveState(prev => ({ ...prev, isSaving: false }));
       
       toast({
-        title: "Error de autoguardado",
-        description: "No se pudo guardar automáticamente. Intenta guardar manualmente.",
+        title: "Error al guardar",
+        description: "No se pudo guardar la sección. Intenta de nuevo.",
         variant: "destructive",
       });
-      return null;
+      return false;
     }
-  }, [user, autosaveState.draftId, toast]);
+  }, [user, toast]);
 
   // Manual save function
   const manualSave = useCallback(async (
+    sectionId: string,
     content: string,
-    editorMode: 'structured' | 'free',
-    sections: Section[],
-    shots: Shot[],
-    creativeItems: CreativeItem[],
+    sectionShots: Shot[],
     title?: string
   ) => {
-    const result = await saveToSupabase(content, editorMode, sections, shots, creativeItems, title);
-    if (result !== null) {
+    const result = await saveSection(sectionId, content, sectionShots, title);
+    if (result) {
       toast({
-        title: "Guardado manual completado",
-        description: "Tu guión ha sido guardado correctamente.",
+        title: "Guardado completado",
+        description: "La sección ha sido guardada correctamente.",
       });
     }
     return result;
-  }, [saveToSupabase, toast]);
+  }, [saveSection, toast]);
 
-  // Auto save with debouncing
-  const scheduleAutosave = useCallback((
-    content: string,
-    editorMode: 'structured' | 'free',
-    sections: Section[],
-    shots: Shot[],
-    creativeItems: CreativeItem[],
-    title?: string
-  ) => {
-    // Check if data has actually changed
-    const currentData = JSON.stringify({ content, editorMode, sections, shots, creativeItems });
-    if (currentData === lastSavedDataRef.current) return;
+  // Load section from Supabase
+  const loadSection = useCallback(async (sectionId: string) => {
+    if (!user) return null;
 
-    lastSavedDataRef.current = currentData;
-    setAutosaveState(prev => ({ ...prev, hasUnsavedChanges: true }));
+    try {
+      const { data, error } = await supabase
+        .from('section_drafts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('section_id', sectionId)
+        .maybeSingle();
 
-    // Clear existing timeout
-    if (autosaveTimeoutRef.current) {
-      clearTimeout(autosaveTimeoutRef.current);
+      if (error) throw error;
+
+      if (data) {
+        setSaveState(prev => ({
+          ...prev,
+          lastSaved: new Date(data.updated_at)
+        }));
+
+        return {
+          id: data.id,
+          title: data.title,
+          content: data.content || '',
+          shots: JSON.parse(data.shots || '[]')
+        };
+      }
+    } catch (error) {
+      console.error('Error cargando sección:', error);
     }
-
-    // Set new timeout for autosave (save after 3 seconds of inactivity)
-    autosaveTimeoutRef.current = setTimeout(() => {
-      saveToSupabase(content, editorMode, sections, shots, creativeItems, title);
-    }, 3000);
-  }, [saveToSupabase]);
+    return null;
+  }, [user]);
 
   // Helper function to safely parse JSON with fallback
   const safeJsonParse = (jsonString: any, fallback: any) => {
@@ -146,7 +161,6 @@ export const useSupabaseAutosave = () => {
       if (typeof jsonString === 'string') {
         return JSON.parse(jsonString);
       }
-      // If it's already an object/array, return it directly
       if (jsonString && typeof jsonString === 'object') {
         return jsonString;
       }
@@ -157,57 +171,11 @@ export const useSupabaseAutosave = () => {
     }
   };
 
-  // Load from Supabase
-  const loadFromSupabase = useCallback(async () => {
-    if (!user) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('script_drafts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setAutosaveState(prev => ({
-          ...prev,
-          draftId: data.id,
-          lastSaved: new Date(data.updated_at)
-        }));
-
-        return {
-          id: data.id,
-          title: data.title,
-          content: data.content || '',
-          editorMode: data.editor_mode as 'structured' | 'free',
-          sections: safeJsonParse(data.sections, []),
-          shots: safeJsonParse(data.shots, []),
-          creativeItems: safeJsonParse(data.creative_items, [])
-        };
-      }
-    } catch (error) {
-      console.error('Error cargando desde Supabase:', error);
-    }
-    return null;
-  }, [user]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (autosaveTimeoutRef.current) {
-        clearTimeout(autosaveTimeoutRef.current);
-      }
-    };
-  }, []);
-
   return {
-    autosaveState,
-    scheduleAutosave,
+    saveState,
+    markAsChanged,
     manualSave,
-    loadFromSupabase
+    loadSection,
+    safeJsonParse
   };
 };
