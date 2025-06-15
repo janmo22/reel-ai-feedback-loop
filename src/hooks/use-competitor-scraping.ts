@@ -41,6 +41,28 @@ export interface CompetitorVideo {
   competitor_analysis: any[];
 }
 
+// Helper function to ensure competitor data has all required fields
+const ensureCompetitorData = (data: any): CompetitorData => ({
+  id: data.id,
+  instagram_username: data.instagram_username,
+  display_name: data.display_name || null,
+  profile_picture_url: data.profile_picture_url || null,
+  follower_count: data.follower_count || null,
+  following_count: data.following_count || null,
+  posts_count: data.posts_count || null,
+  bio: data.bio || null,
+  is_verified: data.is_verified || false,
+  external_urls: data.external_urls || null,
+  is_business_account: data.is_business_account || false,
+  business_category: data.business_category || null,
+  is_private: data.is_private || false,
+  highlight_reel_count: data.highlight_reel_count || null,
+  igtvVideoCount: data.igtvVideoCount || null,
+  last_scraped_at: data.last_scraped_at || null,
+  competitor_videos: data.competitor_videos || [],
+  isLoading: data.isLoading || false
+});
+
 export const useCompetitorScraping = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [competitors, setCompetitors] = useState<CompetitorData[]>([]);
@@ -123,28 +145,11 @@ export const useCompetitorScraping = () => {
       if (fetchError) {
         console.error('Error fetching complete competitor:', fetchError);
         // If fetch fails, still add the basic competitor data with all required fields
-        const basicCompetitor: CompetitorData = {
-          ...data.competitor,
-          external_urls: data.competitor.external_urls || null,
-          is_business_account: data.competitor.is_business_account || false,
-          business_category: data.competitor.business_category || null,
-          is_private: data.competitor.is_private || false,
-          highlight_reel_count: data.competitor.highlight_reel_count || null,
-          igtvVideoCount: data.competitor.igtvVideoCount || null,
-          competitor_videos: data.competitor.competitor_videos || []
-        };
+        const basicCompetitor = ensureCompetitorData(data.competitor);
         setCompetitors(prev => [basicCompetitor, ...prev]);
       } else {
         // Ensure complete competitor has all required fields
-        const enhancedCompetitor: CompetitorData = {
-          ...completeCompetitor,
-          external_urls: completeCompetitor.external_urls || null,
-          is_business_account: completeCompetitor.is_business_account || false,
-          business_category: completeCompetitor.business_category || null,
-          is_private: completeCompetitor.is_private || false,
-          highlight_reel_count: completeCompetitor.highlight_reel_count || null,
-          igtvVideoCount: completeCompetitor.igtvVideoCount || null
-        };
+        const enhancedCompetitor = ensureCompetitorData(completeCompetitor);
         setCompetitors(prev => [enhancedCompetitor, ...prev]);
       }
 
@@ -191,15 +196,9 @@ export const useCompetitorScraping = () => {
       if (error) throw error;
       
       // Ensure all competitors have the required fields
-      const enhancedCompetitors: CompetitorData[] = (data || []).map(competitor => ({
-        ...competitor,
-        external_urls: competitor.external_urls || null,
-        is_business_account: competitor.is_business_account || false,
-        business_category: competitor.business_category || null,
-        is_private: competitor.is_private || false,
-        highlight_reel_count: competitor.highlight_reel_count || null,
-        igtvVideoCount: competitor.igtvVideoCount || null
-      }));
+      const enhancedCompetitors: CompetitorData[] = (data || []).map(competitor => 
+        ensureCompetitorData(competitor)
+      );
       
       setCompetitors(enhancedCompetitors);
     } catch (error) {
@@ -285,15 +284,7 @@ export const useCompetitorScraping = () => {
       if (error) throw error;
 
       // Ensure refreshed competitor has all required fields
-      const enhancedCompetitor: CompetitorData = {
-        ...data,
-        external_urls: data.external_urls || null,
-        is_business_account: data.is_business_account || false,
-        business_category: data.business_category || null,
-        is_private: data.is_private || false,
-        highlight_reel_count: data.highlight_reel_count || null,
-        igtvVideoCount: data.igtvVideoCount || null
-      };
+      const enhancedCompetitor = ensureCompetitorData(data);
 
       setCompetitors(prev => 
         prev.map(competitor => 
