@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -12,22 +11,21 @@ serve(async (req) => {
   console.log("Recibiendo análisis de video de competidor");
   
   // CORS headers
-  const headers = {
+  const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Content-Type": "application/json",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   };
   
   // Handle preflight OPTIONS request
   if (req.method === "OPTIONS") {
-    return new Response("OK", { headers, status: 200 });
+    return new Response("OK", { headers: corsHeaders, status: 200 });
   }
   
   if (req.method !== "POST") {
     return new Response(
       JSON.stringify({ error: "Method not allowed" }),
-      { headers, status: 405 }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 405 }
     );
   }
   
@@ -41,7 +39,7 @@ serve(async (req) => {
       console.error("La respuesta del webhook no es un array:", requestData);
       return new Response(
         JSON.stringify({ error: "Invalid data format, expected array" }),
-        { headers, status: 400 }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
     
@@ -119,7 +117,7 @@ serve(async (req) => {
         message: "Análisis de competidor procesado correctamente",
         count: requestData.length 
       }),
-      { headers, status: 200 }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
     
   } catch (error) {
@@ -127,7 +125,7 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({ error: "Internal server error", details: error.message }),
-      { headers, status: 500 }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });

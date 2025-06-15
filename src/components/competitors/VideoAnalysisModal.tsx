@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { CompetitorData, CompetitorVideo } from '@/hooks/use-competitor-scraping
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { startCompetitorVideoAnalysis } from '@/utils/competitor-analysis-service';
 
 interface VideoAnalysisModalProps {
   video: CompetitorVideo | null;
@@ -43,26 +43,13 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     setIsAnalyzing(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke('competitor-analysis-webhook', {
-        body: {
-          video_id: video.id,
-          video_url: video.video_url,
-          caption: video.caption,
-          hashtags_count: video.hashtags_count,
-          views_count: video.views_count,
-          likes_count: video.likes_count,
-          comments_count: video.comments_count,
-          competitor_username: competitor.instagram_username
-        }
-      });
-
-      if (error) throw error;
+      await startCompetitorVideoAnalysis({ video, competitor });
 
       toast.success('Análisis iniciado correctamente. Recibirás los resultados en unos minutos.');
       onClose();
     } catch (error) {
       console.error('Error starting analysis:', error);
-      toast.error('Error al iniciar el análisis. Inténtalo de nuevo.');
+      toast.error(error instanceof Error ? error.message : 'Error al iniciar el análisis. Inténtalo de nuevo.');
     } finally {
       setIsAnalyzing(false);
     }
