@@ -45,16 +45,22 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
           .maybeSingle();
 
         if (existingAnalysis) {
+          console.log('Análisis encontrado:', existingAnalysis);
           setAnalysisResults(existingAnalysis.feedback_data);
-          setShowResults(true);
+          setShowResults(false); // Mostrar el video primero, no el análisis automáticamente
+        } else {
+          setAnalysisResults(null);
+          setShowResults(false);
         }
       } catch (error) {
         console.error('Error loading existing analysis:', error);
       }
     };
 
-    loadExistingAnalysis();
-  }, [video]);
+    if (isOpen) {
+      loadExistingAnalysis();
+    }
+  }, [video, isOpen]);
 
   // Early return after all hooks are called
   if (!video) return null;
@@ -286,12 +292,14 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
               <Button
                 variant="outline"
                 onClick={() => setShowResults(false)}
+                className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 ← Volver al Video
               </Button>
               <Button
                 variant="outline"
                 onClick={() => window.open(video.video_url, '_blank')}
+                className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200"
               >
                 Ver en Instagram
               </Button>
@@ -386,6 +394,12 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
                   <Calendar className="h-3 w-3" />
                   {formatDate(video.posted_at)}
                 </Badge>
+                {analysisResults && (
+                  <Badge className="bg-green-100 text-green-800 border-green-200 flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    ✓ Analizado
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
@@ -416,6 +430,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
             <Button
               variant="outline"
               onClick={() => window.open(video.video_url, '_blank')}
+              className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200"
             >
               Ver en Instagram
             </Button>
@@ -429,6 +444,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
                   onClick={() => setShowResults(true)}
                   className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                 >
+                  <Eye className="h-4 w-4 mr-2" />
                   Ver Análisis Existente
                 </Button>
               ) : null}

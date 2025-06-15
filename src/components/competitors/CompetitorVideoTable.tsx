@@ -256,7 +256,9 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                 
                 <TableCell className="p-3">
                   {video.competitor_analysis && video.competitor_analysis.length > 0 ? (
-                    <Badge className="bg-green-100 text-green-800 border-green-200">
+                    <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200 transition-colors cursor-pointer" 
+                          onClick={() => handleAnalyzeVideo(video)}>
+                      <CheckCircle className="h-3 w-3 mr-1" />
                       ✓ Analizado
                     </Badge>
                   ) : (
