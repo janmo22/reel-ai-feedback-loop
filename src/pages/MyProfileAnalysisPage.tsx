@@ -20,58 +20,34 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useMyProfileScraping } from '@/hooks/use-my-profile-scraping';
 
 const MyProfileAnalysisPage: React.FC = () => {
   const [username, setUsername] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [profileData, setProfileData] = useState(null);
   const [analysisType, setAnalysisType] = useState<'basic' | 'extensive' | null>(null);
   const [analysisStatus, setAnalysisStatus] = useState<'idle' | 'extracting' | 'analyzing' | 'completed'>('idle');
   const { user } = useAuth();
   const { toast } = useToast();
+  const { scrapeProfile, isLoading, profiles, fetchProfiles } = useMyProfileScraping();
+
+  const currentProfile = profiles.length > 0 ? profiles[0] : null;
+
+  useEffect(() => {
+    fetchProfiles();
+  }, []);
 
   const handleExtractProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) return;
 
-    setIsLoading(true);
     setAnalysisStatus('extracting');
     
-    try {
-      // Aquí iría la lógica para extraer el perfil usando Apify
-      // Simulamos la extracción por ahora
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Mock data - esto será reemplazado por datos reales
-      const mockProfile = {
-        username: username.trim(),
-        display_name: "Usuario Ejemplo",
-        follower_count: 15420,
-        following_count: 892,
-        posts_count: 156,
-        bio: "Creador de contenido digital | Marketing & Growth",
-        is_verified: false,
-        videos_count: 42
-      };
-      
-      setProfileData(mockProfile);
+    const result = await scrapeProfile(username.trim());
+    if (result) {
       setAnalysisStatus('idle');
-      
-      toast({
-        title: "¡Perfil extraído exitosamente!",
-        description: `Se han extraído los datos de @${username}`,
-      });
-      
-    } catch (error) {
-      console.error('Error extracting profile:', error);
+      await fetchProfiles();
+    } else {
       setAnalysisStatus('idle');
-      toast({
-        title: "Error al extraer perfil",
-        description: "No se pudo extraer la información del perfil",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -89,10 +65,20 @@ const MyProfileAnalysisPage: React.FC = () => {
     }, 5000);
   };
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | null) => {
+    if (!num) return '0';
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Nunca';
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   const getStatusBadge = () => {
@@ -130,8 +116,8 @@ const MyProfileAnalysisPage: React.FC = () => {
           )}
         </div>
 
-        {/* Formulario de extracción */}
-        {!profileData && (
+        {/* Formulario de extracción o datos del perfil */}
+        {!currentProfile ? (
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -176,10 +162,7 @@ const MyProfileAnalysisPage: React.FC = () => {
               </form>
             </CardContent>
           </Card>
-        )}
-
-        {/* Datos del perfil extraído */}
-        {profileData && (
+        ) : (
           <div className="space-y-8">
             <Card>
               <CardHeader>
@@ -192,9 +175,8 @@ const MyProfileAnalysisPage: React.FC = () => {
                     variant="outline" 
                     size="sm"
                     onClick={() => {
-                      setProfileData(null);
-                      setUsername('');
-                      setAnalysisStatus('idle');
+                      // Lógica para cambiar perfil
+                      window.location.reload();
                     }}
                   >
                     Cambiar perfil
@@ -203,35 +185,50 @@ const MyProfileAnalysisPage: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-full bg-flow-blue/10 flex items-center justify-center">
-                    <User className="h-8 w-8 text-flow-blue" />
-                  </div>
+                  {currentProfile.profile_picture_url ? (
+                    <img
+                      src={currentProfile.profile_picture_url}
+                      alt={currentProfile.display_name || currentProfile.instagram_username}
+                      className="w-16 h-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-flow-blue/10 flex items-center justify-center">
+                      <User className="h-8 w-8 text-flow-blue" />
+                    </div>
+                  )}
                   <div>
-                    <h3 className="text-xl font-semibold">@{profileData.username}</h3>
-                    <p className="text-gray-600">{profileData.display_name}</p>
-                    {profileData.bio && (
-                      <p className="text-sm text-gray-500 mt-1">{profileData.bio}</p>
+                    <h3 className="text-xl font-semibold">@{currentProfile.instagram_username}</h3>
+                    {currentProfile.display_name && (
+                      <p className="text-gray-600">{currentProfile.display_name}</p>
+                    )}
+                    {currentProfile.bio && (
+                      <p className="text-sm text-gray-500 mt-1">{currentProfile.bio}</p>
                     )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{formatNumber(profileData.follower_count)}</div>
+                    <div className="text-2xl font-bold text-gray-900">{formatNumber(currentProfile.follower_count)}</div>
                     <div className="text-sm text-gray-600">Seguidores</div>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{formatNumber(profileData.following_count)}</div>
+                    <div className="text-2xl font-bold text-gray-900">{formatNumber(currentProfile.following_count)}</div>
                     <div className="text-sm text-gray-600">Siguiendo</div>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{profileData.posts_count}</div>
+                    <div className="text-2xl font-bold text-gray-900">{currentProfile.posts_count}</div>
                     <div className="text-sm text-gray-600">Posts</div>
                   </div>
                   <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{profileData.videos_count}</div>
+                    <div className="text-2xl font-bold text-gray-900">{currentProfile.my_profile_videos?.length || 0}</div>
                     <div className="text-sm text-gray-600">Videos</div>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-1 mt-4 text-xs text-gray-500">
+                  <Calendar className="h-3 w-3" />
+                  <span>Última actualización: {formatDate(currentProfile.last_scraped_at)}</span>
                 </div>
               </CardContent>
             </Card>
