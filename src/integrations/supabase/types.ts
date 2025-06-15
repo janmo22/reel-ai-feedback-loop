@@ -112,12 +112,18 @@ export type Database = {
       competitors: {
         Row: {
           bio: string | null
+          business_category: string | null
           created_at: string
           display_name: string | null
+          external_urls: string | null
           follower_count: number | null
           following_count: number | null
+          highlight_reel_count: number | null
           id: string
+          igtvvideocount: number | null
           instagram_username: string
+          is_business_account: boolean | null
+          is_private: boolean | null
           is_verified: boolean | null
           last_scraped_at: string | null
           posts_count: number | null
@@ -127,12 +133,18 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
+          business_category?: string | null
           created_at?: string
           display_name?: string | null
+          external_urls?: string | null
           follower_count?: number | null
           following_count?: number | null
+          highlight_reel_count?: number | null
           id?: string
+          igtvvideocount?: number | null
           instagram_username: string
+          is_business_account?: boolean | null
+          is_private?: boolean | null
           is_verified?: boolean | null
           last_scraped_at?: string | null
           posts_count?: number | null
@@ -142,12 +154,18 @@ export type Database = {
         }
         Update: {
           bio?: string | null
+          business_category?: string | null
           created_at?: string
           display_name?: string | null
+          external_urls?: string | null
           follower_count?: number | null
           following_count?: number | null
+          highlight_reel_count?: number | null
           id?: string
+          igtvvideocount?: number | null
           instagram_username?: string
+          is_business_account?: boolean | null
+          is_private?: boolean | null
           is_verified?: boolean | null
           last_scraped_at?: string | null
           posts_count?: number | null
