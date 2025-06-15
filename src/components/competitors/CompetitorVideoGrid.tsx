@@ -108,191 +108,137 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
   const totalViews = videos.reduce((sum, video) => sum + (video.views_count || 0), 0);
   const totalLikes = videos.reduce((sum, video) => sum + (video.likes_count || 0), 0);
   const totalComments = videos.reduce((sum, video) => sum + (video.comments_count || 0), 0);
-  const totalHashtags = videos.reduce((sum, video) => sum + (video.hashtags_count || 0), 0);
   const avgViews = videos.length > 0 ? Math.round(totalViews / videos.length) : 0;
-  const avgHashtags = videos.length > 0 ? Math.round(totalHashtags / videos.length) : 0;
   const avgEngagement = videos.length > 0 ? Math.round((totalLikes + totalComments) / videos.length) : 0;
 
   return (
     <div className="space-y-8">
-      {/* Enhanced Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
+      {/* Header minimalista */}
+      <div className="border-b border-gray-100 pb-6">
+        <div className="flex items-center justify-between mb-6">
           <Button 
             variant="ghost" 
             onClick={onBack}
-            className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200"
+            className="text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
           </Button>
           
-          <div className="flex items-center gap-6">
-            {competitor.profile_picture_url && (
-              <div className="relative">
-                <img
-                  src={competitor.profile_picture_url}
-                  alt={competitor.display_name || competitor.instagram_username}
-                  className="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-xl"
-                />
-                {competitor.is_verified && (
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            )}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleRefreshData}
+              disabled={isRefreshing}
+              className="bg-white border-gray-200 hover:bg-gray-50"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
             
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900">@{competitor.instagram_username}</h2>
-              {competitor.display_name && (
-                <p className="text-xl text-gray-600 font-medium">{competitor.display_name}</p>
-              )}
-              <div className="flex items-center gap-4 mt-2">
-                <span className="text-sm text-gray-500 flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  {formatNumber(competitor.follower_count)} seguidores
-                </span>
-                {competitor.is_verified && (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
-                    Verificado
-                  </Badge>
-                )}
-              </div>
-            </div>
+            {selectedVideos.length > 0 && (
+              <Button 
+                onClick={handleAnalyzeSelected} 
+                disabled={isAnalyzing}
+                className="bg-gray-900 hover:bg-gray-800 text-white"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Marcar Seleccionados ({selectedVideos.length})
+              </Button>
+            )}
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleRefreshData}
-            disabled={isRefreshing}
-            className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-          
-          {selectedVideos.length > 0 && (
-            <Button 
-              onClick={handleAnalyzeSelected} 
-              disabled={isAnalyzing}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              Marcar Seleccionados ({selectedVideos.length})
-            </Button>
+        <div className="flex items-center gap-6">
+          {competitor.profile_picture_url && (
+            <div className="relative">
+              <img
+                src={competitor.profile_picture_url}
+                alt={competitor.display_name || competitor.instagram_username}
+                className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+              />
+              {competitor.is_verified && (
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
           )}
+          
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">@{competitor.instagram_username}</h2>
+            {competitor.display_name && (
+              <p className="text-lg text-gray-600">{competitor.display_name}</p>
+            )}
+            <div className="flex items-center gap-4 mt-2">
+              <span className="text-sm text-gray-500">
+                {formatNumber(competitor.follower_count)} seguidores
+              </span>
+              {competitor.is_verified && (
+                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                  Verificado
+                </Badge>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Enhanced Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-600">Total Videos</p>
-                <p className="text-2xl font-bold text-gray-900">{videos.length}</p>
-              </div>
-              <BarChart3 className="h-6 w-6 text-gray-500" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats minimalistas */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="text-lg font-semibold text-gray-900">{videos.length}</div>
+          <div className="text-xs text-gray-600">Total Videos</div>
+        </div>
         
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-blue-700">Total Views</p>
-                <p className="text-2xl font-bold text-blue-900">{formatNumber(totalViews)}</p>
-              </div>
-              <Eye className="h-6 w-6 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="text-lg font-semibold text-gray-900">{formatNumber(totalViews)}</div>
+          <div className="text-xs text-gray-600">Total Views</div>
+        </div>
         
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50 to-red-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-red-700">Total Likes</p>
-                <p className="text-2xl font-bold text-red-900">{formatNumber(totalLikes)}</p>
-              </div>
-              <Heart className="h-6 w-6 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="text-lg font-semibold text-gray-900">{formatNumber(totalLikes)}</div>
+          <div className="text-xs text-gray-600">Total Likes</div>
+        </div>
         
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-green-700">Comentarios</p>
-                <p className="text-2xl font-bold text-green-900">{formatNumber(totalComments)}</p>
-              </div>
-              <MessageCircle className="h-6 w-6 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="text-lg font-semibold text-gray-900">{formatNumber(avgViews)}</div>
+          <div className="text-xs text-gray-600">Promedio Views</div>
+        </div>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-purple-700">Prom. Views</p>
-                <p className="text-2xl font-bold text-purple-900">{formatNumber(avgViews)}</p>
-              </div>
-              <TrendingUp className="h-6 w-6 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-orange-700">Engagement</p>
-                <p className="text-2xl font-bold text-orange-900">{formatNumber(avgEngagement)}</p>
-              </div>
-              <Hash className="h-6 w-6 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="text-lg font-semibold text-gray-900">{formatNumber(avgEngagement)}</div>
+          <div className="text-xs text-gray-600">Engagement</div>
+        </div>
       </div>
 
       {/* Bio Section */}
       {competitor.bio && (
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-900">Biografía</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700">{competitor.bio}</p>
-          </CardContent>
-        </Card>
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
+          <h3 className="font-medium text-gray-900 mb-2">Biografía</h3>
+          <p className="text-gray-700 text-sm leading-relaxed">{competitor.bio}</p>
+        </div>
       )}
 
-      {/* Enhanced Videos Table */}
-      <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
-        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg">
-          <CardTitle className="flex items-center justify-between">
-            <span className="text-xl text-gray-900">Videos Analizables ({videos.length})</span>
-            <div className="text-sm font-normal text-gray-600">
-              {selectedVideos.length > 0 && `${selectedVideos.length} seleccionados`}
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <CompetitorVideoTable
-            competitor={competitor}
-            onDeleteVideo={handleDeleteVideo}
-          />
-        </CardContent>
-      </Card>
+      {/* Videos Table */}
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="p-6 border-b border-gray-100">
+          <h3 className="text-lg font-medium text-gray-900">
+            Videos Analizables ({videos.length})
+          </h3>
+          {selectedVideos.length > 0 && (
+            <p className="text-sm text-gray-600 mt-1">
+              {selectedVideos.length} videos seleccionados
+            </p>
+          )}
+        </div>
+        <CompetitorVideoTable
+          competitor={competitor}
+          onDeleteVideo={handleDeleteVideo}
+        />
+      </div>
     </div>
   );
 };
