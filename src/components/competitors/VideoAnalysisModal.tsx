@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -55,7 +54,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     setIsAnalyzing(true);
 
     try {
-      const webhookUrl = "https://janmoliner33.app.n8n.cloud/webhook/competitor-analysis";
+      const webhookUrl = "https://primary-production-9b33.up.railway.app/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
       
       // Preparar los datos correctamente estructurados
       const analysisData = {
