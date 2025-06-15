@@ -8,28 +8,9 @@ interface ContentSeries {
   id: string;
   name: string;
   description: string | null;
-  target_audience: string | null;
-  content_pillars: string | null;
-  posting_frequency: string | null;
-  goals: string | null;
-  tone_style: string | null;
   user_id: string;
   created_at: string;
   updated_at: string;
-}
-
-interface CreateSeriesData {
-  name: string;
-  description?: string;
-  target_audience?: string;
-  content_pillars?: string;
-  posting_frequency?: string;
-  goals?: string;
-  tone_style?: string;
-}
-
-interface UpdateSeriesData extends CreateSeriesData {
-  id: string;
 }
 
 export const useContentSeries = () => {
@@ -54,20 +35,15 @@ export const useContentSeries = () => {
   });
 
   const createSeries = useMutation({
-    mutationFn: async (seriesData: CreateSeriesData) => {
+    mutationFn: async ({ name, description }: { name: string; description?: string }) => {
       if (!user) throw new Error('Usuario no autenticado');
       
       const { data, error } = await supabase
         .from('content_series')
         .insert({
           user_id: user.id,
-          name: seriesData.name.trim(),
-          description: seriesData.description?.trim() || null,
-          target_audience: seriesData.target_audience?.trim() || null,
-          content_pillars: seriesData.content_pillars?.trim() || null,
-          posting_frequency: seriesData.posting_frequency?.trim() || null,
-          goals: seriesData.goals?.trim() || null,
-          tone_style: seriesData.tone_style?.trim() || null
+          name: name.trim(),
+          description: description?.trim() || null
         })
         .select()
         .single();
@@ -92,19 +68,14 @@ export const useContentSeries = () => {
   });
 
   const updateSeries = useMutation({
-    mutationFn: async (seriesData: UpdateSeriesData) => {
+    mutationFn: async ({ id, name, description }: { id: string; name: string; description?: string }) => {
       const { data, error } = await supabase
         .from('content_series')
         .update({
-          name: seriesData.name.trim(),
-          description: seriesData.description?.trim() || null,
-          target_audience: seriesData.target_audience?.trim() || null,
-          content_pillars: seriesData.content_pillars?.trim() || null,
-          posting_frequency: seriesData.posting_frequency?.trim() || null,
-          goals: seriesData.goals?.trim() || null,
-          tone_style: seriesData.tone_style?.trim() || null
+          name: name.trim(),
+          description: description?.trim() || null
         })
-        .eq('id', seriesData.id)
+        .eq('id', id)
         .select()
         .single();
       

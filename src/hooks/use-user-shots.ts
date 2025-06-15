@@ -8,19 +8,8 @@ interface UserShot {
   id: string;
   name: string;
   description: string | null;
-  color: string;
   user_id: string;
   created_at: string;
-}
-
-interface CreateShotData {
-  name: string;
-  description?: string;
-  color?: string;
-}
-
-interface UpdateShotData extends CreateShotData {
-  id: string;
 }
 
 export const useUserShots = () => {
@@ -45,16 +34,15 @@ export const useUserShots = () => {
   });
 
   const createShot = useMutation({
-    mutationFn: async (shotData: CreateShotData) => {
+    mutationFn: async ({ name, description }: { name: string; description?: string }) => {
       if (!user) throw new Error('Usuario no autenticado');
       
       const { data, error } = await supabase
         .from('user_shots')
         .insert({
           user_id: user.id,
-          name: shotData.name.trim(),
-          description: shotData.description?.trim() || null,
-          color: shotData.color || '#3B82F6'
+          name: name.trim(),
+          description: description?.trim() || null
         })
         .select()
         .single();
@@ -72,38 +60,6 @@ export const useUserShots = () => {
     onError: (error: any) => {
       toast({
         title: "Error al crear plano",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  });
-
-  const updateShot = useMutation({
-    mutationFn: async (shotData: UpdateShotData) => {
-      const { data, error } = await supabase
-        .from('user_shots')
-        .update({
-          name: shotData.name.trim(),
-          description: shotData.description?.trim() || null,
-          color: shotData.color || '#3B82F6'
-        })
-        .eq('id', shotData.id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-shots'] });
-      toast({
-        title: "Plano actualizado",
-        description: "El plano ha sido actualizado correctamente.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error al actualizar plano",
         description: error.message,
         variant: "destructive",
       });
@@ -139,7 +95,6 @@ export const useUserShots = () => {
     userShots,
     isLoading,
     createShot,
-    updateShot,
     deleteShot
   };
 };
