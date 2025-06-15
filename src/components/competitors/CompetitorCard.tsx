@@ -41,7 +41,13 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
   let externalUrls = [];
   try {
     if (competitor.external_urls) {
-      externalUrls = JSON.parse(competitor.external_urls);
+      const parsed = JSON.parse(competitor.external_urls);
+      // Handle both array of strings and array of objects
+      externalUrls = Array.isArray(parsed) ? parsed.filter(url => {
+        if (typeof url === 'string') return true;
+        if (typeof url === 'object' && url.url) return true;
+        return false;
+      }).map(url => typeof url === 'string' ? url : url.url) : [];
     }
   } catch (e) {
     console.warn('Error parsing external URLs:', e);
@@ -278,18 +284,26 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
               Enlaces externos
             </p>
             <div className="flex flex-wrap gap-2">
-              {externalUrls.slice(0, 2).map((url, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(url, '_blank')}
-                  className="text-xs px-3 py-2 h-auto bg-white/80 hover:bg-blue-50 border-gray-200 hover:border-blue-300 transition-all duration-200"
-                >
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  {new URL(url).hostname}
-                </Button>
-              ))}
+              {externalUrls.slice(0, 2).map((url, index) => {
+                try {
+                  const urlObj = new URL(url);
+                  return (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(url, '_blank')}
+                      className="text-xs px-3 py-2 h-auto bg-white/80 hover:bg-blue-50 border-gray-200 hover:border-blue-300 transition-all duration-200"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      {urlObj.hostname}
+                    </Button>
+                  );
+                } catch (e) {
+                  console.warn('Invalid URL:', url);
+                  return null;
+                }
+              })}
             </div>
           </div>
         )}

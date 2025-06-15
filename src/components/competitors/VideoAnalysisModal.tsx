@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Heart, Eye, MessageCircle, Hash, Clock, Calendar, CheckCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { CompetitorVideo, CompetitorData } from '@/hooks/use-competitor-scraping';
+import { Sparkles, Clock, Eye, Heart, MessageCircle, Calendar, Loader2, CheckCircle, ExternalLink } from 'lucide-react';
+import { CompetitorData, CompetitorVideo } from '@/hooks/use-competitor-scraping';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import CompetitorAnalysisResults from './CompetitorAnalysisResults';
+import { toast } from 'sonner';
 
 interface VideoAnalysisModalProps {
   video: CompetitorVideo | null;
@@ -25,50 +23,74 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
   competitor
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisNotes, setAnalysisNotes] = useState('');
-  const [analysisResults, setAnalysisResults] = useState(null);
-  const { toast } = useToast();
-  const { user } = useAuth();
+  const [existingAnalysis, setExistingAnalysis] = useState<any>(null);
   const navigate = useNavigate();
 
-  // Always call useEffect hooks, but with proper conditions inside
-  React.useEffect(() => {
-    const loadExistingAnalysis = async () => {
-      if (!video) return;
-      
-      try {
-        const { data: existingAnalysis } = await supabase
-          .from('competitor_analysis')
-          .select('*')
-          .eq('competitor_video_id', video.id)
-          .eq('analysis_status', 'completed')
-          .maybeSingle();
-
-        if (existingAnalysis) {
-          console.log('Análisis encontrado:', existingAnalysis);
-          setAnalysisResults(existingAnalysis.feedback_data);
-          setShowResults(false); // Mostrar el video primero, no el análisis automáticamente
-        } else {
-          setAnalysisResults(null);
-          setShowResults(false);
-        }
-      } catch (error) {
-        console.error('Error loading existing analysis:', error);
+  useEffect(() => {
+    if (video && isOpen) {
+      // Check if video already has analysis
+      if (video.competitor_analysis && video.competitor_analysis.length > 0) {
+        setExistingAnalysis(video.competitor_analysis[0]);
+      } else {
+        setExistingAnalysis(null);
       }
-    };
-
-    if (isOpen) {
-      loadExistingAnalysis();
     }
   }, [video, isOpen]);
 
-  // Early return after all hooks are called
+  const handleAnalyze = async () => {
+    if (!video) return;
+    
+    setIsAnalyzing(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('competitor-analysis-webhook', {
+        body: {
+          video_id: video.id,
+          video_url: video.video_url,
+          caption: video.caption,
+          hashtags_count: video.hashtags_count,
+          views_count: video.views_count,
+          likes_count: video.likes_count,
+          comments_count: video.comments_count,
+          competitor_username: competitor.instagram_username
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Análisis iniciado correctamente. Recibirás los resultados en unos minutos.');
+      onClose();
+    } catch (error) {
+      console.error('Error starting analysis:', error);
+      toast.error('Error al iniciar el análisis. Inténtalo de nuevo.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleViewAnalysis = () => {
+    if (video) {
+      navigate(`/competitor-video/${video.id}`);
+      onClose();
+    }
+  };
+
   if (!video) return null;
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | null) => {
+    if (!num) return '0';
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '--';
+    return new Date(dateString).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   const formatDuration = (seconds: number | null) => {
@@ -78,397 +100,186 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '--';
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Function to fetch comprehensive user data
-  const fetchUserData = async () => {
-    if (!user) return null;
-
-    try {
-      // Get user mission data
-      const { data: userMission } = await supabase
-        .from('user_mission')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      // Get user's own profile data
-      const { data: myProfile } = await supabase
-        .from('my_profile')
-        .select(`
-          *,
-          my_profile_videos (*)
-        `)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      // Get user's video performance data
-      const { data: userVideos } = await supabase
-        .from('videos')
-        .select(`
-          *,
-          feedback (*)
-        `)
-        .eq('user_id', user.id);
-
-      // Calculate user's video metrics
-      const userVideoMetrics = userVideos ? {
-        total_videos: userVideos.length,
-        avg_score: userVideos.filter(v => v.feedback?.length > 0).length > 0 
-          ? userVideos
-              .filter(v => v.feedback?.length > 0)
-              .reduce((sum, v) => sum + (v.feedback[0]?.overall_score || 0), 0) / 
-            userVideos.filter(v => v.feedback?.length > 0).length
-          : 0,
-        completed_videos: userVideos.filter(v => v.status === 'completed').length,
-        processing_videos: userVideos.filter(v => v.status === 'processing').length
-      } : null;
-
-      // Calculate user's Instagram metrics if available
-      const userInstagramMetrics = myProfile ? {
-        follower_count: myProfile.follower_count || 0,
-        following_count: myProfile.following_count || 0,
-        posts_count: myProfile.posts_count || 0,
-        is_verified: myProfile.is_verified || false,
-        total_my_videos: myProfile.my_profile_videos?.length || 0,
-        avg_likes: myProfile.my_profile_videos?.length > 0 
-          ? myProfile.my_profile_videos.reduce((sum, v) => sum + (v.likes_count || 0), 0) / myProfile.my_profile_videos.length
-          : 0,
-        avg_views: myProfile.my_profile_videos?.length > 0 
-          ? myProfile.my_profile_videos.reduce((sum, v) => sum + (v.views_count || 0), 0) / myProfile.my_profile_videos.length
-          : 0,
-        avg_comments: myProfile.my_profile_videos?.length > 0 
-          ? myProfile.my_profile_videos.reduce((sum, v) => sum + (v.comments_count || 0), 0) / myProfile.my_profile_videos.length
-          : 0
-      } : null;
-
-      return {
-        user_id: user.id,
-        user_email: user.email,
-        user_mission: userMission,
-        my_profile: myProfile,
-        user_video_metrics: userVideoMetrics,
-        user_instagram_metrics: userInstagramMetrics,
-        analysis_context: {
-          has_strategy: !!userMission,
-          has_instagram_profile: !!myProfile,
-          total_analyzed_videos: userVideos?.length || 0,
-          account_creation_date: user.created_at
-        }
-      };
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      return null;
-    }
-  };
-
-  const handleAnalyze = async () => {
-    setIsAnalyzing(true);
-
-    try {
-      const webhookUrl = "https://primary-production-9b33.up.railway.app/webhook-test/d21a77de-3dfb-4a00-8872-1047fa550e57";
-      
-      // Fetch comprehensive user data
-      const userData = await fetchUserData();
-      
-      // Preparar los datos para el análisis incluyendo toda la información del usuario
-      const analysisData = {
-        // Video data
-        video_id: video.id,
-        instagram_id: video.instagram_id,
-        video_url: video.video_url,
-        caption: video.caption || '',
-        likes_count: video.likes_count || 0,
-        comments_count: video.comments_count || 0,
-        views_count: video.views_count || 0,
-        duration_seconds: video.duration_seconds || 0,
-        hashtags_count: video.hashtags_count || 0,
-        posted_at: video.posted_at,
-        thumbnail_url: video.thumbnail_url || '',
-        analysis_notes: analysisNotes.trim(),
-        timestamp: new Date().toISOString(),
-        
-        // Video metrics
-        engagement_rate: video.likes_count && video.views_count ? 
-          ((video.likes_count + video.comments_count) / video.views_count * 100).toFixed(2) : '0',
-        
-        // Competitor data
-        competitor_data: {
-          username: competitor.instagram_username,
-          follower_count: competitor.follower_count || 0,
-          following_count: competitor.following_count || 0,
-          posts_count: competitor.posts_count || 0,
-          display_name: competitor.display_name,
-          is_verified: competitor.is_verified,
-          is_business_account: competitor.is_business_account,
-          business_category: competitor.business_category,
-          bio: competitor.bio,
-          is_private: competitor.is_private,
-          video_metrics: {
-            performance_score: video.views_count > 0 ? 
-              Math.min(100, Math.round((video.likes_count / video.views_count) * 1000)) : 0
-          }
-        },
-        
-        // Comprehensive user data for personalized analysis
-        user_data: userData,
-        
-        // Comparison context
-        comparison_context: {
-          user_vs_competitor_followers: userData?.user_instagram_metrics?.follower_count && competitor.follower_count
-            ? {
-                user_followers: userData.user_instagram_metrics.follower_count,
-                competitor_followers: competitor.follower_count,
-                ratio: (userData.user_instagram_metrics.follower_count / competitor.follower_count).toFixed(3)
-              }
-            : null,
-          user_avg_performance: userData?.user_instagram_metrics?.avg_views || 0,
-          competitor_video_performance: video.views_count || 0,
-          user_content_strategy: userData?.user_mission ? {
-            value_proposition: userData.user_mission.value_proposition,
-            target_audience: userData.user_mission.target_audience,
-            niche: userData.user_mission.niche,
-            content_tone: userData.user_mission.content_tone,
-            content_personality: userData.user_mission.content_personality
-          } : null
-        }
-      };
-
-      console.log('Enviando video para análisis con datos completos del usuario:', analysisData);
-
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(analysisData)
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Análisis iniciado",
-          description: "El video ha sido enviado para análisis personalizado con IA. Los resultados incluirán comparaciones específicas para tu perfil.",
-        });
-        onClose();
-      } else {
-        const errorText = await response.text();
-        console.error('Error response:', response.status, errorText);
-        throw new Error(`Error del webhook: ${response.status} - ${errorText}`);
+  // Function to handle image URLs, especially from Apify
+  const getImageUrl = (url: string | null) => {
+    if (!url) return null;
+    
+    // Handle Apify URLs by decoding the base64 part
+    if (url.includes('images.apifyusercontent.com')) {
+      try {
+        const parts = url.split('/');
+        const encodedPart = parts[parts.length - 1].replace('.jpg', '').replace('.png', '').replace('.webp', '');
+        const decodedUrl = atob(encodedPart);
+        return decodedUrl;
+      } catch (e) {
+        console.warn('Could not decode Apify URL:', e);
+        return url;
       }
-    } catch (error) {
-      console.error('Error enviando para análisis:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "No se pudo enviar el video para análisis. Inténtalo de nuevo.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsAnalyzing(false);
     }
+    
+    return url;
   };
-
-  const handleViewFullAnalysis = () => {
-    if (video) {
-      navigate(`/competitor-video/${video.id}`);
-      onClose();
-    }
-  };
-
-  if (showResults && analysisResults) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-purple-500" />
-              Análisis de Video - @{competitor.instagram_username}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="mt-4">
-            <div className="flex justify-between items-center mb-6">
-              <Button
-                variant="outline"
-                onClick={() => setShowResults(false)}
-                className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                ← Volver al Video
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => window.open(video.video_url, '_blank')}
-                className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                Ver en Instagram
-              </Button>
-            </div>
-            
-            <CompetitorAnalysisResults analysisData={analysisResults} />
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-purple-500" />
-            Analizar Video de @{competitor.instagram_username}
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white to-gray-50">
+        <DialogHeader className="space-y-4 pb-6 border-b border-gray-100">
+          <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-white" />
+            </div>
+            Análisis de Video - @{competitor.instagram_username}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Video Preview */}
-          <div className="flex gap-4">
-            <div className="w-40 h-56 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 shadow-md">
-              {video.thumbnail_url ? (
-                <img
-                  src={video.thumbnail_url}
-                  alt="Portada del video"
-                  className="w-full h-full object-cover"
-                  crossOrigin="anonymous"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              ) : null}
-              <div className={`w-full h-full flex items-center justify-center text-gray-400 ${video.thumbnail_url ? 'hidden' : ''}`}>
-                <div className="text-center">
-                  <Sparkles className="h-8 w-8 mx-auto mb-2" />
-                  <p className="text-sm">Sin portada</p>
+        <div className="space-y-8">
+          {/* Video Preview Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Video Thumbnail */}
+            <div className="lg:col-span-1">
+              <div className="aspect-[9/16] bg-gray-100 rounded-xl overflow-hidden shadow-lg border-2 border-gray-200">
+                {video.thumbnail_url ? (
+                  <img
+                    src={getImageUrl(video.thumbnail_url)}
+                    alt="Video thumbnail"
+                    className="w-full h-full object-cover"
+                    crossOrigin="anonymous"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <div className={`w-full h-full flex items-center justify-center text-gray-400 ${video.thumbnail_url ? 'hidden' : ''}`}>
+                  <div className="text-center">
+                    <Eye className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                    <p className="text-sm">Sin imagen disponible</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 space-y-3">
-              {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg border border-red-100">
-                  <Heart className="h-4 w-4 text-red-500" />
-                  <div>
-                    <p className="text-xs text-gray-600">Likes</p>
-                    <p className="font-semibold text-lg">{formatNumber(video.likes_count)}</p>
-                  </div>
+            {/* Video Stats */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200 text-center">
+                  <Eye className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-blue-900">{formatNumber(video.views_count)}</div>
+                  <div className="text-xs text-blue-700 font-medium">Vistas</div>
                 </div>
-                
-                <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                  <Eye className="h-4 w-4 text-blue-500" />
-                  <div>
-                    <p className="text-xs text-gray-600">Views</p>
-                    <p className="font-semibold text-lg">{formatNumber(video.views_count)}</p>
-                  </div>
+                <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-red-200 text-center">
+                  <Heart className="h-6 w-6 text-red-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-red-900">{formatNumber(video.likes_count)}</div>
+                  <div className="text-xs text-red-700 font-medium">Likes</div>
                 </div>
-                
-                <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg border border-green-100">
-                  <MessageCircle className="h-4 w-4 text-green-500" />
-                  <div>
-                    <p className="text-xs text-gray-600">Comentarios</p>
-                    <p className="font-semibold text-lg">{formatNumber(video.comments_count)}</p>
-                  </div>
+                <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200 text-center">
+                  <MessageCircle className="h-6 w-6 text-green-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-green-900">{formatNumber(video.comments_count)}</div>
+                  <div className="text-xs text-green-700 font-medium">Comentarios</div>
                 </div>
-                
-                <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg border border-purple-100">
-                  <Hash className="h-4 w-4 text-purple-500" />
-                  <div>
-                    <p className="text-xs text-gray-600">Hashtags</p>
-                    <p className="font-semibold text-lg">{video.hashtags_count || 0}</p>
-                  </div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200 text-center">
+                  <Clock className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-purple-900">{formatDuration(video.duration_seconds)}</div>
+                  <div className="text-xs text-purple-700 font-medium">Duración</div>
                 </div>
               </div>
 
-              {/* Additional Info */}
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {formatDuration(video.duration_seconds)}
-                </Badge>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {formatDate(video.posted_at)}
-                </Badge>
-                {analysisResults && (
-                  <Badge className="bg-green-100 text-green-800 border-green-200 flex items-center gap-1">
-                    <CheckCircle className="h-3 w-3" />
-                    ✓ Analizado
+              {/* Video Details */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Calendar className="h-4 w-4" />
+                  <span>Publicado: {formatDate(video.posted_at)}</span>
+                </div>
+                
+                {video.caption && (
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <h4 className="font-semibold text-gray-900 mb-2">Caption:</h4>
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                      {video.caption}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="text-purple-700 border-purple-300 bg-purple-50">
+                    #{video.hashtags_count || 0} hashtags
                   </Badge>
-                )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(video.video_url, '_blank')}
+                    className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Ver en Instagram
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Caption */}
-          {video.caption && (
-            <div>
-              <h4 className="font-semibold mb-2">Caption completo:</h4>
-              <div className="p-4 bg-gray-50 rounded-lg max-h-40 overflow-y-auto border">
-                <p className="text-sm whitespace-pre-wrap">{video.caption}</p>
+          {/* Analysis Status Section */}
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 rounded-xl border border-gray-200">
+            {existingAnalysis ? (
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">¡Análisis Completado!</h3>
+                  <p className="text-gray-600 mb-4">
+                    Este video ya ha sido analizado por nuestra IA. Puedes ver los resultados detallados.
+                  </p>
+                  <Button
+                    onClick={handleViewAnalysis}
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Ver Análisis Completo
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Analysis Notes */}
-          <div>
-            <h4 className="font-semibold mb-2">Notas para el análisis (opcional):</h4>
-            <Textarea
-              value={analysisNotes}
-              onChange={(e) => setAnalysisNotes(e.target.value)}
-              placeholder="Añade contexto específico o preguntas sobre este video para el análisis con IA..."
-              className="min-h-[100px] resize-none"
-            />
+            ) : (
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                  <Sparkles className="h-8 w-8 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Análizar con IA</h3>
+                  <p className="text-gray-600 mb-4">
+                    Obtén insights detallados sobre este video: estrategias de contenido, engagement, 
+                    mejores prácticas y recomendaciones personalizadas.
+                  </p>
+                  <Button
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Analizando...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Iniciar Análisis
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Actions */}
-          <div className="flex justify-between pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => window.open(video.video_url, '_blank')}
-              className="bg-white/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              Ver en Instagram
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <Button variant="outline" onClick={onClose}>
+              Cerrar
             </Button>
-            
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              {analysisResults ? (
-                <Button 
-                  onClick={handleViewFullAnalysis}
-                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Ver Análisis Completo
-                </Button>
-              ) : null}
-              <Button onClick={handleAnalyze} disabled={isAnalyzing}>
-                {isAnalyzing ? (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2 animate-pulse" />
-                    Analizando...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Analizar con IA
-                  </>
-                )}
-              </Button>
-            </div>
           </div>
         </div>
       </DialogContent>
