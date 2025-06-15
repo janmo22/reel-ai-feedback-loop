@@ -38,6 +38,18 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
     }
   }, [sections, freeContent, editorMode, onContentChange, getAllContent]);
 
+  // Function to switch modes and transfer content
+  const switchMode = (mode: 'structured' | 'free') => {
+    if (mode === 'free' && editorMode === 'structured') {
+      // Transfer structured content to free mode
+      const structuredContent = getAllContent();
+      if (structuredContent.trim()) {
+        setFreeContent(structuredContent);
+      }
+    }
+    setEditorMode(mode);
+  };
+
   // Check if there's any content written
   const hasContent = editorMode === 'structured' 
     ? sections.some(section => section.content.trim().length > 0)
@@ -65,7 +77,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
             <Button
               variant={editorMode === 'structured' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setEditorMode('structured')}
+              onClick={() => switchMode('structured')}
               className="flex items-center gap-2"
             >
               <Layout className="h-4 w-4" />
@@ -74,7 +86,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
             <Button
               variant={editorMode === 'free' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setEditorMode('free')}
+              onClick={() => switchMode('free')}
               className="flex items-center gap-2"
             >
               <FileText className="h-4 w-4" />

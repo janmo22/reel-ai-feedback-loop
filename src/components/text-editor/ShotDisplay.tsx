@@ -1,18 +1,15 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, X, Plus, Edit, Trash2, ChevronDown, ChevronUp, Eye, EyeOff, MessageSquare, Film } from 'lucide-react';
-import { Shot, ShotInfo } from '@/hooks/use-advanced-editor';
+import { Check, X, ChevronDown, ChevronUp, Eye, EyeOff, MessageSquare, Film } from 'lucide-react';
+import { Shot } from '@/hooks/use-advanced-editor';
 
 interface ShotDisplayProps {
   shots: Shot[];
   onToggleStrikethrough?: (segmentId: string) => void;
-  onAddShotInfo?: (shotId: string, label: string, value: string) => void;
-  onUpdateShotInfo?: (shotId: string, infoId: string, label: string, value: string) => void;
-  onRemoveShotInfo?: (shotId: string, infoId: string) => void;
   onAddSegmentInfo?: (segmentId: string, info: string) => void;
   onUpdateSegmentInfo?: (segmentId: string, info: string) => void;
   onRemoveSegmentInfo?: (segmentId: string) => void;
@@ -21,19 +18,13 @@ interface ShotDisplayProps {
 export const ShotDisplay: React.FC<ShotDisplayProps> = ({ 
   shots, 
   onToggleStrikethrough,
-  onAddShotInfo,
-  onUpdateShotInfo,
-  onRemoveShotInfo,
   onAddSegmentInfo,
   onUpdateSegmentInfo,
   onRemoveSegmentInfo
 }) => {
   const [expandedShots, setExpandedShots] = useState<Set<string>>(new Set());
   const [shotsVisible, setShotsVisible] = useState(true);
-  const [editingInfo, setEditingInfo] = useState<{ shotId: string; infoId: string | null }>({ shotId: '', infoId: null });
   const [editingSegmentInfo, setEditingSegmentInfo] = useState<{ segmentId: string; isEditing: boolean }>({ segmentId: '', isEditing: false });
-  const [newInfoLabel, setNewInfoLabel] = useState('');
-  const [newInfoValue, setNewInfoValue] = useState('');
   const [segmentInfoText, setSegmentInfoText] = useState('');
 
   const toggleShotExpanded = (shotId: string) => {
@@ -46,42 +37,6 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
       }
       return newSet;
     });
-  };
-
-  const handleAddInfo = (shotId: string) => {
-    if (newInfoLabel.trim() && newInfoValue.trim() && onAddShotInfo) {
-      onAddShotInfo(shotId, newInfoLabel.trim(), newInfoValue.trim());
-      setNewInfoLabel('');
-      setNewInfoValue('');
-      setEditingInfo({ shotId: '', infoId: null });
-    }
-  };
-
-  const handleUpdateInfo = (shotId: string, infoId: string) => {
-    if (newInfoLabel.trim() && newInfoValue.trim() && onUpdateShotInfo) {
-      onUpdateShotInfo(shotId, infoId, newInfoLabel.trim(), newInfoValue.trim());
-      setNewInfoLabel('');
-      setNewInfoValue('');
-      setEditingInfo({ shotId: '', infoId: null });
-    }
-  };
-
-  const startEditingInfo = (shotId: string, info?: ShotInfo) => {
-    if (info) {
-      setNewInfoLabel(info.label);
-      setNewInfoValue(info.value);
-      setEditingInfo({ shotId, infoId: info.id });
-    } else {
-      setNewInfoLabel('');
-      setNewInfoValue('');
-      setEditingInfo({ shotId, infoId: null });
-    }
-  };
-
-  const cancelEditing = () => {
-    setEditingInfo({ shotId: '', infoId: null });
-    setNewInfoLabel('');
-    setNewInfoValue('');
   };
 
   const handleAddSegmentInfo = (segmentId: string) => {
@@ -213,7 +168,7 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
                               size="sm"
                               onClick={() => startEditingSegmentInfo(segment.id, segment.additionalInfo)}
                               className="h-5 w-5 p-0 text-gray-400 hover:text-blue-600"
-                              title="Añadir información"
+                              title="Añadir información adicional"
                             >
                               <MessageSquare className="h-3 w-3" />
                             </Button>
@@ -234,6 +189,27 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
                             )}
                           </div>
                         </div>
+
+                        {/* Segment additional info display */}
+                        {segment.additionalInfo && !editingSegmentInfo.isEditing && (
+                          <div className="ml-2 p-2 bg-blue-50 rounded text-xs border-l-2 border-blue-200">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1">
+                                <span className="font-medium text-blue-800">Información Adicional:</span>
+                                <p className="text-blue-700 mt-1">{segment.additionalInfo}</p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startEditingSegmentInfo(segment.id, segment.additionalInfo)}
+                                className="h-5 w-5 p-0 text-blue-400 hover:text-blue-600"
+                                title="Editar información"
+                              >
+                                <MessageSquare className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Segment additional info form */}
                         {editingSegmentInfo.segmentId === segment.id && editingSegmentInfo.isEditing && (
@@ -285,90 +261,6 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
                         )}
                       </div>
                     ))}
-
-                    {/* Shot-level additional info */}
-                    <div className="pt-2 border-t space-y-1">
-                      <div className="text-xs font-medium text-gray-600 flex items-center justify-between">
-                        <span>Información del plano:</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startEditingInfo(shot.id)}
-                          className="h-5 text-xs px-2"
-                        >
-                          <Plus className="h-2 w-2 mr-1" />
-                          Añadir
-                        </Button>
-                      </div>
-
-                      {/* Existing shot info items */}
-                      {shot.additionalInfo.map((info) => (
-                        <div key={info.id} className="flex items-center gap-1 text-xs">
-                          <div className="flex-1 bg-gray-50 p-1.5 rounded border">
-                            <span className="font-medium text-gray-700">{info.label}:</span> 
-                            <span className="text-gray-600">{info.value}</span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEditingInfo(shot.id, info)}
-                            className="h-5 w-5 p-0 text-gray-400 hover:text-blue-600"
-                          >
-                            <Edit className="h-2 w-2" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onRemoveShotInfo?.(shot.id, info.id)}
-                            className="h-5 w-5 p-0 text-gray-400 hover:text-red-600"
-                          >
-                            <Trash2 className="h-2 w-2" />
-                          </Button>
-                        </div>
-                      ))}
-
-                      {/* Add/Edit shot info form */}
-                      {editingInfo.shotId === shot.id && (
-                        <div className="space-y-1 p-2 bg-blue-50 rounded border">
-                          <Input
-                            placeholder="Etiqueta (ej: Ángulo, Duración...)"
-                            value={newInfoLabel}
-                            onChange={(e) => setNewInfoLabel(e.target.value)}
-                            className="text-xs h-7"
-                          />
-                          <Input
-                            placeholder="Valor (ej: Primer plano, 5 segundos...)"
-                            value={newInfoValue}
-                            onChange={(e) => setNewInfoValue(e.target.value)}
-                            className="text-xs h-7"
-                          />
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                if (editingInfo.infoId) {
-                                  handleUpdateInfo(shot.id, editingInfo.infoId);
-                                } else {
-                                  handleAddInfo(shot.id);
-                                }
-                              }}
-                              disabled={!newInfoLabel.trim() || !newInfoValue.trim()}
-                              className="h-6 text-xs px-2"
-                            >
-                              {editingInfo.infoId ? 'Actualizar' : 'Añadir'}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={cancelEditing}
-                              className="h-6 text-xs px-2"
-                            >
-                              Cancelar
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
                   </div>
                 )}
               </CardContent>

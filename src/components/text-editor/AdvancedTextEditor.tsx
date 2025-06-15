@@ -55,15 +55,38 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     removeCreativeItem,
     getShotForText,
     toggleTextStrikethrough,
-    addShotInfo,
-    updateShotInfo,
-    removeShotInfo,
     addSegmentInfo,
     updateSegmentInfo,
     removeSegmentInfo
   } = useAdvancedEditor(content);
 
   const overlayRef = useRef<HTMLDivElement>(null);
+
+  // Auto-resize textarea function
+  const autoResizeTextarea = () => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      
+      // Calculate the new height based on content
+      const newHeight = Math.max(150, textarea.scrollHeight);
+      
+      // Set the new height
+      textarea.style.height = `${newHeight}px`;
+      
+      // Also update the overlay height
+      if (overlayRef.current) {
+        overlayRef.current.style.height = `${newHeight}px`;
+      }
+    }
+  };
+
+  // Auto-resize on content change
+  useEffect(() => {
+    autoResizeTextarea();
+  }, [editorContent]);
 
   // Sync with parent component only when there are actual changes
   useEffect(() => {
@@ -95,6 +118,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
 
   const handleContentChange = (newContent: string) => {
     updateContent(newContent);
+    // Auto-resize after content update
+    setTimeout(autoResizeTextarea, 0);
   };
 
   const syncScroll = () => {
@@ -247,7 +272,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                 {/* Background highlighting layer */}
                 <div 
                   ref={overlayRef}
-                  className="absolute top-0 left-0 w-full h-full pointer-events-none z-0 overflow-auto"
+                  className="absolute top-0 left-0 w-full pointer-events-none z-0 overflow-hidden"
                   style={{
                     padding: '12px',
                     whiteSpace: 'pre-wrap',
@@ -257,7 +282,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                     fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                     color: 'transparent',
                     border: 'none',
-                    outline: 'none'
+                    outline: 'none',
+                    minHeight: '150px'
                   }}
                   dangerouslySetInnerHTML={{ __html: renderHighlightedContent() }}
                 />
@@ -271,7 +297,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                   onMouseUp={handleTextSelectionEvent}
                   onKeyUp={handleTextSelectionEvent}
                   onScroll={syncScroll}
-                  className="min-h-[150px] text-base leading-relaxed resize-none border-0 bg-transparent relative z-10 focus:ring-0 focus:border-0 focus:outline-0"
+                  className="text-base leading-relaxed resize-none border-0 bg-transparent relative z-10 focus:ring-0 focus:border-0 focus:outline-0 overflow-hidden"
                   style={{
                     direction: 'ltr',
                     textAlign: 'left',
@@ -280,7 +306,9 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                     fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                     lineHeight: '1.6',
                     padding: '12px',
-                    caretColor: '#1f2937'
+                    caretColor: '#1f2937',
+                    minHeight: '150px',
+                    height: 'auto'
                   }}
                 />
               </div>
@@ -304,9 +332,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
               <ShotDisplay 
                 shots={shots} 
                 onToggleStrikethrough={toggleTextStrikethrough}
-                onAddShotInfo={addShotInfo}
-                onUpdateShotInfo={updateShotInfo}
-                onRemoveShotInfo={removeShotInfo}
                 onAddSegmentInfo={addSegmentInfo}
                 onUpdateSegmentInfo={updateSegmentInfo}
                 onRemoveSegmentInfo={removeSegmentInfo}
