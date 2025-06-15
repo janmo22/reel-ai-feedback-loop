@@ -140,6 +140,23 @@ export const useSupabaseAutosave = () => {
     }, 3000);
   }, [saveToSupabase]);
 
+  // Helper function to safely parse JSON with fallback
+  const safeJsonParse = (jsonString: any, fallback: any) => {
+    try {
+      if (typeof jsonString === 'string') {
+        return JSON.parse(jsonString);
+      }
+      // If it's already an object/array, return it directly
+      if (jsonString && typeof jsonString === 'object') {
+        return jsonString;
+      }
+      return fallback;
+    } catch (error) {
+      console.warn('Error parsing JSON:', error);
+      return fallback;
+    }
+  };
+
   // Load from Supabase
   const loadFromSupabase = useCallback(async () => {
     if (!user) return null;
@@ -167,9 +184,9 @@ export const useSupabaseAutosave = () => {
           title: data.title,
           content: data.content || '',
           editorMode: data.editor_mode as 'structured' | 'free',
-          sections: JSON.parse(data.sections || '[]'),
-          shots: JSON.parse(data.shots || '[]'),
-          creativeItems: JSON.parse(data.creative_items || '[]')
+          sections: safeJsonParse(data.sections, []),
+          shots: safeJsonParse(data.shots, []),
+          creativeItems: safeJsonParse(data.creative_items, [])
         };
       }
     } catch (error) {
