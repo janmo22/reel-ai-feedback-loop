@@ -31,6 +31,32 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Always call useEffect hooks, but with proper conditions inside
+  React.useEffect(() => {
+    const loadExistingAnalysis = async () => {
+      if (!video) return;
+      
+      try {
+        const { data: existingAnalysis } = await supabase
+          .from('competitor_analysis')
+          .select('*')
+          .eq('competitor_video_id', video.id)
+          .eq('analysis_status', 'completed')
+          .maybeSingle();
+
+        if (existingAnalysis) {
+          setAnalysisResults(existingAnalysis.feedback_data);
+          setShowResults(true);
+        }
+      } catch (error) {
+        console.error('Error loading existing analysis:', error);
+      }
+    };
+
+    loadExistingAnalysis();
+  }, [video]);
+
+  // Early return after all hooks are called
   if (!video) return null;
 
   const formatNumber = (num: number) => {
@@ -138,30 +164,6 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
       return null;
     }
   };
-
-  const loadExistingAnalysis = async () => {
-    try {
-      const { data: existingAnalysis } = await supabase
-        .from('competitor_analysis')
-        .select('*')
-        .eq('competitor_video_id', video.id)
-        .eq('analysis_status', 'completed')
-        .maybeSingle();
-
-      if (existingAnalysis) {
-        setAnalysisResults(existingAnalysis.feedback_data);
-        setShowResults(true);
-      }
-    } catch (error) {
-      console.error('Error loading existing analysis:', error);
-    }
-  };
-
-  React.useEffect(() => {
-    if (video) {
-      loadExistingAnalysis();
-    }
-  }, [video]);
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
