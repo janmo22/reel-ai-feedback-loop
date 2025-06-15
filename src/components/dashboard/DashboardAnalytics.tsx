@@ -109,54 +109,108 @@ const DashboardAnalytics: React.FC = () => {
   }, [user]);
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      <StatCard 
-        icon={<Video className="h-4 w-4" />}
-        title="Videos analizados"
-        value={stats.loading ? "..." : stats.videosAnalyzed}
-        trend={stats.loading ? "cargando..." : `${stats.videosAnalyzed} videos subidos`}
-        trendUp={true}
-      />
+    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-sm hover:shadow-lg transition-all">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="bg-blue-100 p-3 rounded-xl">
+            <Video className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Videos Analizados</h3>
+            <div className="text-3xl font-bold text-gray-900">
+              {stats.loading ? "..." : stats.videosAnalyzed}
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500">
+          {stats.loading ? "cargando..." : `${stats.videosAnalyzed} videos procesados`}
+        </p>
+      </div>
       
-      <StatCard 
-        icon={<Users className="h-4 w-4" />}
-        title="Competidores"
-        value={stats.loading ? "..." : stats.competitorsTracked}
-        trend={stats.loading ? "cargando..." : "perfiles monitoreados"}
-        trendUp={true}
-      />
+      <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-sm hover:shadow-lg transition-all">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="bg-blue-100 p-3 rounded-xl">
+            <Users className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Competidores</h3>
+            <div className="text-3xl font-bold text-gray-900">
+              {stats.loading ? "..." : stats.competitorsTracked}
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500">
+          {stats.loading ? "cargando..." : "perfiles monitoreados"}
+        </p>
+      </div>
       
-      <StatCard 
-        icon={<FileVideo className="h-4 w-4" />}
-        title="Videos creados"
-        value={stats.loading ? "..." : stats.createdVideos}
-        trend={stats.loading ? "cargando..." : "guiones desarrollados"}
-        trendUp={true}
-      />
+      <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-sm hover:shadow-lg transition-all">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="bg-blue-100 p-3 rounded-xl">
+            <FileVideo className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Videos Creados</h3>
+            <div className="text-3xl font-bold text-gray-900">
+              {stats.loading ? "..." : stats.createdVideos}
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500">
+          {stats.loading ? "cargando..." : "guiones desarrollados"}
+        </p>
+      </div>
       
-      <StatCard 
-        icon={<Target className="h-4 w-4" />}
-        title="Estrategias"
-        value={stats.loading ? "..." : stats.strategiesDefined}
-        trend={stats.loading ? "cargando..." : "estrategias definidas"}
-        trendUp={true}
-      />
+      <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-sm hover:shadow-lg transition-all">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="bg-blue-100 p-3 rounded-xl">
+            <Target className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Estrategias</h3>
+            <div className="text-3xl font-bold text-gray-900">
+              {stats.loading ? "..." : stats.strategiesDefined}
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500">
+          {stats.loading ? "cargando..." : "estrategias definidas"}
+        </p>
+      </div>
       
-      <StatCard 
-        icon={<BarChart3 className="h-4 w-4" />}
-        title="Análisis totales"
-        value={stats.loading ? "..." : stats.totalAnalysis}
-        trend={stats.loading ? "cargando..." : "insights generados"}
-        trendUp={true}
-      />
+      <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-sm hover:shadow-lg transition-all">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="bg-blue-100 p-3 rounded-xl">
+            <BarChart3 className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Análisis Totales</h3>
+            <div className="text-3xl font-bold text-gray-900">
+              {stats.loading ? "..." : stats.totalAnalysis}
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500">
+          {stats.loading ? "cargando..." : "insights generados"}
+        </p>
+      </div>
       
-      <StatCard 
-        icon={<TrendingUp className="h-4 w-4" />}
-        title="Mejoras detectadas"
-        value={stats.loading ? "..." : stats.improvements}
-        trend={stats.loading ? "cargando..." : "vs videos anteriores"}
-        trendUp={stats.improvements.includes('+') || stats.improvements === "0%"}
-      />
+      <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-sm hover:shadow-lg transition-all">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="bg-blue-100 p-3 rounded-xl">
+            <TrendingUp className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Mejoras</h3>
+            <div className="text-3xl font-bold text-gray-900">
+              {stats.loading ? "..." : stats.improvements}
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500">
+          {stats.loading ? "cargando..." : "vs videos anteriores"}
+        </p>
+      </div>
     </div>
   );
 };

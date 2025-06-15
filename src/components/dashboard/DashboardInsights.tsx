@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Users, Target, Lightbulb } from "lucide-react";
+import { TrendingUp, Users, Target, Lightbulb, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -71,88 +71,97 @@ const DashboardInsights: React.FC = () => {
 
   if (insights.loading) {
     return (
-      <Card className="border-gray-100">
-        <CardHeader>
-          <CardTitle className="text-lg font-medium text-gray-900 flex items-center gap-2">
-            <Lightbulb className="h-5 w-5" />
-            Insights Rápidos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-100 rounded w-1/2"></div>
-            </div>
+      <div className="space-y-6">
+        <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-sm">
+          <div className="animate-pulse">
+            <div className="h-6 bg-blue-100 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-4 bg-gray-100 rounded w-1/2"></div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="border-gray-100">
-      <CardHeader>
-        <CardTitle className="text-lg font-medium text-gray-900 flex items-center gap-2">
-          <Lightbulb className="h-5 w-5" />
-          Insights Rápidos
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+    <div className="space-y-6">
+      <div className="bg-white p-8 rounded-2xl border-2 border-blue-100 shadow-sm">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="bg-blue-100 p-3 rounded-xl">
+            <Lightbulb className="h-6 w-6 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Insights Rápidos</h2>
+        </div>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {insights.recentCompetitor && (
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-gray-600" />
-                <span className="text-sm text-gray-600">Último competidor:</span>
+            <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex items-center gap-3 mb-3">
+                <Users className="h-5 w-5 text-blue-600" />
+                <span className="text-sm font-medium text-blue-700">Último Competidor</span>
               </div>
-              <Badge variant="outline" className="text-gray-700 border-gray-300">
+              <div className="text-lg font-semibold text-gray-900 mb-2">
                 @{insights.recentCompetitor}
-              </Badge>
+              </div>
+              <p className="text-sm text-gray-600">Agregado recientemente</p>
             </div>
           )}
           
           {insights.lastScore !== null && (
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-gray-600" />
-                <span className="text-sm text-gray-600">Último score:</span>
+            <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex items-center gap-3 mb-3">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                <span className="text-sm font-medium text-blue-700">Último Score</span>
               </div>
-              <Badge 
-                variant="outline" 
-                className={`${
-                  insights.lastScore >= 8 
-                    ? 'text-green-700 border-green-300' 
-                    : insights.lastScore >= 6 
-                    ? 'text-blue-700 border-blue-300' 
-                    : 'text-red-700 border-red-300'
-                }`}
-              >
+              <div className="text-lg font-semibold text-gray-900 mb-2">
                 {insights.lastScore}/10
-              </Badge>
-            </div>
-          )}
-          
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-gray-600" />
-              <span className="text-sm text-gray-600">Estrategias definidas:</span>
-            </div>
-            <Badge variant="outline" className="text-gray-700 border-gray-300">
-              {insights.strategiesCount}
-            </Badge>
-          </div>
-          
-          {insights.strategiesCount === 0 && (
-            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-700">
-                💡 Define tu estrategia de contenido para obtener análisis más precisos
+              </div>
+              <p className="text-sm text-gray-600">
+                {insights.lastScore >= 8 ? 'Excelente rendimiento' : 
+                 insights.lastScore >= 6 ? 'Buen resultado' : 'Área de mejora'}
               </p>
             </div>
           )}
+          
+          <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
+            <div className="flex items-center gap-3 mb-3">
+              <Target className="h-5 w-5 text-blue-600" />
+              <span className="text-sm font-medium text-blue-700">Estrategias</span>
+            </div>
+            <div className="text-lg font-semibold text-gray-900 mb-2">
+              {insights.strategiesCount}
+            </div>
+            <p className="text-sm text-gray-600">
+              {insights.strategiesCount > 0 ? 'Estrategias definidas' : 'Pendiente definir'}
+            </p>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+        
+        {insights.strategiesCount === 0 && (
+          <div className="mt-6 p-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="h-6 w-6 text-blue-600 mt-1" />
+              <div>
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                  Recomendación Personalizada
+                </h3>
+                <p className="text-blue-700 mb-4">
+                  Define tu estrategia de contenido para obtener análisis más precisos y recomendaciones personalizadas.
+                </p>
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Mejores análisis de competencia</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Contenido más alineado con tu audiencia</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

@@ -13,7 +13,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userName }) => {
   return (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-4">
-        <Badge variant="outline" className="text-gray-600 border-gray-300 bg-gray-50">
+        <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
           <Sparkles className="h-3 w-3 mr-1" />
           Dashboard
         </Badge>
@@ -30,18 +30,18 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ userName }) => {
         </div>
       </div>
       
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-          <div className="text-sm text-gray-600 mb-1">🎯 Crea</div>
-          <div className="text-sm font-medium text-gray-900">Guiones estructurados</div>
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+          <div className="text-sm text-blue-600 mb-2 font-medium">🎯 Crea</div>
+          <div className="text-base font-semibold text-gray-900">Guiones estructurados</div>
         </div>
-        <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-          <div className="text-sm text-gray-600 mb-1">📊 Analiza</div>
-          <div className="text-sm font-medium text-gray-900">Tu contenido y competencia</div>
+        <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+          <div className="text-sm text-blue-600 mb-2 font-medium">📊 Analiza</div>
+          <div className="text-base font-semibold text-gray-900">Tu contenido y competencia</div>
         </div>
-        <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-          <div className="text-sm text-gray-600 mb-1">🚀 Optimiza</div>
-          <div className="text-sm font-medium text-gray-900">Basado en datos reales</div>
+        <div className="p-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+          <div className="text-sm text-blue-600 mb-2 font-medium">🚀 Optimiza</div>
+          <div className="text-base font-semibold text-gray-900">Basado en datos reales</div>
         </div>
       </div>
     </div>
