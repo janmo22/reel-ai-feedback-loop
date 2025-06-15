@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { 
   User, 
   Target, 
@@ -16,7 +17,9 @@ import {
   ArrowRight,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ExternalLink,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -94,9 +97,29 @@ const MyProfileAnalysisPage: React.FC = () => {
     }
   };
 
+  // Function to handle Apify proxied images with proper decoding
+  const getImageUrl = (url: string | null) => {
+    if (!url) return null;
+    
+    // Handle Apify URLs
+    if (url.includes('images.apifyusercontent.com')) {
+      try {
+        const parts = url.split('/');
+        const encodedPart = parts[parts.length - 1].replace('.jpg', '').replace('.png', '').replace('.webp', '');
+        const decodedUrl = atob(encodedPart);
+        return decodedUrl;
+      } catch (e) {
+        console.warn('Could not decode Apify URL:', e);
+        return url;
+      }
+    }
+    
+    return url;
+  };
+
   return (
     <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-6 py-8 max-w-4xl">
+      <div className="container mx-auto px-6 py-8 max-w-6xl">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 text-flow-blue mb-2">
@@ -118,7 +141,7 @@ const MyProfileAnalysisPage: React.FC = () => {
 
         {/* Formulario de extracción o datos del perfil */}
         {!currentProfile ? (
-          <Card className="mb-8">
+          <Card className="mb-8 max-w-lg mx-auto">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-flow-blue" />
@@ -164,78 +187,185 @@ const MyProfileAnalysisPage: React.FC = () => {
           </Card>
         ) : (
           <div className="space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-flow-blue" />
-                    Perfil conectado
+            {/* Profile Card - Similar to CompetitorCard */}
+            <Card className="border border-gray-200 bg-white hover:shadow-lg transition-shadow duration-300 max-w-2xl mx-auto">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  {/* Profile Section */}
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200">
+                        <AspectRatio ratio={1}>
+                          {currentProfile.profile_picture_url ? (
+                            <img
+                              src={getImageUrl(currentProfile.profile_picture_url)}
+                              alt={currentProfile.display_name || currentProfile.instagram_username}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              crossOrigin="anonymous"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                const img = e.target as HTMLImageElement;
+                                img.style.display = 'none';
+                                const fallback = img.parentElement?.querySelector('.fallback-avatar') as HTMLElement;
+                                if (fallback) {
+                                  fallback.style.display = 'flex';
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div 
+                            className="fallback-avatar absolute inset-0 w-full h-full flex items-center justify-center bg-flow-blue text-white font-medium text-lg"
+                            style={{ display: currentProfile.profile_picture_url ? 'none' : 'flex' }}
+                          >
+                            {currentProfile.instagram_username.substring(0, 2).toUpperCase()}
+                          </div>
+                        </AspectRatio>
+                      </div>
+                      
+                      {currentProfile.is_verified && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                          <CheckCircle className="w-3 h-3 text-white fill-current" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Profile Info */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          @{currentProfile.instagram_username}
+                        </h3>
+                        {currentProfile.is_verified && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                            Verificado
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {currentProfile.display_name && (
+                        <p className="text-sm text-gray-600 font-medium">
+                          {currentProfile.display_name}
+                        </p>
+                      )}
+
+                      {currentProfile.is_business_account && currentProfile.business_category && (
+                        <Badge variant="outline" className="text-xs mt-1 bg-gray-50 text-gray-600 border-gray-200">
+                          <Building2 className="h-3 w-3 mr-1" />
+                          {currentProfile.business_category}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <Button 
-                    variant="outline" 
+
+                  {/* Change Profile Button */}
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => {
-                      // Lógica para cambiar perfil
                       window.location.reload();
                     }}
+                    className="text-gray-600 hover:text-gray-900"
                   >
                     Cambiar perfil
                   </Button>
-                </CardTitle>
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 mb-6">
-                  {currentProfile.profile_picture_url ? (
-                    <img
-                      src={currentProfile.profile_picture_url}
-                      alt={currentProfile.display_name || currentProfile.instagram_username}
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-flow-blue/10 flex items-center justify-center">
-                      <User className="h-8 w-8 text-flow-blue" />
+
+              <CardContent className="space-y-4">
+                {/* Bio Section */}
+                {currentProfile.bio && (
+                  <div className="p-3 bg-gray-50 rounded-md border border-gray-100">
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {currentProfile.bio}
+                    </p>
+                  </div>
+                )}
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-4 gap-3 text-center">
+                  <div className="p-3 bg-gray-50 rounded-md border border-gray-100">
+                    <div className="text-lg font-semibold text-gray-900">
+                      {formatNumber(currentProfile.follower_count)}
                     </div>
-                  )}
-                  <div>
-                    <h3 className="text-xl font-semibold">@{currentProfile.instagram_username}</h3>
-                    {currentProfile.display_name && (
-                      <p className="text-gray-600">{currentProfile.display_name}</p>
-                    )}
-                    {currentProfile.bio && (
-                      <p className="text-sm text-gray-500 mt-1">{currentProfile.bio}</p>
-                    )}
+                    <div className="text-xs text-gray-600">Seguidores</div>
+                  </div>
+                  
+                  <div className="p-3 bg-gray-50 rounded-md border border-gray-100">
+                    <div className="text-lg font-semibold text-gray-900">
+                      {currentProfile.my_profile_videos?.length || 0}
+                    </div>
+                    <div className="text-xs text-gray-600">Videos</div>
+                  </div>
+                  
+                  <div className="p-3 bg-gray-50 rounded-md border border-gray-100">
+                    <div className="text-lg font-semibold text-gray-900">
+                      {formatNumber(currentProfile.following_count)}
+                    </div>
+                    <div className="text-xs text-gray-600">Siguiendo</div>
+                  </div>
+
+                  <div className="p-3 bg-gray-50 rounded-md border border-gray-100">
+                    <div className="text-lg font-semibold text-gray-900">
+                      {formatNumber(currentProfile.posts_count)}
+                    </div>
+                    <div className="text-xs text-gray-600">Posts</div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{formatNumber(currentProfile.follower_count)}</div>
-                    <div className="text-sm text-gray-600">Seguidores</div>
+                {/* External URLs */}
+                {currentProfile.external_urls && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-700">Enlaces externos</p>
+                    <div className="flex flex-wrap gap-2">
+                      {JSON.parse(currentProfile.external_urls).slice(0, 2).map((url: string, index: number) => {
+                        try {
+                          const urlObj = new URL(url);
+                          return (
+                            <Button
+                              key={index}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(url, '_blank')}
+                              className="text-xs h-8 bg-white border-gray-200 hover:bg-gray-50"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              {urlObj.hostname}
+                            </Button>
+                          );
+                        } catch (e) {
+                          return null;
+                        }
+                      })}
+                    </div>
                   </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{formatNumber(currentProfile.following_count)}</div>
-                    <div className="text-sm text-gray-600">Siguiendo</div>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{currentProfile.posts_count}</div>
-                    <div className="text-sm text-gray-600">Posts</div>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-2xl font-bold text-gray-900">{currentProfile.my_profile_videos?.length || 0}</div>
-                    <div className="text-sm text-gray-600">Videos</div>
-                  </div>
+                )}
+
+                {/* Last Updated */}
+                <div className="pt-3 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 text-center">
+                    Última actualización: {formatDate(currentProfile.last_scraped_at)}
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-1 mt-4 text-xs text-gray-500">
-                  <Calendar className="h-3 w-3" />
-                  <span>Última actualización: {formatDate(currentProfile.last_scraped_at)}</span>
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open(`https://instagram.com/${currentProfile.instagram_username}`, '_blank')}
+                    className="px-4 bg-white border-gray-200 hover:bg-gray-50"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Ver en Instagram
+                  </Button>
                 </div>
               </CardContent>
             </Card>
 
             {/* Opciones de análisis */}
             {analysisStatus === 'idle' && (
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 <Card className="hover:shadow-md transition-shadow cursor-pointer group">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -296,7 +426,7 @@ const MyProfileAnalysisPage: React.FC = () => {
 
             {/* Estado de análisis */}
             {analysisStatus === 'analyzing' && (
-              <Card>
+              <Card className="max-w-2xl mx-auto">
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <div className="w-16 h-16 bg-flow-blue/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -319,7 +449,7 @@ const MyProfileAnalysisPage: React.FC = () => {
 
             {/* Resultados del análisis */}
             {analysisStatus === 'completed' && (
-              <Card>
+              <Card className="max-w-2xl mx-auto">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-green-500" />
