@@ -64,7 +64,7 @@ export const useAdvancedEditor = (initialContent = '') => {
     return /^\s*$/.test(text);
   }, []);
 
-  // Helper function to find overlapping segments
+  // Helper function to find overlapping segments for new selection
   const findOverlappingSegments = useCallback((startIndex: number, endIndex: number) => {
     const overlapping: { shot: Shot; segment: TextSegment }[] = [];
     
@@ -79,45 +79,97 @@ export const useAdvancedEditor = (initialContent = '') => {
     return overlapping;
   }, [shots]);
 
-  // Update content function that doesn't cause infinite loops
-  const updateContent = useCallback((newContent: string) => {
-    if (newContent === content) return; // Prevent unnecessary updates
-    
-    setContent(newContent);
-    
-    // Update shot boundaries when content changes, but only if shots exist
-    if (shots.length > 0) {
-      setShots(prevShots => {
-        return prevShots.map(shot => ({
-          ...shot,
-          textSegments: shot.textSegments.map(segment => {
-            // Ensure segment indices are within bounds
-            const adjustedStart = Math.max(0, Math.min(segment.startIndex, newContent.length - 1));
-            const adjustedEnd = Math.max(adjustedStart, Math.min(segment.endIndex, newContent.length - 1));
-            
-            // Only keep segment if it has valid content
-            if (adjustedStart >= newContent.length || adjustedEnd >= newContent.length) {
-              return null;
-            }
+  // Helper function to adjust shot segments when content changes
+  const adjustShotSegments = useCallback((oldContent: string, newContent: string) => {
+    if (oldContent === newContent || shots.length === 0) return;
 
-            const segmentText = newContent.slice(adjustedStart, adjustedEnd + 1);
-            
-            // Keep segment only if it has meaningful content
-            if (isOnlyWhitespace(segmentText)) {
-              return null;
-            }
+    // Find the position where content changed
+    let changeStart = 0;
+    let changeEnd = oldContent.length;
+    
+    // Find start of change
+    while (changeStart < Math.min(oldContent.length, newContent.length) && 
+           oldContent[changeStart] === newContent[changeStart]) {
+      changeStart++;
+    }
+    
+    // Find end of change (working backwards)
+    let oldEnd = oldContent.length - 1;
+    let newEnd = newContent.length - 1;
+    
+    while (oldEnd >= changeStart && newEnd >= changeStart && 
+           oldContent[oldEnd] === newContent[newEnd]) {
+      oldEnd--;
+      newEnd--;
+    }
+    
+    changeEnd = oldEnd + 1;
+    const lengthDiff = newContent.length - oldContent.length;
 
+    setShots(prevShots => {
+      return prevShots.map(shot => ({
+        ...shot,
+        textSegments: shot.textSegments.map(segment => {
+          // If segment is completely before the change, keep as is
+          if (segment.endIndex < changeStart) {
+            return segment;
+          }
+          
+          // If segment is completely after the change, adjust indices
+          if (segment.startIndex > changeEnd) {
             return {
               ...segment,
-              startIndex: adjustedStart,
-              endIndex: adjustedEnd,
-              text: segmentText
+              startIndex: segment.startIndex + lengthDiff,
+              endIndex: segment.endIndex + lengthDiff,
+              text: newContent.slice(segment.startIndex + lengthDiff, segment.endIndex + lengthDiff + 1)
             };
-          }).filter(segment => segment !== null)
-        })).filter(shot => shot.textSegments.length > 0);
-      });
-    }
-  }, [content, shots.length, isOnlyWhitespace]);
+          }
+          
+          // If segment overlaps with change area, expand or adjust it
+          let newStart = segment.startIndex;
+          let newEnd = segment.endIndex;
+          
+          // If change is within the segment (typing inside), expand the segment
+          if (changeStart >= segment.startIndex && changeStart <= segment.endIndex) {
+            newEnd = segment.endIndex + lengthDiff;
+          } else if (changeStart < segment.startIndex) {
+            // Change is before segment, adjust both start and end
+            newStart = segment.startIndex + lengthDiff;
+            newEnd = segment.endIndex + lengthDiff;
+          }
+          
+          // Ensure indices are within bounds
+          newStart = Math.max(0, Math.min(newStart, newContent.length - 1));
+          newEnd = Math.max(newStart, Math.min(newEnd, newContent.length - 1));
+          
+          const segmentText = newContent.slice(newStart, newEnd + 1);
+          
+          // Only keep segment if it has meaningful content
+          if (isOnlyWhitespace(segmentText)) {
+            return null;
+          }
+
+          return {
+            ...segment,
+            startIndex: newStart,
+            endIndex: newEnd,
+            text: segmentText
+          };
+        }).filter(segment => segment !== null)
+      })).filter(shot => shot.textSegments.length > 0);
+    });
+  }, [shots, isOnlyWhitespace]);
+
+  // Update content function with improved shot segment handling
+  const updateContent = useCallback((newContent: string) => {
+    if (newContent === content) return;
+    
+    const oldContent = content;
+    setContent(newContent);
+    
+    // Adjust shot segments based on content changes
+    adjustShotSegments(oldContent, newContent);
+  }, [content, adjustShotSegments]);
 
   const createShot = useCallback((name: string, color: string) => {
     if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) return null;
@@ -125,17 +177,53 @@ export const useAdvancedEditor = (initialContent = '') => {
     const start = selectionRange.start;
     const end = selectionRange.end - 1;
 
-    // Remove overlapping segments from other shots
+    // Handle overlapping segments more intelligently
     const overlapping = findOverlappingSegments(start, end);
     if (overlapping.length > 0) {
       setShots(prevShots => 
         prevShots.map(shot => ({
           ...shot,
-          textSegments: shot.textSegments.filter(segment => 
-            !overlapping.some(overlap => 
-              overlap.shot.id === shot.id && overlap.segment.id === segment.id
-            )
-          )
+          textSegments: shot.textSegments.map(segment => {
+            const overlap = overlapping.find(o => o.shot.id === shot.id && o.segment.id === segment.id);
+            if (!overlap) return segment;
+            
+            // Check if the new selection completely covers this segment
+            if (start <= segment.startIndex && end >= segment.endIndex) {
+              // Remove the entire segment
+              return null;
+            }
+            
+            // Check if the new selection is completely within this segment
+            if (start > segment.startIndex && end < segment.endIndex) {
+              // Split the segment: keep the part before the selection
+              return {
+                ...segment,
+                endIndex: start - 1,
+                text: content.slice(segment.startIndex, start)
+              };
+            }
+            
+            // Partial overlap: adjust the segment
+            if (start <= segment.startIndex && end < segment.endIndex) {
+              // Selection starts before or at segment start, ends within segment
+              return {
+                ...segment,
+                startIndex: end + 1,
+                text: content.slice(end + 1, segment.endIndex + 1)
+              };
+            }
+            
+            if (start > segment.startIndex && end >= segment.endIndex) {
+              // Selection starts within segment, ends after or at segment end
+              return {
+                ...segment,
+                endIndex: start - 1,
+                text: content.slice(segment.startIndex, start)
+              };
+            }
+            
+            return segment;
+          }).filter(segment => segment !== null)
         })).filter(shot => shot.textSegments.length > 0)
       );
     }
@@ -165,7 +253,7 @@ export const useAdvancedEditor = (initialContent = '') => {
     setSelectionRange(null);
     
     return newShot;
-  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments]);
+  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments, content]);
 
   const assignToExistingShot = useCallback((shotId: string) => {
     if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) return;
@@ -173,17 +261,53 @@ export const useAdvancedEditor = (initialContent = '') => {
     const start = selectionRange.start;
     const end = selectionRange.end - 1;
 
-    // Remove overlapping segments from other shots
+    // Handle overlapping segments more intelligently
     const overlapping = findOverlappingSegments(start, end);
     if (overlapping.length > 0) {
       setShots(prevShots => 
         prevShots.map(shot => ({
           ...shot,
-          textSegments: shot.textSegments.filter(segment => 
-            !overlapping.some(overlap => 
-              overlap.shot.id === shot.id && overlap.segment.id === segment.id
-            )
-          )
+          textSegments: shot.textSegments.map(segment => {
+            const overlap = overlapping.find(o => o.shot.id === shot.id && o.segment.id === segment.id);
+            if (!overlap) return segment;
+            
+            // Check if the new selection completely covers this segment
+            if (start <= segment.startIndex && end >= segment.endIndex) {
+              // Remove the entire segment
+              return null;
+            }
+            
+            // Check if the new selection is completely within this segment
+            if (start > segment.startIndex && end < segment.endIndex) {
+              // Split the segment: keep the part before the selection
+              return {
+                ...segment,
+                endIndex: start - 1,
+                text: content.slice(segment.startIndex, start)
+              };
+            }
+            
+            // Partial overlap: adjust the segment
+            if (start <= segment.startIndex && end < segment.endIndex) {
+              // Selection starts before or at segment start, ends within segment
+              return {
+                ...segment,
+                startIndex: end + 1,
+                text: content.slice(end + 1, segment.endIndex + 1)
+              };
+            }
+            
+            if (start > segment.startIndex && end >= segment.endIndex) {
+              // Selection starts within segment, ends after or at segment end
+              return {
+                ...segment,
+                endIndex: start - 1,
+                text: content.slice(segment.startIndex, start)
+              };
+            }
+            
+            return segment;
+          }).filter(segment => segment !== null)
         })).filter(shot => shot.textSegments.length > 0)
       );
     }
@@ -206,7 +330,7 @@ export const useAdvancedEditor = (initialContent = '') => {
     // Clear selection
     setSelectedText('');
     setSelectionRange(null);
-  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments]);
+  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments, content]);
 
   const toggleTextStrikethrough = useCallback((segmentId: string) => {
     setShots(prev => prev.map(shot => ({
