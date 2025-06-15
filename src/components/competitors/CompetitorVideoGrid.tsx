@@ -288,11 +288,8 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
         </CardHeader>
         <CardContent className="p-0">
           <CompetitorVideoTable
-            videos={videos}
-            selectedVideos={selectedVideos}
-            onVideoSelection={handleVideoSelection}
+            competitor={competitor}
             onDeleteVideo={handleDeleteVideo}
-            competitorUsername={competitor.instagram_username}
           />
         </CardContent>
       </Card>
