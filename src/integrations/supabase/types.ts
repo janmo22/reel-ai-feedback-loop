@@ -423,6 +423,45 @@ export type Database = {
           },
         ]
       }
+      script_drafts: {
+        Row: {
+          content: string | null
+          created_at: string
+          creative_items: Json | null
+          editor_mode: string
+          id: string
+          sections: Json | null
+          shots: Json | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          creative_items?: Json | null
+          editor_mode?: string
+          id?: string
+          sections?: Json | null
+          shots?: Json | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          creative_items?: Json | null
+          editor_mode?: string
+          id?: string
+          sections?: Json | null
+          shots?: Json | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_mission: {
         Row: {
           audience_content_consumption: string | null
