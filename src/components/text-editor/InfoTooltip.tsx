@@ -7,7 +7,7 @@ interface InfoTooltipProps {
   x: number;
   y: number;
   shotName?: string;
-  additionalInfo?: string;
+  comments?: string[];
 }
 
 export const InfoTooltip: React.FC<InfoTooltipProps> = ({
@@ -15,9 +15,9 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
   x,
   y,
   shotName,
-  additionalInfo
+  comments
 }) => {
-  if (!additionalInfo || additionalInfo.trim() === '') {
+  if (!comments || comments.length === 0) {
     return null;
   }
 
@@ -33,12 +33,19 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
       <Card className="border shadow-lg bg-white max-w-xs">
         <CardContent className="p-3">
           {shotName && (
-            <div className="text-xs font-medium text-gray-900 mb-1">
+            <div className="text-xs font-medium text-gray-900 mb-2">
               {shotName}
             </div>
           )}
-          <div className="text-xs text-gray-600 whitespace-pre-wrap">
-            {additionalInfo}
+          <div className="space-y-1">
+            {comments.map((comment, index) => (
+              <div 
+                key={index} 
+                className="text-xs text-gray-600 p-2 bg-blue-50 rounded border-l-2 border-blue-200"
+              >
+                {comment}
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

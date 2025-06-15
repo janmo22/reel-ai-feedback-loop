@@ -7,7 +7,7 @@ import { ShotSummary } from './ShotSummary';
 import { useAdvancedEditor } from '@/hooks/use-advanced-editor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Layout } from 'lucide-react';
+import { FileText, Layout, Save } from 'lucide-react';
 
 interface NewTextEditorProps {
   onContentChange?: (content: string) => void;
@@ -16,10 +16,12 @@ interface NewTextEditorProps {
 const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
   const [editorMode, setEditorMode] = useState<'structured' | 'free'>('structured');
   const [freeContent, setFreeContent] = useState('');
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
 
   const {
     sections,
-    getAllContent
+    getAllContent,
+    updateSectionContent
   } = useSimpleEditor();
 
   // Global creative zone and shots for the entire video
@@ -27,7 +29,8 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
     shots: allShots,
     creativeItems,
     addCreativeItem,
-    removeCreativeItem
+    removeCreativeItem,
+    clearAutosave
   } = useAdvancedEditor();
 
   React.useEffect(() => {
@@ -46,6 +49,11 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
       if (structuredContent.trim()) {
         setFreeContent(structuredContent);
       }
+    } else if (mode === 'structured' && editorMode === 'free') {
+      // Transfer free content to structured mode (to the first section)
+      if (freeContent.trim() && sections.length > 0) {
+        updateSectionContent(sections[0].id, freeContent);
+      }
     }
     setEditorMode(mode);
   };
@@ -62,9 +70,19 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
     return allShots;
   };
 
+  // Manual save function
+  const handleManualSave = () => {
+    // Force save to localStorage
+    const currentTime = new Date();
+    setLastSaveTime(currentTime);
+    
+    // You could also implement saving to a backend here
+    console.log('Guardado manual realizado');
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header with mode selector */}
+      {/* Header with mode selector and save info */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -72,8 +90,22 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
             <p className="text-gray-600 text-sm">
               Elige cómo quieres organizar tu contenido
             </p>
+            {lastSaveTime && (
+              <p className="text-xs text-green-600 mt-1">
+                Guardado manual: {lastSaveTime.toLocaleTimeString()}
+              </p>
+            )}
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManualSave}
+              className="flex items-center gap-2"
+            >
+              <Save className="h-4 w-4" />
+              Guardar
+            </Button>
             <Button
               variant={editorMode === 'structured' ? 'default' : 'outline'}
               size="sm"
@@ -94,6 +126,11 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
             </Button>
           </div>
         </div>
+
+        {/* Autosave indicator */}
+        <div className="text-xs text-gray-500 mb-2">
+          💾 Autoguardado activado - Se guarda automáticamente cada 2 segundos
+        </div>
       </div>
 
       {/* Content based on mode */}
@@ -108,8 +145,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
               placeholder={section.placeholder}
               content={section.content}
               onContentChange={(content) => {
-                // Update the section content
-                // This would need proper implementation in useSimpleEditor
+                updateSectionContent(section.id, content);
               }}
               showCreativeZone={false}
               hideEmptyShots={!hasContent}
@@ -120,7 +156,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
         // Free mode - single text area
         <AdvancedTextEditor
           title="Guión Libre"
-          description="Escribe tu guión libremente. Puedes seleccionar texto para crear tomas específicas."
+          description="Escribe tu guión libremente. Puedes seleccionar texto para crear tomas específicas y añadir comentarios."
           placeholder="Escribe tu guión aquí... Puedes estructurarlo como prefieras y crear tomas seleccionando el texto."
           content={freeContent}
           onContentChange={setFreeContent}

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,7 +25,7 @@ interface HoveredSegment {
   x: number;
   y: number;
   shotName?: string;
-  additionalInfo?: string;
+  comments?: string[];
 }
 
 export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
@@ -55,12 +56,21 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     removeCreativeItem,
     getShotForText,
     toggleTextStrikethrough,
-    addSegmentInfo,
-    updateSegmentInfo,
-    removeSegmentInfo
+    addSegmentComment,
+    updateSegmentComment,
+    removeSegmentComment,
+    loadFromLocalStorage
   } = useAdvancedEditor(content);
 
   const overlayRef = useRef<HTMLDivElement>(null);
+
+  // Load autosaved content on mount
+  useEffect(() => {
+    const hasAutosave = loadFromLocalStorage();
+    if (hasAutosave) {
+      console.log('Contenido autoguardado cargado');
+    }
+  }, [loadFromLocalStorage]);
 
   // Auto-resize textarea function
   const autoResizeTextarea = () => {
@@ -70,7 +80,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       // Reset height to auto to get the correct scrollHeight
       textarea.style.height = 'auto';
       
-      // Calculate the new height based on content
+      // Calculate the new height based on content, with no maximum limit
       const newHeight = Math.max(150, textarea.scrollHeight);
       
       // Set the new height
@@ -144,7 +154,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       segmentId: string;
       isStrikethrough: boolean;
       shotName: string;
-      additionalInfo: string;
+      comments: string[];
     }> = [];
     
     shots.forEach(shot => {
@@ -157,7 +167,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
           segmentId: segment.id,
           isStrikethrough: segment.isStrikethrough || false,
           shotName: shot.name,
-          additionalInfo: segment.additionalInfo || ''
+          comments: segment.comments?.map(c => c.text) || []
         });
       });
     });
@@ -174,6 +184,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       
       // Add highlighted segment with precise character-level highlighting
       const segmentText = editorContent.slice(segment.startIndex, segment.endIndex + 1);
+      const commentsData = JSON.stringify(segment.comments).replace(/"/g, '&quot;');
+      
       renderedContent += `<span 
         class="shot-highlight" 
         data-segment-id="${segment.segmentId}"
@@ -187,7 +199,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
           line-height: inherit;
           ${segment.isStrikethrough ? 'text-decoration: line-through; opacity: 0.6;' : ''}
         "
-        onmouseenter="this.dispatchEvent(new CustomEvent('segment-hover', { detail: { segmentId: '${segment.segmentId}', shotName: '${segment.shotName}', additionalInfo: '${segment.additionalInfo}' } }))"
+        onmouseenter="this.dispatchEvent(new CustomEvent('segment-hover', { detail: { segmentId: '${segment.segmentId}', shotName: '${segment.shotName}', comments: ${commentsData} } }))"
         onmouseleave="this.dispatchEvent(new CustomEvent('segment-leave'))"
       >${segmentText}</span>`;
       
@@ -214,7 +226,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
         x: rect.left + rect.width / 2,
         y: rect.top,
         shotName: e.detail.shotName,
-        additionalInfo: e.detail.additionalInfo
+        comments: e.detail.comments
       });
     };
 
@@ -332,23 +344,23 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
               <ShotDisplay 
                 shots={shots} 
                 onToggleStrikethrough={toggleTextStrikethrough}
-                onAddSegmentInfo={addSegmentInfo}
-                onUpdateSegmentInfo={updateSegmentInfo}
-                onRemoveSegmentInfo={removeSegmentInfo}
+                onAddSegmentComment={addSegmentComment}
+                onUpdateSegmentComment={updateSegmentComment}
+                onRemoveSegmentComment={removeSegmentComment}
               />
             )}
           </CardContent>
         )}
       </Card>
 
-      {/* Tooltip for segment info */}
-      {hoveredSegment && (
+      {/* Tooltip for segment comments */}
+      {hoveredSegment && hoveredSegment.comments && hoveredSegment.comments.length > 0 && (
         <InfoTooltip
           segmentId={hoveredSegment.id}
           x={hoveredSegment.x}
           y={hoveredSegment.y}
           shotName={hoveredSegment.shotName}
-          additionalInfo={hoveredSegment.additionalInfo}
+          comments={hoveredSegment.comments}
         />
       )}
 

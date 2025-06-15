@@ -6,6 +6,12 @@ export interface ShotInfo {
   value: string;
 }
 
+export interface SegmentComment {
+  id: string;
+  text: string;
+  timestamp: number;
+}
+
 export interface TextSegment {
   id: string;
   text: string;
@@ -13,7 +19,7 @@ export interface TextSegment {
   startIndex: number;
   endIndex: number;
   isStrikethrough?: boolean;
-  additionalInfo?: string;
+  comments?: SegmentComment[];
 }
 
 export interface Shot {
@@ -21,7 +27,6 @@ export interface Shot {
   name: string;
   color: string;
   textSegments: TextSegment[];
-  additionalInfo: ShotInfo[];
 }
 
 export interface CreativeItem {
@@ -52,12 +57,73 @@ export const useAdvancedEditor = (initialContent = '') => {
   const [creativeItems, setCreativeItems] = useState<CreativeItem[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Autosave functionality
+  const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Initialize content from parent only once on mount or when initial content changes significantly
   useEffect(() => {
     if (initialContent !== content && Math.abs(initialContent.length - content.length) > 1) {
       setContent(initialContent);
     }
   }, [initialContent]);
+
+  // Autosave effect
+  useEffect(() => {
+    // Clear existing timeout
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+
+    // Set new timeout for autosave (save after 2 seconds of inactivity)
+    autosaveTimeoutRef.current = setTimeout(() => {
+      saveToLocalStorage();
+    }, 2000);
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
+      }
+    };
+  }, [content, shots, creativeItems]);
+
+  // Save to localStorage
+  const saveToLocalStorage = useCallback(() => {
+    try {
+      const editorState = {
+        content,
+        shots,
+        creativeItems,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('advancedEditor_autosave', JSON.stringify(editorState));
+      console.log('Autoguardado realizado');
+    } catch (error) {
+      console.error('Error en autoguardado:', error);
+    }
+  }, [content, shots, creativeItems]);
+
+  // Load from localStorage
+  const loadFromLocalStorage = useCallback(() => {
+    try {
+      const saved = localStorage.getItem('advancedEditor_autosave');
+      if (saved) {
+        const editorState = JSON.parse(saved);
+        setContent(editorState.content || '');
+        setShots(editorState.shots || []);
+        setCreativeItems(editorState.creativeItems || []);
+        return true;
+      }
+    } catch (error) {
+      console.error('Error cargando autoguardado:', error);
+    }
+    return false;
+  }, []);
+
+  // Clear autosave
+  const clearAutosave = useCallback(() => {
+    localStorage.removeItem('advancedEditor_autosave');
+  }, []);
 
   // Helper function to check if text contains only whitespace
   const isOnlyWhitespace = useCallback((text: string) => {
@@ -125,14 +191,24 @@ export const useAdvancedEditor = (initialContent = '') => {
             };
           }
           
-          // If segment overlaps with change area, expand or adjust it
+          // Check if the change is within the segment (user is typing inside)
+          if (changeStart >= segment.startIndex && changeStart <= segment.endIndex + 1) {
+            // Expand segment to include new content
+            const newEndIndex = Math.max(segment.endIndex + lengthDiff, changeStart + Math.max(0, lengthDiff) - 1);
+            const segmentText = newContent.slice(segment.startIndex, newEndIndex + 1);
+            
+            return {
+              ...segment,
+              endIndex: newEndIndex,
+              text: segmentText
+            };
+          }
+          
+          // If segment overlaps with change area but change is not inside, adjust normally
           let newStart = segment.startIndex;
           let newEnd = segment.endIndex;
           
-          // If change is within the segment (typing inside), expand the segment
-          if (changeStart >= segment.startIndex && changeStart <= segment.endIndex) {
-            newEnd = segment.endIndex + lengthDiff;
-          } else if (changeStart < segment.startIndex) {
+          if (changeStart < segment.startIndex) {
             // Change is before segment, adjust both start and end
             newStart = segment.startIndex + lengthDiff;
             newEnd = segment.endIndex + lengthDiff;
@@ -187,20 +263,16 @@ export const useAdvancedEditor = (initialContent = '') => {
             const overlap = overlapping.find(o => o.shot.id === shot.id && o.segment.id === segment.id);
             if (!overlap) return segment;
             
+            // Handle partial selections within existing segments
+            if (start > segment.startIndex && end < segment.endIndex) {
+              // Selection is completely within this segment - don't modify, let new shot overlap
+              return segment;
+            }
+            
             // Check if the new selection completely covers this segment
             if (start <= segment.startIndex && end >= segment.endIndex) {
               // Remove the entire segment
               return null;
-            }
-            
-            // Check if the new selection is completely within this segment
-            if (start > segment.startIndex && end < segment.endIndex) {
-              // Split the segment: keep the part before the selection
-              return {
-                ...segment,
-                endIndex: start - 1,
-                text: content.slice(segment.startIndex, start)
-              };
             }
             
             // Partial overlap: adjust the segment
@@ -232,8 +304,7 @@ export const useAdvancedEditor = (initialContent = '') => {
       id: `shot-${Date.now()}`,
       name,
       color,
-      textSegments: [],
-      additionalInfo: []
+      textSegments: []
     };
 
     const newSegment: TextSegment = {
@@ -242,7 +313,8 @@ export const useAdvancedEditor = (initialContent = '') => {
       shotId: newShot.id,
       startIndex: start,
       endIndex: end,
-      isStrikethrough: false
+      isStrikethrough: false,
+      comments: []
     };
 
     newShot.textSegments.push(newSegment);
@@ -271,20 +343,16 @@ export const useAdvancedEditor = (initialContent = '') => {
             const overlap = overlapping.find(o => o.shot.id === shot.id && o.segment.id === segment.id);
             if (!overlap) return segment;
             
+            // Handle partial selections within existing segments
+            if (start > segment.startIndex && end < segment.endIndex) {
+              // Selection is completely within this segment - don't modify, let new shot overlap
+              return segment;
+            }
+            
             // Check if the new selection completely covers this segment
             if (start <= segment.startIndex && end >= segment.endIndex) {
               // Remove the entire segment
               return null;
-            }
-            
-            // Check if the new selection is completely within this segment
-            if (start > segment.startIndex && end < segment.endIndex) {
-              // Split the segment: keep the part before the selection
-              return {
-                ...segment,
-                endIndex: start - 1,
-                text: content.slice(segment.startIndex, start)
-              };
             }
             
             // Partial overlap: adjust the segment
@@ -318,7 +386,8 @@ export const useAdvancedEditor = (initialContent = '') => {
       shotId,
       startIndex: start,
       endIndex: end,
-      isStrikethrough: false
+      isStrikethrough: false,
+      comments: []
     };
 
     setShots(prev => prev.map(shot => 
@@ -343,72 +412,54 @@ export const useAdvancedEditor = (initialContent = '') => {
     })));
   }, []);
 
-  const addShotInfo = useCallback((shotId: string, label: string, value: string) => {
-    const newInfo: ShotInfo = {
-      id: `info-${Date.now()}`,
-      label,
-      value
+  // New functions for handling multiple comments
+  const addSegmentComment = useCallback((segmentId: string, commentText: string) => {
+    const newComment: SegmentComment = {
+      id: `comment-${Date.now()}`,
+      text: commentText,
+      timestamp: Date.now()
     };
 
-    setShots(prev => prev.map(shot => 
-      shot.id === shotId 
-        ? { ...shot, additionalInfo: [...shot.additionalInfo, newInfo] }
-        : shot
-    ));
-  }, []);
-
-  const updateShotInfo = useCallback((shotId: string, infoId: string, label: string, value: string) => {
-    setShots(prev => prev.map(shot => 
-      shot.id === shotId 
-        ? {
-            ...shot,
-            additionalInfo: shot.additionalInfo.map(info =>
-              info.id === infoId ? { ...info, label, value } : info
-            )
-          }
-        : shot
-    ));
-  }, []);
-
-  const removeShotInfo = useCallback((shotId: string, infoId: string) => {
-    setShots(prev => prev.map(shot => 
-      shot.id === shotId 
-        ? {
-            ...shot,
-            additionalInfo: shot.additionalInfo.filter(info => info.id !== infoId)
-          }
-        : shot
-    ));
-  }, []);
-
-  const addSegmentInfo = useCallback((segmentId: string, info: string) => {
     setShots(prev => prev.map(shot => ({
       ...shot,
       textSegments: shot.textSegments.map(segment =>
         segment.id === segmentId
-          ? { ...segment, additionalInfo: info }
+          ? { 
+              ...segment, 
+              comments: [...(segment.comments || []), newComment]
+            }
           : segment
       )
     })));
   }, []);
 
-  const updateSegmentInfo = useCallback((segmentId: string, info: string) => {
+  const updateSegmentComment = useCallback((segmentId: string, commentId: string, commentText: string) => {
     setShots(prev => prev.map(shot => ({
       ...shot,
       textSegments: shot.textSegments.map(segment =>
         segment.id === segmentId
-          ? { ...segment, additionalInfo: info }
+          ? {
+              ...segment,
+              comments: segment.comments?.map(comment =>
+                comment.id === commentId 
+                  ? { ...comment, text: commentText }
+                  : comment
+              ) || []
+            }
           : segment
       )
     })));
   }, []);
 
-  const removeSegmentInfo = useCallback((segmentId: string) => {
+  const removeSegmentComment = useCallback((segmentId: string, commentId: string) => {
     setShots(prev => prev.map(shot => ({
       ...shot,
       textSegments: shot.textSegments.map(segment =>
         segment.id === segmentId
-          ? { ...segment, additionalInfo: undefined }
+          ? {
+              ...segment,
+              comments: segment.comments?.filter(comment => comment.id !== commentId) || []
+            }
           : segment
       )
     })));
@@ -480,11 +531,12 @@ export const useAdvancedEditor = (initialContent = '') => {
     removeCreativeItem,
     getShotForText,
     toggleTextStrikethrough,
-    addShotInfo,
-    updateShotInfo,
-    removeShotInfo,
-    addSegmentInfo,
-    updateSegmentInfo,
-    removeSegmentInfo
+    addSegmentComment,
+    updateSegmentComment,
+    removeSegmentComment,
+    // Autosave functions
+    saveToLocalStorage,
+    loadFromLocalStorage,
+    clearAutosave
   };
 };

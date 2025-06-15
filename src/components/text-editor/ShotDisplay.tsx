@@ -1,31 +1,30 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Check, X, ChevronDown, ChevronUp, Eye, EyeOff, MessageSquare, Film } from 'lucide-react';
+import { Check, X, ChevronDown, ChevronUp, Eye, EyeOff, MessageSquare, Film, Plus, Trash2 } from 'lucide-react';
 import { Shot } from '@/hooks/use-advanced-editor';
 
 interface ShotDisplayProps {
   shots: Shot[];
   onToggleStrikethrough?: (segmentId: string) => void;
-  onAddSegmentInfo?: (segmentId: string, info: string) => void;
-  onUpdateSegmentInfo?: (segmentId: string, info: string) => void;
-  onRemoveSegmentInfo?: (segmentId: string) => void;
+  onAddSegmentComment?: (segmentId: string, comment: string) => void;
+  onUpdateSegmentComment?: (segmentId: string, commentId: string, comment: string) => void;
+  onRemoveSegmentComment?: (segmentId: string, commentId: string) => void;
 }
 
 export const ShotDisplay: React.FC<ShotDisplayProps> = ({ 
   shots, 
   onToggleStrikethrough,
-  onAddSegmentInfo,
-  onUpdateSegmentInfo,
-  onRemoveSegmentInfo
+  onAddSegmentComment,
+  onUpdateSegmentComment,
+  onRemoveSegmentComment
 }) => {
   const [expandedShots, setExpandedShots] = useState<Set<string>>(new Set());
   const [shotsVisible, setShotsVisible] = useState(true);
-  const [editingSegmentInfo, setEditingSegmentInfo] = useState<{ segmentId: string; isEditing: boolean }>({ segmentId: '', isEditing: false });
-  const [segmentInfoText, setSegmentInfoText] = useState('');
+  const [editingComment, setEditingComment] = useState<{ segmentId: string; commentId?: string; isEditing: boolean }>({ segmentId: '', isEditing: false });
+  const [commentText, setCommentText] = useState('');
 
   const toggleShotExpanded = (shotId: string) => {
     setExpandedShots(prev => {
@@ -39,25 +38,30 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
     });
   };
 
-  const handleAddSegmentInfo = (segmentId: string) => {
-    if (segmentInfoText.trim() && onAddSegmentInfo) {
-      onAddSegmentInfo(segmentId, segmentInfoText.trim());
-      setSegmentInfoText('');
-      setEditingSegmentInfo({ segmentId: '', isEditing: false });
+  const handleAddComment = (segmentId: string) => {
+    if (commentText.trim() && onAddSegmentComment) {
+      onAddSegmentComment(segmentId, commentText.trim());
+      setCommentText('');
+      setEditingComment({ segmentId: '', isEditing: false });
     }
   };
 
-  const handleUpdateSegmentInfo = (segmentId: string) => {
-    if (segmentInfoText.trim() && onUpdateSegmentInfo) {
-      onUpdateSegmentInfo(segmentId, segmentInfoText.trim());
-      setSegmentInfoText('');
-      setEditingSegmentInfo({ segmentId: '', isEditing: false });
+  const handleUpdateComment = (segmentId: string, commentId: string) => {
+    if (commentText.trim() && onUpdateSegmentComment) {
+      onUpdateSegmentComment(segmentId, commentId, commentText.trim());
+      setCommentText('');
+      setEditingComment({ segmentId: '', isEditing: false });
     }
   };
 
-  const startEditingSegmentInfo = (segmentId: string, currentInfo?: string) => {
-    setSegmentInfoText(currentInfo || '');
-    setEditingSegmentInfo({ segmentId, isEditing: true });
+  const startEditingComment = (segmentId: string, commentId?: string, currentText?: string) => {
+    setCommentText(currentText || '');
+    setEditingComment({ segmentId, commentId, isEditing: true });
+  };
+
+  const cancelEditing = () => {
+    setCommentText('');
+    setEditingComment({ segmentId: '', isEditing: false });
   };
 
   if (shots.length === 0) {
@@ -166,11 +170,11 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => startEditingSegmentInfo(segment.id, segment.additionalInfo)}
+                              onClick={() => startEditingComment(segment.id)}
                               className="h-5 w-5 p-0 text-gray-400 hover:text-blue-600"
-                              title="Añadir información adicional"
+                              title="Añadir comentario"
                             >
-                              <MessageSquare className="h-3 w-3" />
+                              <Plus className="h-3 w-3" />
                             </Button>
                             {onToggleStrikethrough && (
                               <Button
@@ -190,34 +194,53 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
                           </div>
                         </div>
 
-                        {/* Segment additional info display */}
-                        {segment.additionalInfo && !editingSegmentInfo.isEditing && (
-                          <div className="ml-2 p-2 bg-blue-50 rounded text-xs border-l-2 border-blue-200">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1">
-                                <span className="font-medium text-blue-800">Información Adicional:</span>
-                                <p className="text-blue-700 mt-1">{segment.additionalInfo}</p>
+                        {/* Existing comments display */}
+                        {segment.comments && segment.comments.length > 0 && (
+                          <div className="ml-2 space-y-1">
+                            {segment.comments.map((comment) => (
+                              <div key={comment.id} className="p-2 bg-blue-50 rounded text-xs border-l-2 border-blue-200">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1">
+                                    <p className="text-blue-700">{comment.text}</p>
+                                    <p className="text-blue-500 text-xs mt-1">
+                                      {new Date(comment.timestamp).toLocaleTimeString()}
+                                    </p>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => startEditingComment(segment.id, comment.id, comment.text)}
+                                      className="h-4 w-4 p-0 text-blue-400 hover:text-blue-600"
+                                      title="Editar comentario"
+                                    >
+                                      <MessageSquare className="h-2.5 w-2.5" />
+                                    </Button>
+                                    {onRemoveSegmentComment && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => onRemoveSegmentComment(segment.id, comment.id)}
+                                        className="h-4 w-4 p-0 text-red-400 hover:text-red-600"
+                                        title="Eliminar comentario"
+                                      >
+                                        <Trash2 className="h-2.5 w-2.5" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => startEditingSegmentInfo(segment.id, segment.additionalInfo)}
-                                className="h-5 w-5 p-0 text-blue-400 hover:text-blue-600"
-                                title="Editar información"
-                              >
-                                <MessageSquare className="h-3 w-3" />
-                              </Button>
-                            </div>
+                            ))}
                           </div>
                         )}
 
-                        {/* Segment additional info form */}
-                        {editingSegmentInfo.segmentId === segment.id && editingSegmentInfo.isEditing && (
+                        {/* Comment editing form */}
+                        {editingComment.segmentId === segment.id && editingComment.isEditing && (
                           <div className="ml-2 p-2 bg-blue-50 rounded text-xs border">
                             <Textarea
-                              placeholder="Información adicional (estilo, emoción, instrucciones...)"
-                              value={segmentInfoText}
-                              onChange={(e) => setSegmentInfoText(e.target.value)}
+                              placeholder="Escribe tu comentario aquí..."
+                              value={commentText}
+                              onChange={(e) => setCommentText(e.target.value)}
                               rows={2}
                               className="text-xs mb-2"
                             />
@@ -225,37 +248,24 @@ export const ShotDisplay: React.FC<ShotDisplayProps> = ({
                               <Button
                                 size="sm"
                                 onClick={() => {
-                                  if (segment.additionalInfo) {
-                                    handleUpdateSegmentInfo(segment.id);
+                                  if (editingComment.commentId) {
+                                    handleUpdateComment(segment.id, editingComment.commentId);
                                   } else {
-                                    handleAddSegmentInfo(segment.id);
+                                    handleAddComment(segment.id);
                                   }
                                 }}
                                 className="h-6 text-xs px-2"
                               >
-                                {segment.additionalInfo ? 'Actualizar' : 'Añadir'}
+                                {editingComment.commentId ? 'Actualizar' : 'Añadir'}
                               </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setEditingSegmentInfo({ segmentId: '', isEditing: false })}
+                                onClick={cancelEditing}
                                 className="h-6 text-xs px-2"
                               >
                                 Cancelar
                               </Button>
-                              {segment.additionalInfo && onRemoveSegmentInfo && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    onRemoveSegmentInfo(segment.id);
-                                    setEditingSegmentInfo({ segmentId: '', isEditing: false });
-                                  }}
-                                  className="h-6 text-xs px-2 text-red-500 hover:text-red-700"
-                                >
-                                  Eliminar
-                                </Button>
-                              )}
                             </div>
                           </div>
                         )}
