@@ -26,7 +26,7 @@ const navigation = [
     name: 'Zona del Creador', 
     icon: PenTool,
     subItems: [
-      { name: 'Estrategia de Videos', href: '/strategy', icon: Target },
+      { name: 'Estrategia de contenido', href: '/strategy', icon: Target },
       { name: 'Videos', href: '/videos', icon: FileVideo },
       { name: 'Subir Video', href: '/upload', icon: Upload },
       { name: 'Historial', href: '/history', icon: History },
