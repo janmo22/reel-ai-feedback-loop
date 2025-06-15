@@ -144,7 +144,8 @@ export const useSupabaseAutosave = () => {
           if (data.shots && typeof data.shots === 'string') {
             parsedShots = JSON.parse(data.shots);
           } else if (Array.isArray(data.shots)) {
-            parsedShots = data.shots as Shot[];
+            // Properly cast from Json[] to Shot[] using unknown first
+            parsedShots = data.shots as unknown as Shot[];
           }
         } catch (parseError) {
           console.warn('Error parsing shots JSON:', parseError);
