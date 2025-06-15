@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles, Heart, Eye, MessageCircle, Hash, Clock, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CompetitorVideo, CompetitorData } from '@/hooks/use-competitor-scraping';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface VideoAnalysisModalProps {
   video: CompetitorVideo | null;
@@ -24,6 +26,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisNotes, setAnalysisNotes] = useState('');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   if (!video) return null;
 
@@ -51,18 +54,103 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     });
   };
 
+  // Function to fetch comprehensive user data
+  const fetchUserData = async () => {
+    if (!user) return null;
+
+    try {
+      // Get user mission data
+      const { data: userMission } = await supabase
+        .from('user_mission')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      // Get user's own profile data
+      const { data: myProfile } = await supabase
+        .from('my_profile')
+        .select(`
+          *,
+          my_profile_videos (*)
+        `)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      // Get user's video performance data
+      const { data: userVideos } = await supabase
+        .from('videos')
+        .select(`
+          *,
+          feedback (*)
+        `)
+        .eq('user_id', user.id);
+
+      // Calculate user's video metrics
+      const userVideoMetrics = userVideos ? {
+        total_videos: userVideos.length,
+        avg_score: userVideos.filter(v => v.feedback?.length > 0).length > 0 
+          ? userVideos
+              .filter(v => v.feedback?.length > 0)
+              .reduce((sum, v) => sum + (v.feedback[0]?.overall_score || 0), 0) / 
+            userVideos.filter(v => v.feedback?.length > 0).length
+          : 0,
+        completed_videos: userVideos.filter(v => v.status === 'completed').length,
+        processing_videos: userVideos.filter(v => v.status === 'processing').length
+      } : null;
+
+      // Calculate user's Instagram metrics if available
+      const userInstagramMetrics = myProfile ? {
+        follower_count: myProfile.follower_count || 0,
+        following_count: myProfile.following_count || 0,
+        posts_count: myProfile.posts_count || 0,
+        is_verified: myProfile.is_verified || false,
+        is_business_account: myProfile.is_business_account || false,
+        total_my_videos: myProfile.my_profile_videos?.length || 0,
+        avg_likes: myProfile.my_profile_videos?.length > 0 
+          ? myProfile.my_profile_videos.reduce((sum, v) => sum + (v.likes_count || 0), 0) / myProfile.my_profile_videos.length
+          : 0,
+        avg_views: myProfile.my_profile_videos?.length > 0 
+          ? myProfile.my_profile_videos.reduce((sum, v) => sum + (v.views_count || 0), 0) / myProfile.my_profile_videos.length
+          : 0,
+        avg_comments: myProfile.my_profile_videos?.length > 0 
+          ? myProfile.my_profile_videos.reduce((sum, v) => sum + (v.comments_count || 0), 0) / myProfile.my_profile_videos.length
+          : 0
+      } : null;
+
+      return {
+        user_id: user.id,
+        user_email: user.email,
+        user_mission: userMission,
+        my_profile: myProfile,
+        user_video_metrics: userVideoMetrics,
+        user_instagram_metrics: userInstagramMetrics,
+        analysis_context: {
+          has_strategy: !!userMission,
+          has_instagram_profile: !!myProfile,
+          total_analyzed_videos: userVideos?.length || 0,
+          account_creation_date: user.created_at
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      return null;
+    }
+  };
+
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
 
     try {
       const webhookUrl = "https://primary-production-9b33.up.railway.app/webhook-test/d21a77de-3dfb-4a00-8872-1047fa550e57";
       
-      // Preparar los datos para el análisis incluyendo follower_count
+      // Fetch comprehensive user data
+      const userData = await fetchUserData();
+      
+      // Preparar los datos para el análisis incluyendo toda la información del usuario
       const analysisData = {
+        // Video data
         video_id: video.id,
         instagram_id: video.instagram_id,
-        competitor_username: competitor.instagram_username,
-        follower_count: competitor.follower_count || 0,
         video_url: video.video_url,
         caption: video.caption || '',
         likes_count: video.likes_count || 0,
@@ -74,24 +162,54 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
         thumbnail_url: video.thumbnail_url || '',
         analysis_notes: analysisNotes.trim(),
         timestamp: new Date().toISOString(),
-        // Métricas adicionales
+        
+        // Video metrics
         engagement_rate: video.likes_count && video.views_count ? 
           ((video.likes_count + video.comments_count) / video.views_count * 100).toFixed(2) : '0',
+        
+        // Competitor data
         competitor_data: {
           username: competitor.instagram_username,
           follower_count: competitor.follower_count || 0,
+          following_count: competitor.following_count || 0,
+          posts_count: competitor.posts_count || 0,
           display_name: competitor.display_name,
           is_verified: competitor.is_verified,
           is_business_account: competitor.is_business_account,
           business_category: competitor.business_category,
+          bio: competitor.bio,
+          is_private: competitor.is_private,
           video_metrics: {
             performance_score: video.views_count > 0 ? 
               Math.min(100, Math.round((video.likes_count / video.views_count) * 1000)) : 0
           }
+        },
+        
+        // Comprehensive user data for personalized analysis
+        user_data: userData,
+        
+        // Comparison context
+        comparison_context: {
+          user_vs_competitor_followers: userData?.user_instagram_metrics?.follower_count && competitor.follower_count
+            ? {
+                user_followers: userData.user_instagram_metrics.follower_count,
+                competitor_followers: competitor.follower_count,
+                ratio: (userData.user_instagram_metrics.follower_count / competitor.follower_count).toFixed(3)
+              }
+            : null,
+          user_avg_performance: userData?.user_instagram_metrics?.avg_views || 0,
+          competitor_video_performance: video.views_count || 0,
+          user_content_strategy: userData?.user_mission ? {
+            value_proposition: userData.user_mission.value_proposition,
+            target_audience: userData.user_mission.target_audience,
+            niche: userData.user_mission.niche,
+            content_tone: userData.user_mission.content_tone,
+            content_personality: userData.user_mission.content_personality
+          } : null
         }
       };
 
-      console.log('Enviando video para análisis:', analysisData);
+      console.log('Enviando video para análisis con datos completos del usuario:', analysisData);
 
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -104,7 +222,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
       if (response.ok) {
         toast({
           title: "Análisis iniciado",
-          description: "El video ha sido enviado para análisis con IA. Los resultados estarán disponibles pronto.",
+          description: "El video ha sido enviado para análisis personalizado con IA. Los resultados incluirán comparaciones específicas para tu perfil.",
         });
         onClose();
       } else {
