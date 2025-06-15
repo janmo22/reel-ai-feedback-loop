@@ -9,14 +9,14 @@ import {
   Settings, 
   Target,
   Users,
-  User,
   ChevronDown,
   ChevronRight,
   Video,
   Search,
   PenTool,
   FileVideo,
-  Play
+  Play,
+  User
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -27,6 +27,7 @@ const navigation = [
     icon: PenTool,
     subItems: [
       { name: 'Estrategia de contenido', href: '/strategy', icon: Target },
+      { name: 'Análisis de mi perfil', href: '/my-profile-analysis', icon: User },
       { name: 'Videos', href: '/videos', icon: FileVideo },
       { name: 'Subir Video', href: '/upload', icon: Upload },
       { name: 'Historial', href: '/history', icon: History },
@@ -37,7 +38,6 @@ const navigation = [
     icon: Search,
     subItems: [
       { name: 'Competencia', href: '/competitors', icon: Users },
-      { name: 'Mi Perfil', href: '/my-profile', icon: User },
     ]
   },
   { name: 'Configuración', href: '/settings', icon: Settings },

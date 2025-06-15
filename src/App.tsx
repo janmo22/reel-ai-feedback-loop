@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +14,7 @@ import HistoryPage from "./pages/HistoryPage";
 import SettingsPage from "./pages/SettingsPage";
 import StrategyPage from "./pages/StrategyPage";
 import CompetitorsPage from "./pages/CompetitorsPage";
-import MyProfilePage from "./pages/MyProfilePage";
+import MyProfileAnalysisPage from "./pages/MyProfileAnalysisPage";
 import CreateVideoPage from "./pages/CreateVideoPage";
 import VideosPage from "./pages/VideosPage";
 import NotFound from "./pages/NotFound";
@@ -40,7 +41,7 @@ const App = () => (
               <Route path="settings" element={<SettingsPage />} />
               <Route path="strategy" element={<StrategyPage />} />
               <Route path="competitors" element={<CompetitorsPage />} />
-              <Route path="my-profile" element={<MyProfilePage />} />
+              <Route path="my-profile-analysis" element={<MyProfileAnalysisPage />} />
               <Route path="/competitor-video/:videoId" element={<CompetitorVideoAnalysisPage />} />
               <Route path="*" element={<NotFound />} />
             </Route>
