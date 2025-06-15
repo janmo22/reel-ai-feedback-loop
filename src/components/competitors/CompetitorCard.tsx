@@ -47,36 +47,32 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
     console.warn('Error parsing external URLs:', e);
   }
 
-  // Function to create a proxy URL for Apify images
-  const getProxiedImageUrl = (url: string | null) => {
+  // Function to handle Apify proxied images with proper decoding
+  const getImageUrl = (url: string | null) => {
     if (!url) return null;
     
-    // If it's an Apify URL, try to extract the actual Instagram URL
+    // Handle Apify URLs
     if (url.includes('images.apifyusercontent.com')) {
       try {
-        // The URL structure is: https://images.apifyusercontent.com/[hash]/cb:1/[base64_encoded_url].jpg
-        const urlParts = url.split('/');
-        if (urlParts.length >= 5) {
-          const encodedPart = urlParts[urlParts.length - 1];
-          // Remove .jpg extension if present
-          const base64Part = encodedPart.replace('.jpg', '');
-          try {
-            const decodedUrl = atob(base64Part);
-            // Return the decoded Instagram URL directly
-            return decodedUrl;
-          } catch (e) {
-            console.warn('Could not decode image URL:', e);
-          }
-        }
+        // Extract the base64 encoded part from Apify URL
+        const parts = url.split('/');
+        const encodedPart = parts[parts.length - 1].replace('.jpg', '').replace('.png', '').replace('.webp', '');
+        
+        // Decode base64 to get the original Instagram URL
+        const decodedUrl = atob(encodedPart);
+        
+        // Return Instagram URL with proper CORS headers
+        return decodedUrl;
       } catch (e) {
-        console.warn('Error processing Apify URL:', e);
+        console.warn('Could not decode Apify URL:', e);
+        return url;
       }
     }
     
     return url;
   };
 
-  const profileImageUrl = getProxiedImageUrl(competitor.profile_picture_url);
+  const profileImageUrl = getImageUrl(competitor.profile_picture_url);
 
   return (
     <Card className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/95 backdrop-blur-lg overflow-hidden relative">
@@ -97,27 +93,21 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
                       alt={competitor.display_name || competitor.instagram_username}
                       className="w-full h-full object-cover object-center transition-all duration-300 group-hover:scale-110 rounded-full"
                       loading="lazy"
+                      crossOrigin="anonymous"
+                      referrerPolicy="no-referrer"
                       onError={(e) => {
-                        console.log('Primary image failed to load, trying fallback');
+                        console.log('Image failed to load, showing fallback');
                         const img = e.target as HTMLImageElement;
-                        
-                        // If the decoded URL failed, try the original Apify URL
-                        if (img.src !== competitor.profile_picture_url && competitor.profile_picture_url) {
-                          img.src = competitor.profile_picture_url;
-                          return;
-                        }
-                        
-                        // Hide image and show fallback
                         img.style.display = 'none';
-                        const fallback = img.parentElement?.querySelector('.fallback-avatar');
+                        const fallback = img.parentElement?.querySelector('.fallback-avatar') as HTMLElement;
                         if (fallback) {
-                          (fallback as HTMLElement).style.display = 'flex';
+                          fallback.style.display = 'flex';
                         }
                       }}
                       onLoad={() => {
-                        const fallback = document.querySelector(`[data-competitor="${competitor.id}"] .fallback-avatar`);
+                        const fallback = document.querySelector(`[data-competitor="${competitor.id}"] .fallback-avatar`) as HTMLElement;
                         if (fallback) {
-                          (fallback as HTMLElement).style.display = 'none';
+                          fallback.style.display = 'none';
                         }
                       }}
                     />
@@ -125,6 +115,7 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
                   <div 
                     className="fallback-avatar absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-2xl rounded-full"
                     data-competitor={competitor.id}
+                    style={{ display: profileImageUrl ? 'none' : 'flex' }}
                   >
                     {competitor.instagram_username.substring(0, 2).toUpperCase()}
                   </div>

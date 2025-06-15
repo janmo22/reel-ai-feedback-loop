@@ -6,20 +6,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Heart, Eye, MessageCircle, Hash, Clock, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { CompetitorVideo } from '@/hooks/use-competitor-scraping';
+import { CompetitorVideo, CompetitorData } from '@/hooks/use-competitor-scraping';
 
 interface VideoAnalysisModalProps {
   video: CompetitorVideo | null;
   isOpen: boolean;
   onClose: () => void;
-  competitorUsername: string;
+  competitor: CompetitorData;
 }
 
 const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
   video,
   isOpen,
   onClose,
-  competitorUsername
+  competitor
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisNotes, setAnalysisNotes] = useState('');
@@ -57,11 +57,12 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     try {
       const webhookUrl = "https://primary-production-9b33.up.railway.app/webhook-test/d21a77de-3dfb-4a00-8872-1047fa550e57";
       
-      // Preparar los datos para el análisis
+      // Preparar los datos para el análisis incluyendo follower_count
       const analysisData = {
         video_id: video.id,
         instagram_id: video.instagram_id,
-        competitor_username: competitorUsername,
+        competitor_username: competitor.instagram_username,
+        follower_count: competitor.follower_count || 0,
         video_url: video.video_url,
         caption: video.caption || '',
         likes_count: video.likes_count || 0,
@@ -77,7 +78,12 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
         engagement_rate: video.likes_count && video.views_count ? 
           ((video.likes_count + video.comments_count) / video.views_count * 100).toFixed(2) : '0',
         competitor_data: {
-          username: competitorUsername,
+          username: competitor.instagram_username,
+          follower_count: competitor.follower_count || 0,
+          display_name: competitor.display_name,
+          is_verified: competitor.is_verified,
+          is_business_account: competitor.is_business_account,
+          business_category: competitor.business_category,
           video_metrics: {
             performance_score: video.views_count > 0 ? 
               Math.min(100, Math.round((video.likes_count / video.views_count) * 1000)) : 0
@@ -124,7 +130,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-500" />
-            Analizar Video de @{competitorUsername}
+            Analizar Video de @{competitor.instagram_username}
           </DialogTitle>
         </DialogHeader>
 

@@ -3,63 +3,28 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Heart, MessageCircle, Eye, Clock, ExternalLink, Play, Trash2, Hash, Sparkles, ArrowDown, ArrowUp } from 'lucide-react';
-import { CompetitorVideo } from '@/hooks/use-competitor-scraping';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Eye, Heart, MessageCircle, Sparkles, ExternalLink, Trash2, Calendar, Clock, Hash } from 'lucide-react';
+import { CompetitorData, CompetitorVideo } from '@/hooks/use-competitor-scraping';
 import VideoAnalysisModal from './VideoAnalysisModal';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 
 interface CompetitorVideoTableProps {
-  videos: CompetitorVideo[];
-  selectedVideos: string[];
-  onVideoSelection: (videoId: string, checked: boolean) => void;
-  onDeleteVideo?: (videoId: string) => void;
-  competitorUsername: string;
+  competitor: CompetitorData;
+  onDeleteVideo: (videoId: string) => void;
 }
 
-type SortField = 'views_count' | 'likes_count' | 'posted_at' | 'comments_count';
-type SortDirection = 'asc' | 'desc';
-
 const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({ 
-  videos, 
-  selectedVideos, 
-  onVideoSelection,
-  onDeleteVideo,
-  competitorUsername
+  competitor, 
+  onDeleteVideo 
 }) => {
   const [selectedVideo, setSelectedVideo] = useState<CompetitorVideo | null>(null);
-  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
-  const [sortField, setSortField] = useState<SortField>('views_count');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | null) => {
+    if (!num) return '0';
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
     return num.toString();
-  };
-
-  const formatDuration = (seconds: number | null) => {
-    if (!seconds) return '--';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const formatDate = (dateString: string | null) => {
@@ -71,153 +36,69 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     });
   };
 
-  const truncateText = (text: string | null, maxLength: number = 80) => {
-    if (!text) return '--';
-    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  const formatDuration = (seconds: number | null) => {
+    if (!seconds) return '--';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleAnalyzeVideo = (video: CompetitorVideo) => {
     setSelectedVideo(video);
-    setShowAnalysisModal(true);
+    setIsAnalysisModalOpen(true);
   };
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('desc');
-    }
+  const closeAnalysisModal = () => {
+    setIsAnalysisModalOpen(false);
+    setSelectedVideo(null);
   };
 
-  const sortedVideos = [...videos].sort((a, b) => {
-    let aValue: any = a[sortField];
-    let bValue: any = b[sortField];
-
-    // Handle null values
-    if (aValue === null || aValue === undefined) aValue = 0;
-    if (bValue === null || bValue === undefined) bValue = 0;
-
-    // Handle date sorting
-    if (sortField === 'posted_at') {
-      aValue = new Date(aValue).getTime();
-      bValue = new Date(bValue).getTime();
+  // Function to handle image URLs, especially from Apify
+  const getImageUrl = (url: string | null) => {
+    if (!url) return null;
+    
+    // Handle Apify URLs by decoding the base64 part
+    if (url.includes('images.apifyusercontent.com')) {
+      try {
+        const parts = url.split('/');
+        const encodedPart = parts[parts.length - 1].replace('.jpg', '').replace('.png', '').replace('.webp', '');
+        const decodedUrl = atob(encodedPart);
+        return decodedUrl;
+      } catch (e) {
+        console.warn('Could not decode Apify URL:', e);
+        return url;
+      }
     }
-
-    if (sortDirection === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
-  });
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return null;
-    return sortDirection === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+    
+    return url;
   };
 
   return (
     <>
-      <div className="rounded-md border">
+      <div className="rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={selectedVideos.length === videos.length && videos.length > 0}
-                  onCheckedChange={(checked) => {
-                    videos.forEach(video => {
-                      if (checked && !selectedVideos.includes(video.id)) {
-                        onVideoSelection(video.id, true);
-                      } else if (!checked && selectedVideos.includes(video.id)) {
-                        onVideoSelection(video.id, false);
-                      }
-                    });
-                  }}
-                />
-              </TableHead>
-              <TableHead className="w-24">Portada</TableHead>
-              <TableHead>Contenido</TableHead>
-              <TableHead className="w-24">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleSort('likes_count')}
-                  className="h-auto p-0 text-left flex items-center gap-1 hover:bg-transparent"
-                >
-                  <Heart className="h-4 w-4" />
-                  Likes
-                  {getSortIcon('likes_count')}
-                </Button>
-              </TableHead>
-              <TableHead className="w-24">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleSort('views_count')}
-                  className="h-auto p-0 text-left flex items-center gap-1 hover:bg-transparent"
-                >
-                  <Eye className="h-4 w-4" />
-                  Views
-                  {getSortIcon('views_count')}
-                </Button>
-              </TableHead>
-              <TableHead className="w-24">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleSort('comments_count')}
-                  className="h-auto p-0 text-left flex items-center gap-1 hover:bg-transparent"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Comentarios
-                  {getSortIcon('comments_count')}
-                </Button>
-              </TableHead>
-              <TableHead className="w-20">
-                <div className="flex items-center gap-1">
-                  <Hash className="h-4 w-4" />
-                  Hashtags
-                </div>
-              </TableHead>
-              <TableHead className="w-20">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  Duración
-                </div>
-              </TableHead>
-              <TableHead className="w-24">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleSort('posted_at')}
-                  className="h-auto p-0 text-left flex items-center gap-1 hover:bg-transparent"
-                >
-                  Fecha
-                  {getSortIcon('posted_at')}
-                </Button>
-              </TableHead>
-              <TableHead className="w-20">Estado</TableHead>
-              <TableHead className="w-40">Acciones</TableHead>
+            <TableRow className="bg-gray-50">
+              <TableHead className="w-16">Vista previa</TableHead>
+              <TableHead>Métricas</TableHead>
+              <TableHead>Fecha y duración</TableHead>
+              <TableHead>Caption</TableHead>
+              <TableHead>Análisis</TableHead>
+              <TableHead className="w-24">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedVideos.map((video) => (
-              <TableRow key={video.id} className="hover:bg-muted/50">
+            {competitor.competitor_videos?.map((video) => (
+              <TableRow key={video.id} className="hover:bg-gray-50/50">
                 <TableCell>
-                  <Checkbox
-                    checked={selectedVideos.includes(video.id)}
-                    onCheckedChange={(checked) => onVideoSelection(video.id, checked as boolean)}
-                  />
-                </TableCell>
-                
-                <TableCell>
-                  <div className="relative w-16 h-20 bg-gray-100 rounded-lg overflow-hidden shadow-sm">
+                  <div className="w-12 h-16 bg-gray-100 rounded-md overflow-hidden shadow-sm">
                     {video.thumbnail_url ? (
                       <img
-                        src={video.thumbnail_url}
-                        alt="Portada del reel"
+                        src={getImageUrl(video.thumbnail_url)}
+                        alt="Thumbnail"
                         className="w-full h-full object-cover"
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
@@ -225,168 +106,110 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                         }}
                       />
                     ) : null}
-                    <div className={`absolute inset-0 flex items-center justify-center ${video.thumbnail_url ? 'hidden' : ''}`}>
-                      <Play className="h-6 w-6 text-gray-400" />
-                    </div>
-                    <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <Play className="h-4 w-4 text-white" />
+                    <div className={`w-full h-full flex items-center justify-center text-gray-400 text-xs ${video.thumbnail_url ? 'hidden' : ''}`}>
+                      Sin imagen
                     </div>
                   </div>
                 </TableCell>
                 
-                <TableCell className="max-w-xs">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">
-                      {truncateText(video.caption, 60)}
-                    </p>
-                    {video.caption && video.caption.length > 60 && (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-blue-600 hover:text-blue-800">
-                            Ver más...
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>Caption completo</DialogTitle>
-                          </DialogHeader>
-                          <div className="max-h-96 overflow-y-auto p-4 bg-gray-50 rounded-lg">
-                            <p className="text-sm whitespace-pre-wrap">{video.caption}</p>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                <TableCell>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      <Eye className="h-3 w-3 mr-1" />
+                      {formatNumber(video.views_count)}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      <Heart className="h-3 w-3 mr-1" />
+                      {formatNumber(video.likes_count)}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      <MessageCircle className="h-3 w-3 mr-1" />
+                      {formatNumber(video.comments_count)}
+                    </Badge>
+                    {video.hashtags_count > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        <Hash className="h-3 w-3 mr-1" />
+                        {video.hashtags_count}
+                      </Badge>
                     )}
                   </div>
                 </TableCell>
                 
                 <TableCell>
-                  <div className="flex items-center gap-1 text-sm font-medium">
-                    <Heart className="h-3 w-3 text-red-500" />
-                    {formatNumber(video.likes_count)}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <Calendar className="h-3 w-3" />
+                      {formatDate(video.posted_at)}
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <Clock className="h-3 w-3" />
+                      {formatDuration(video.duration_seconds)}
+                    </div>
                   </div>
                 </TableCell>
                 
-                <TableCell>
-                  <div className="flex items-center gap-1 text-sm font-medium">
-                    <Eye className="h-3 w-3 text-blue-500" />
-                    {formatNumber(video.views_count)}
-                  </div>
-                </TableCell>
-                
-                <TableCell>
-                  <div className="flex items-center gap-1 text-sm">
-                    <MessageCircle className="h-3 w-3 text-green-500" />
-                    {formatNumber(video.comments_count)}
-                  </div>
-                </TableCell>
-                
-                <TableCell>
-                  <div className="flex items-center gap-1 text-sm">
-                    <Hash className="h-3 w-3 text-purple-500" />
-                    {video.hashtags_count || 0}
-                  </div>
-                </TableCell>
-                
-                <TableCell>
-                  <div className="flex items-center gap-1 text-sm">
-                    <Clock className="h-3 w-3" />
-                    {formatDuration(video.duration_seconds)}
-                  </div>
-                </TableCell>
-                
-                <TableCell className="text-sm">
-                  {formatDate(video.posted_at)}
+                <TableCell className="max-w-xs">
+                  {video.caption ? (
+                    <p className="text-sm text-gray-700 line-clamp-2 leading-relaxed">
+                      {video.caption.substring(0, 100)}
+                      {video.caption.length > 100 && '...'}
+                    </p>
+                  ) : (
+                    <span className="text-gray-400 text-sm italic">Sin caption</span>
+                  )}
                 </TableCell>
                 
                 <TableCell>
                   {video.competitor_analysis && video.competitor_analysis.length > 0 ? (
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    <Badge className="bg-green-100 text-green-800">
                       Analizado
                     </Badge>
-                  ) : video.is_selected_for_analysis ? (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                      Seleccionado
-                    </Badge>
                   ) : (
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-gray-500">
                       Pendiente
                     </Badge>
                   )}
                 </TableCell>
                 
                 <TableCell>
-                  <div className="flex items-center gap-1">
+                  <div className="flex gap-2">
                     <Button
-                      variant="ghost"
                       size="sm"
+                      variant="outline"
                       onClick={() => handleAnalyzeVideo(video)}
-                      className="h-8 px-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50"
-                      title="Analizar con IA"
+                      className="h-8 px-3"
                     >
-                      <Sparkles className="h-3 w-3 mr-1" />
-                      Analizar
+                      <Sparkles className="h-3 w-3" />
                     </Button>
-                    
                     <Button
-                      variant="ghost"
                       size="sm"
+                      variant="outline"
                       onClick={() => window.open(video.video_url, '_blank')}
-                      className="h-8 w-8 p-0"
-                      title="Ver en Instagram"
+                      className="h-8 px-3"
                     >
                       <ExternalLink className="h-3 w-3" />
                     </Button>
-                    
-                    {onDeleteVideo && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            title="Eliminar video"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>¿Eliminar video?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta acción no se puede deshacer. El video será eliminado permanentemente de tu análisis.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => onDeleteVideo(video.id)}>
-                              Eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onDeleteVideo(video.id)}
+                      className="h-8 px-3 text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-        
-        {videos.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            No se encontraron videos para este competidor
-          </div>
-        )}
       </div>
 
       <VideoAnalysisModal
         video={selectedVideo}
-        isOpen={showAnalysisModal}
-        onClose={() => {
-          setShowAnalysisModal(false);
-          setSelectedVideo(null);
-        }}
-        competitorUsername={competitorUsername}
+        isOpen={isAnalysisModalOpen}
+        onClose={closeAnalysisModal}
+        competitor={competitor}
       />
     </>
   );
