@@ -70,6 +70,12 @@ export const useCompetitorScraping = () => {
       posts_count: null,
       bio: null,
       is_verified: false,
+      external_urls: null,
+      is_business_account: false,
+      business_category: null,
+      is_private: false,
+      highlight_reel_count: null,
+      igtvVideoCount: null,
       last_scraped_at: null,
       competitor_videos: [],
       isLoading: true
@@ -116,10 +122,30 @@ export const useCompetitorScraping = () => {
 
       if (fetchError) {
         console.error('Error fetching complete competitor:', fetchError);
-        // If fetch fails, still add the basic competitor data
-        setCompetitors(prev => [data.competitor, ...prev]);
+        // If fetch fails, still add the basic competitor data with all required fields
+        const basicCompetitor: CompetitorData = {
+          ...data.competitor,
+          external_urls: data.competitor.external_urls || null,
+          is_business_account: data.competitor.is_business_account || false,
+          business_category: data.competitor.business_category || null,
+          is_private: data.competitor.is_private || false,
+          highlight_reel_count: data.competitor.highlight_reel_count || null,
+          igtvVideoCount: data.competitor.igtvVideoCount || null,
+          competitor_videos: data.competitor.competitor_videos || []
+        };
+        setCompetitors(prev => [basicCompetitor, ...prev]);
       } else {
-        setCompetitors(prev => [completeCompetitor, ...prev]);
+        // Ensure complete competitor has all required fields
+        const enhancedCompetitor: CompetitorData = {
+          ...completeCompetitor,
+          external_urls: completeCompetitor.external_urls || null,
+          is_business_account: completeCompetitor.is_business_account || false,
+          business_category: completeCompetitor.business_category || null,
+          is_private: completeCompetitor.is_private || false,
+          highlight_reel_count: completeCompetitor.highlight_reel_count || null,
+          igtvVideoCount: completeCompetitor.igtvVideoCount || null
+        };
+        setCompetitors(prev => [enhancedCompetitor, ...prev]);
       }
 
       toast({
@@ -164,7 +190,18 @@ export const useCompetitorScraping = () => {
 
       if (error) throw error;
       
-      setCompetitors(data || []);
+      // Ensure all competitors have the required fields
+      const enhancedCompetitors: CompetitorData[] = (data || []).map(competitor => ({
+        ...competitor,
+        external_urls: competitor.external_urls || null,
+        is_business_account: competitor.is_business_account || false,
+        business_category: competitor.business_category || null,
+        is_private: competitor.is_private || false,
+        highlight_reel_count: competitor.highlight_reel_count || null,
+        igtvVideoCount: competitor.igtvVideoCount || null
+      }));
+      
+      setCompetitors(enhancedCompetitors);
     } catch (error) {
       console.error('Error fetching competitors:', error);
       toast({
@@ -247,13 +284,24 @@ export const useCompetitorScraping = () => {
 
       if (error) throw error;
 
+      // Ensure refreshed competitor has all required fields
+      const enhancedCompetitor: CompetitorData = {
+        ...data,
+        external_urls: data.external_urls || null,
+        is_business_account: data.is_business_account || false,
+        business_category: data.business_category || null,
+        is_private: data.is_private || false,
+        highlight_reel_count: data.highlight_reel_count || null,
+        igtvVideoCount: data.igtvVideoCount || null
+      };
+
       setCompetitors(prev => 
         prev.map(competitor => 
-          competitor.id === competitorId ? data : competitor
+          competitor.id === competitorId ? enhancedCompetitor : competitor
         )
       );
 
-      return data;
+      return enhancedCompetitor;
     } catch (error) {
       console.error('Error refreshing competitor:', error);
       toast({
