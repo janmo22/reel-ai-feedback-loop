@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Heart, Eye, MessageCircle, Hash, Clock, Calendar } from 'lucide-react';
+import { Sparkles, Heart, Eye, MessageCircle, Hash, Clock, Calendar, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CompetitorVideo, CompetitorData } from '@/hooks/use-competitor-scraping';
 import { supabase } from '@/integrations/supabase/client';

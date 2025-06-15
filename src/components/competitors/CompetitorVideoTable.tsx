@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Heart, MessageCircle, Sparkles, ExternalLink, Trash2, Calendar, Clock, Hash, ChevronUp, ChevronDown } from 'lucide-react';
+import { Eye, Heart, MessageCircle, Sparkles, ExternalLink, Trash2, Calendar, Clock, Hash, ChevronUp, ChevronDown, CheckCircle } from 'lucide-react';
 import { CompetitorData, CompetitorVideo } from '@/hooks/use-competitor-scraping';
 import VideoAnalysisModal from './VideoAnalysisModal';
 
