@@ -52,12 +52,12 @@ export const useAdvancedEditor = (initialContent = '') => {
   const [creativeItems, setCreativeItems] = useState<CreativeItem[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync with initial content only when it actually changes from parent
+  // Initialize content from parent only once on mount or when initial content changes significantly
   useEffect(() => {
-    if (initialContent !== content) {
+    if (initialContent !== content && Math.abs(initialContent.length - content.length) > 1) {
       setContent(initialContent);
     }
-  }, [initialContent]); // Remove content from dependencies to prevent loop
+  }, [initialContent]);
 
   // Helper function to check if text contains only whitespace
   const isOnlyWhitespace = useCallback((text: string) => {
@@ -79,11 +79,13 @@ export const useAdvancedEditor = (initialContent = '') => {
     return overlapping;
   }, [shots]);
 
-  // Improved updateContent function that doesn't trigger infinite loops
+  // Update content function that doesn't cause infinite loops
   const updateContent = useCallback((newContent: string) => {
+    if (newContent === content) return; // Prevent unnecessary updates
+    
     setContent(newContent);
     
-    // Update shot boundaries when content changes
+    // Update shot boundaries when content changes, but only if shots exist
     if (shots.length > 0) {
       setShots(prevShots => {
         return prevShots.map(shot => ({
@@ -115,7 +117,7 @@ export const useAdvancedEditor = (initialContent = '') => {
         })).filter(shot => shot.textSegments.length > 0);
       });
     }
-  }, [shots.length, isOnlyWhitespace]);
+  }, [content, shots.length, isOnlyWhitespace]);
 
   const createShot = useCallback((name: string, color: string) => {
     if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) return null;
@@ -205,11 +207,6 @@ export const useAdvancedEditor = (initialContent = '') => {
     setSelectedText('');
     setSelectionRange(null);
   }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments]);
-
-  const updateShotSegments = useCallback((newContent: string) => {
-    // This is now handled by updateShotBoundaries
-    return;
-  }, []);
 
   const toggleTextStrikethrough = useCallback((segmentId: string) => {
     setShots(prev => prev.map(shot => ({
@@ -359,7 +356,6 @@ export const useAdvancedEditor = (initialContent = '') => {
     removeCreativeItem,
     getShotForText,
     toggleTextStrikethrough,
-    updateShotSegments,
     addShotInfo,
     updateShotInfo,
     removeShotInfo,

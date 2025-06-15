@@ -65,14 +65,12 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
 
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Sync with parent component
+  // Sync with parent component only when there are actual changes
   useEffect(() => {
-    onContentChange(editorContent);
-  }, [editorContent, onContentChange]);
-
-  useEffect(() => {
-    updateContent(content);
-  }, [content, updateContent]);
+    if (editorContent !== content) {
+      onContentChange(editorContent);
+    }
+  }, [editorContent]);
 
   const handleTextSelectionEvent = () => {
     handleTextSelection();
@@ -97,7 +95,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
 
   const handleContentChange = (newContent: string) => {
     updateContent(newContent);
-    onContentChange(newContent); // Notify parent immediately
   };
 
   const syncScroll = () => {
