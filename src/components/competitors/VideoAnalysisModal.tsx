@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CompetitorVideo, CompetitorData } from '@/hooks/use-competitor-scraping';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import CompetitorAnalysisResults from './CompetitorAnalysisResults';
 
 interface VideoAnalysisModalProps {
   video: CompetitorVideo | null;
@@ -24,6 +26,8 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisNotes, setAnalysisNotes] = useState('');
+  const [analysisResults, setAnalysisResults] = useState(null);
+  const [showResults, setShowResults] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -135,6 +139,30 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     }
   };
 
+  const loadExistingAnalysis = async () => {
+    try {
+      const { data: existingAnalysis } = await supabase
+        .from('competitor_analysis')
+        .select('*')
+        .eq('competitor_video_id', video.id)
+        .eq('analysis_status', 'completed')
+        .maybeSingle();
+
+      if (existingAnalysis) {
+        setAnalysisResults(existingAnalysis.feedback_data);
+        setShowResults(true);
+      }
+    } catch (error) {
+      console.error('Error loading existing analysis:', error);
+    }
+  };
+
+  React.useEffect(() => {
+    if (video) {
+      loadExistingAnalysis();
+    }
+  }, [video]);
+
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
 
@@ -239,6 +267,40 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
       setIsAnalyzing(false);
     }
   };
+
+  if (showResults && analysisResults) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              Análisis de Video - @{competitor.instagram_username}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowResults(false)}
+              >
+                ← Volver al Video
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => window.open(video.video_url, '_blank')}
+              >
+                Ver en Instagram
+              </Button>
+            </div>
+            
+            <CompetitorAnalysisResults analysisData={analysisResults} />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -360,6 +422,14 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
               <Button variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
+              {analysisResults ? (
+                <Button 
+                  onClick={() => setShowResults(true)}
+                  className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                >
+                  Ver Análisis Existente
+                </Button>
+              ) : null}
               <Button onClick={handleAnalyze} disabled={isAnalyzing}>
                 {isAnalyzing ? (
                   <>

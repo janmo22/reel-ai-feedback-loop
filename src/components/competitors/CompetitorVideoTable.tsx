@@ -112,11 +112,6 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     return url;
   };
 
-  const getEngagementRate = (video: CompetitorVideo) => {
-    if (!video.views_count || video.views_count === 0) return 0;
-    return (((video.likes_count || 0) + (video.comments_count || 0)) / video.views_count * 100);
-  };
-
   return (
     <>
       <div className="rounded-lg border border-gray-200 overflow-hidden shadow-lg bg-white">
@@ -151,7 +146,6 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                   Comentarios {getSortIcon('comments_count')}
                 </Button>
               </TableHead>
-              <TableHead className="font-semibold text-gray-700">Engagement</TableHead>
               <TableHead className="font-semibold text-gray-700">
                 <Button
                   variant="ghost"
@@ -170,6 +164,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                   Duración {getSortIcon('duration_seconds')}
                 </Button>
               </TableHead>
+              <TableHead className="font-semibold text-gray-700">Hashtags</TableHead>
               <TableHead className="font-semibold text-gray-700">Caption</TableHead>
               <TableHead className="font-semibold text-gray-700">Estado</TableHead>
               <TableHead className="w-32 font-semibold text-gray-700 text-center">Acciones</TableHead>
@@ -179,7 +174,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
             {sortedVideos.map((video, index) => (
               <TableRow key={video.id} className={`hover:bg-blue-50/50 transition-colors ${index % 2 === 0 ? 'bg-gray-50/30' : 'bg-white'}`}>
                 <TableCell className="p-3">
-                  <div className="w-14 h-20 bg-gray-100 rounded-lg overflow-hidden shadow-md border">
+                  <div className="w-16 h-20 bg-gray-100 rounded-lg overflow-hidden shadow-md border">
                     {video.thumbnail_url ? (
                       <img
                         src={getImageUrl(video.thumbnail_url)}
@@ -203,7 +198,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                 <TableCell className="p-3">
                   <div className="flex items-center gap-2">
                     <Eye className="h-4 w-4 text-blue-500" />
-                    <span className="font-semibold text-lg text-gray-900">
+                    <span className="font-medium text-gray-800">
                       {formatNumber(video.views_count)}
                     </span>
                   </div>
@@ -228,12 +223,6 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                 </TableCell>
                 
                 <TableCell className="p-3">
-                  <Badge variant="outline" className="font-medium">
-                    {getEngagementRate(video).toFixed(2)}%
-                  </Badge>
-                </TableCell>
-                
-                <TableCell className="p-3">
                   <div className="flex items-center gap-1 text-sm text-gray-600">
                     <Calendar className="h-3 w-3" />
                     {formatDate(video.posted_at)}
@@ -245,12 +234,13 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                     <Clock className="h-3 w-3" />
                     {formatDuration(video.duration_seconds)}
                   </div>
-                  {video.hashtags_count > 0 && (
-                    <div className="flex items-center gap-1 text-xs text-purple-600 mt-1">
-                      <Hash className="h-3 w-3" />
-                      {video.hashtags_count}
-                    </div>
-                  )}
+                </TableCell>
+                
+                <TableCell className="p-3">
+                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <Hash className="h-3 w-3 text-purple-600" />
+                    <span className="font-medium">{video.hashtags_count || 0}</span>
+                  </div>
                 </TableCell>
                 
                 <TableCell className="max-w-xs p-3">
