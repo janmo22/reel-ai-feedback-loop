@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [sortField, setSortField] = useState<SortField>('views_count');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const navigate = useNavigate();
 
   const formatNumber = (num: number | null) => {
     if (!num) return '0';
@@ -85,6 +86,10 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
   const handleAnalyzeVideo = (video: CompetitorVideo) => {
     setSelectedVideo(video);
     setIsAnalysisModalOpen(true);
+  };
+
+  const handleViewAnalysis = (video: CompetitorVideo) => {
+    navigate(`/competitor-video/${video.id}`);
   };
 
   const closeAnalysisModal = () => {
@@ -256,8 +261,10 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                 
                 <TableCell className="p-3">
                   {video.competitor_analysis && video.competitor_analysis.length > 0 ? (
-                    <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200 transition-colors cursor-pointer" 
-                          onClick={() => handleAnalyzeVideo(video)}>
+                    <Badge 
+                      className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200 transition-colors cursor-pointer" 
+                      onClick={() => handleViewAnalysis(video)}
+                    >
                       <CheckCircle className="h-3 w-3 mr-1" />
                       ✓ Analizado
                     </Badge>

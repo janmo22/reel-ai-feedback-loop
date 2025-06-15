@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,9 +27,9 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisNotes, setAnalysisNotes] = useState('');
   const [analysisResults, setAnalysisResults] = useState(null);
-  const [showResults, setShowResults] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Always call useEffect hooks, but with proper conditions inside
   React.useEffect(() => {
@@ -276,6 +276,13 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     }
   };
 
+  const handleViewFullAnalysis = () => {
+    if (video) {
+      navigate(`/competitor-video/${video.id}`);
+      onClose();
+    }
+  };
+
   if (showResults && analysisResults) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -441,11 +448,11 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
               </Button>
               {analysisResults ? (
                 <Button 
-                  onClick={() => setShowResults(true)}
+                  onClick={handleViewFullAnalysis}
                   className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                 >
                   <Eye className="h-4 w-4 mr-2" />
-                  Ver Análisis Existente
+                  Ver Análisis Completo
                 </Button>
               ) : null}
               <Button onClick={handleAnalyze} disabled={isAnalyzing}>
