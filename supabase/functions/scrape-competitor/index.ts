@@ -101,11 +101,11 @@ serve(async (req) => {
 
     let profileId = existingProfile?.id
 
-    // Enhanced profile data from instagram-profile-scraper - FIXED COLUMN NAME
+    // Enhanced profile data from instagram-profile-scraper - USING CORRECT FIELD NAMES
     const enhancedProfileData = {
       instagram_username: profile.username || username,
       display_name: profile.fullName || null,
-      profile_picture_url: profile.profilePicUrlHD || profile.profilePicUrl || null,
+      profile_picture_url: profile.profilePicUrl || null, // FIXED: Using correct field name from Apify
       follower_count: profile.followersCount || 0,
       following_count: profile.followsCount || 0,
       posts_count: profile.postsCount || 0,
@@ -116,7 +116,7 @@ serve(async (req) => {
       business_category: profile.businessCategoryName || null,
       is_private: profile.private || false,
       highlight_reel_count: profile.highlightReelCount || 0,
-      igtvvideocount: profile.igtvVideoCount || 0, // FIXED: changed from igtvVideoCount to igtvvideocount
+      igtvvideocount: profile.igtvVideoCount || 0,
       last_scraped_at: new Date().toISOString()
     }
 

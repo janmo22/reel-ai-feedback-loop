@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Heart, MessageCircle, Play, Trash2, ExternalLink, Building2, Lock, Eye, Star } from 'lucide-react';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { Users, Heart, MessageCircle, Play, Trash2, ExternalLink, Building2, Lock, Eye, Star, CheckCircle, MapPin } from 'lucide-react';
 import { CompetitorData } from '@/hooks/use-competitor-scraping';
 import LoadingCompetitorCard from './LoadingCompetitorCard';
 
@@ -47,156 +48,198 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
   }
 
   return (
-    <Card className="hover:shadow-xl transition-all duration-300 border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
-      <CardHeader className="pb-4 bg-gradient-to-r from-gray-50 to-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <Card className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/95 backdrop-blur-lg overflow-hidden relative">
+      {/* Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 via-white to-blue-50/30 opacity-60" />
+      
+      <CardHeader className="relative pb-6 space-y-4">
+        <div className="flex items-start justify-between">
+          {/* Profile Section */}
+          <div className="flex items-center gap-6">
             <div className="relative">
-              <Avatar className="h-16 w-16 ring-3 ring-white shadow-lg">
-                <AvatarImage 
-                  src={competitor.profile_picture_url || ''} 
-                  alt={competitor.display_name || competitor.instagram_username}
-                  className="object-cover"
-                  onError={(e) => {
-                    console.log('Avatar image failed to load:', competitor.profile_picture_url);
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-lg">
-                  {competitor.instagram_username.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              {/* Professional Avatar with High Quality Image */}
+              <div className="w-20 h-20 rounded-full ring-4 ring-white shadow-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                <AspectRatio ratio={1}>
+                  {competitor.profile_picture_url ? (
+                    <img
+                      src={competitor.profile_picture_url}
+                      alt={competitor.display_name || competitor.instagram_username}
+                      className="w-full h-full object-cover object-center transition-all duration-300 group-hover:scale-110"
+                      style={{
+                        imageRendering: 'crisp-edges',
+                        WebkitImageSmoothing: 'true'
+                      }}
+                      onError={(e) => {
+                        console.log('Profile image failed to load:', competitor.profile_picture_url);
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      onLoad={(e) => {
+                        console.log('Profile image loaded successfully:', competitor.profile_picture_url);
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-2xl">
+                      {competitor.instagram_username.substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </AspectRatio>
+              </div>
+              
+              {/* Verification Badge */}
               {competitor.is_verified && (
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center ring-2 ring-white">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
+                <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center ring-3 ring-white shadow-lg">
+                  <CheckCircle className="w-4 h-4 text-white fill-current" />
+                </div>
+              )}
+              
+              {/* Private Account Indicator */}
+              {competitor.is_private && (
+                <div className="absolute -top-1 -left-1 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center ring-2 ring-white shadow-lg">
+                  <Lock className="w-3 h-3 text-white" />
                 </div>
               )}
             </div>
-            <div className="flex-1">
-              <CardTitle className="text-xl flex items-center gap-2 mb-1">
-                @{competitor.instagram_username}
-                {competitor.is_private && (
-                  <Lock className="w-4 h-4 text-gray-500" />
-                )}
-              </CardTitle>
+
+            {/* Profile Info */}
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-2xl font-bold text-gray-900 leading-tight">
+                  @{competitor.instagram_username}
+                </CardTitle>
+              </div>
+              
               {competitor.display_name && (
-                <p className="text-lg text-gray-700 font-semibold mb-2">
+                <p className="text-lg text-gray-700 font-semibold leading-tight">
                   {competitor.display_name}
                 </p>
               )}
-              <div className="flex items-center gap-3 flex-wrap">
-                {competitor.is_business_account && competitor.business_category && (
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                    <Building2 className="w-3 h-3 mr-1" />
-                    {competitor.business_category}
-                  </Badge>
-                )}
+
+              {/* Status Badges */}
+              <div className="flex items-center gap-2 flex-wrap">
                 {competitor.is_verified && (
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200 shadow-sm">
                     <Star className="w-3 h-3 mr-1" />
                     Verificado
                   </Badge>
                 )}
+                {competitor.is_business_account && competitor.business_category && (
+                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm">
+                    <Building2 className="w-3 h-3 mr-1" />
+                    {competitor.business_category}
+                  </Badge>
+                )}
                 {competitor.is_private && (
-                  <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 shadow-sm">
                     <Lock className="w-3 h-3 mr-1" />
-                    Privado
+                    Cuenta Privada
                   </Badge>
                 )}
               </div>
             </div>
           </div>
+
+          {/* Delete Button */}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onDelete(competitor.id)}
-            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+            className="text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors duration-200 rounded-full"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent className="relative space-y-6">
+        {/* Bio Section */}
         {competitor.bio && (
-          <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-4 rounded-xl">
+          <div className="bg-gradient-to-r from-gray-50 to-blue-50/50 p-4 rounded-xl border border-gray-100/50">
             <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
               {competitor.bio}
             </p>
           </div>
         )}
 
-        {/* Enhanced Stats Grid */}
+        {/* Enhanced Stats Grid with Professional Design */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+          <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl border border-blue-100/50 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex justify-center mb-2">
-              <Users className="h-5 w-5 text-blue-600" />
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <Users className="h-4 w-4 text-white" />
+              </div>
             </div>
-            <div className="text-lg font-bold text-blue-900">
+            <div className="text-xl font-bold text-blue-900">
               {formatNumber(competitor.follower_count)}
             </div>
             <div className="text-xs text-blue-700 font-medium">Seguidores</div>
           </div>
           
-          <div className="text-center p-3 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+          <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100/50 rounded-xl border border-green-100/50 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex justify-center mb-2">
-              <Play className="h-5 w-5 text-green-600" />
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <Play className="h-4 w-4 text-white" />
+              </div>
             </div>
-            <div className="text-lg font-bold text-green-900">
+            <div className="text-xl font-bold text-green-900">
               {competitor.competitor_videos?.length || 0}
             </div>
             <div className="text-xs text-green-700 font-medium">Videos</div>
           </div>
           
-          <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+          <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl border border-purple-100/50 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex justify-center mb-2">
-              <MessageCircle className="h-5 w-5 text-purple-600" />
+              <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                <MessageCircle className="h-4 w-4 text-white" />
+              </div>
             </div>
-            <div className="text-lg font-bold text-purple-900">
+            <div className="text-xl font-bold text-purple-900">
               {videosWithAnalysis}
             </div>
             <div className="text-xs text-purple-700 font-medium">Analizados</div>
           </div>
 
-          <div className="text-center p-3 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl">
+          <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl border border-orange-100/50 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex justify-center mb-2">
-              <Eye className="h-5 w-5 text-orange-600" />
+              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <Eye className="h-4 w-4 text-white" />
+              </div>
             </div>
-            <div className="text-lg font-bold text-orange-900">
+            <div className="text-xl font-bold text-orange-900">
               {formatNumber(competitor.posts_count)}
             </div>
             <div className="text-xs text-orange-700 font-medium">Posts</div>
           </div>
         </div>
 
-        {/* Additional Stats - FIXED: using correct field name */}
+        {/* Additional Professional Stats */}
         {(competitor.highlight_reel_count > 0 || competitor.igtvvideocount > 0) && (
           <div className="grid grid-cols-2 gap-3">
             {competitor.highlight_reel_count > 0 && (
-              <div className="text-center p-2 bg-yellow-50 rounded-lg">
-                <div className="text-sm font-bold text-yellow-900">
+              <div className="text-center p-3 bg-gradient-to-br from-yellow-50 to-yellow-100/50 rounded-lg border border-yellow-100/50">
+                <div className="text-lg font-bold text-yellow-900">
                   {competitor.highlight_reel_count}
                 </div>
-                <div className="text-xs text-yellow-700">Highlights</div>
+                <div className="text-xs text-yellow-700 font-medium">Highlights</div>
               </div>
             )}
             {competitor.igtvvideocount > 0 && (
-              <div className="text-center p-2 bg-pink-50 rounded-lg">
-                <div className="text-sm font-bold text-pink-900">
+              <div className="text-center p-3 bg-gradient-to-br from-pink-50 to-pink-100/50 rounded-lg border border-pink-100/50">
+                <div className="text-lg font-bold text-pink-900">
                   {competitor.igtvvideocount}
                 </div>
-                <div className="text-xs text-pink-700">IGTV</div>
+                <div className="text-xs text-pink-700 font-medium">IGTV</div>
               </div>
             )}
           </div>
         )}
 
-        {/* External URLs */}
+        {/* External URLs with Professional Design */}
         {externalUrls.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-gray-600">Enlaces externos:</p>
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Enlaces externos
+            </p>
             <div className="flex flex-wrap gap-2">
               {externalUrls.slice(0, 2).map((url, index) => (
                 <Button
@@ -204,7 +247,7 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => window.open(url, '_blank')}
-                  className="text-xs px-2 py-1 h-auto"
+                  className="text-xs px-3 py-2 h-auto bg-white/80 hover:bg-blue-50 border-gray-200 hover:border-blue-300 transition-all duration-200"
                 >
                   <ExternalLink className="h-3 w-3 mr-1" />
                   {new URL(url).hostname}
@@ -214,18 +257,24 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
           </div>
         )}
 
+        {/* Last Updated */}
         {competitor.last_scraped_at && (
-          <div className="text-center py-2 border-t border-gray-100">
+          <div className="text-center py-3 border-t border-gray-100">
             <p className="text-xs text-gray-500">
-              Última actualización: {new Date(competitor.last_scraped_at).toLocaleDateString('es-ES')}
+              Última actualización: {new Date(competitor.last_scraped_at).toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
             </p>
           </div>
         )}
 
-        <div className="flex gap-2 pt-2">
+        {/* Action Buttons with Professional Design */}
+        <div className="flex gap-3 pt-4">
           <Button 
             onClick={() => onViewVideos(competitor)}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+            className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
           >
             <Play className="h-4 w-4 mr-2" />
             Ver Videos
@@ -234,7 +283,7 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
             variant="outline" 
             size="sm"
             onClick={() => window.open(`https://instagram.com/${competitor.instagram_username}`, '_blank')}
-            className="px-3 shadow-sm hover:shadow-md transition-all duration-200"
+            className="px-4 shadow-sm hover:shadow-md transition-all duration-200 bg-white/80 hover:bg-gray-50 border-gray-200 hover:border-gray-300"
           >
             <ExternalLink className="h-4 w-4" />
           </Button>
