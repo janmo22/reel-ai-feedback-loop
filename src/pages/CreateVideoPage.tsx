@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Target, Save, Eye, Plus, X, Check } from 'lucide-react';
+import { Target, Save, Eye, Plus, X, Check, ArrowLeft, Tag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +27,7 @@ interface SMP {
 }
 
 const CreateVideoPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -58,6 +61,9 @@ const CreateVideoPage: React.FC = () => {
            typeof series.id === 'string' && 
            series.id.trim() !== '';
   }) || [];
+
+  // Get selected series info
+  const selectedSeriesInfo = validSeries.find(series => series.id === selectedSeries);
 
   const toggleMainSMPCompleted = () => {
     setMainSMP(prev => ({ ...prev, completed: !prev.completed }));
@@ -145,6 +151,17 @@ const CreateVideoPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       <div className="mb-6">
+        <div className="flex items-center gap-4 mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver
+          </Button>
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Crear Nuevo Video</h1>
         <p className="text-gray-600">Planifica y estructura tu contenido de manera profesional</p>
       </div>
@@ -186,6 +203,19 @@ const CreateVideoPage: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                
+                {/* Display selected series info */}
+                {selectedSeriesInfo && (
+                  <div className="mt-2 p-3 bg-flow-blue/5 border border-flow-blue/20 rounded-md">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Tag className="h-4 w-4 text-flow-blue" />
+                      <span className="font-medium text-flow-blue">{selectedSeriesInfo.name}</span>
+                    </div>
+                    {selectedSeriesInfo.description && (
+                      <p className="text-sm text-gray-600">{selectedSeriesInfo.description}</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

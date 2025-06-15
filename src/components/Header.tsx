@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronDown } from "lucide-react";
+import BackButton from "@/components/ui/back-button";
 
 const Header = () => {
   const location = useLocation();
@@ -13,6 +14,7 @@ const Header = () => {
   const isLandingPage = location.pathname === '/';
   const isAuthPage = location.pathname === '/auth';
   const isHistoryPage = location.pathname === '/history';
+  const isDashboardPage = location.pathname === '/dashboard';
 
   const getInitials = () => {
     if (!user) return "??";
@@ -80,7 +82,14 @@ const Header = () => {
 
   return (
     <header className="border-b bg-white/95 backdrop-blur-md sticky top-0 z-40 w-full">
-      <div className="container flex h-16 items-center justify-end px-4">
+      <div className="container flex h-16 items-center justify-between px-4">
+        {/* Botón de retroceso solo en páginas que no sean dashboard */}
+        <div className="flex items-center gap-4">
+          {!isDashboardPage && (
+            <BackButton />
+          )}
+        </div>
+        
         <div className="flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

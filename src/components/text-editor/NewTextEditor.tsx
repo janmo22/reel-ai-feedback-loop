@@ -5,9 +5,10 @@ import { AdvancedTextEditor } from './AdvancedTextEditor';
 import { CreativeZone } from './CreativeZone';
 import { ShotSummary } from './ShotSummary';
 import { useAdvancedEditor } from '@/hooks/use-advanced-editor';
+import { useSupabaseAutosave } from '@/hooks/use-supabase-autosave';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Layout, AlertTriangle } from 'lucide-react';
+import { FileText, Layout, Save } from 'lucide-react';
 
 interface NewTextEditorProps {
   onContentChange?: (content: string) => void;
@@ -16,8 +17,6 @@ interface NewTextEditorProps {
 const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
   const [editorMode, setEditorMode] = useState<'structured' | 'free'>('structured');
   const [freeContent, setFreeContent] = useState('');
-  const [title, setTitle] = useState('Guión sin título');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const {
     sections,
@@ -29,29 +28,17 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
     shots: allShots,
     creativeItems,
     addCreativeItem,
-    removeCreativeItem
+    removeCreativeItem,
+    getShotsBySection
   } = useAdvancedEditor();
 
-  // Track changes
+  const { saveState, saveAllSections } = useSupabaseAutosave();
+
+  // Track content changes
   useEffect(() => {
     const currentContent = editorMode === 'structured' ? getAllContent() : freeContent;
     onContentChange?.(currentContent);
-    setHasUnsavedChanges(true);
   }, [sections, freeContent, editorMode, onContentChange, getAllContent]);
-
-  // Warning before leaving with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = '¿Estás seguro de que quieres salir? Tienes cambios sin guardar.';
-        return e.returnValue;
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [hasUnsavedChanges]);
 
   const switchMode = (mode: 'structured' | 'free') => {
     if (mode === 'free' && editorMode === 'structured') {
@@ -65,6 +52,25 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
       }
     }
     setEditorMode(mode);
+  };
+
+  const handleSaveAll = async () => {
+    if (editorMode === 'structured') {
+      const sectionsToSave = sections.map(section => ({
+        sectionId: section.id,
+        content: section.content,
+        shots: getShotsBySection(section.id),
+        title: section.title
+      }));
+      await saveAllSections(sectionsToSave);
+    } else {
+      await saveAllSections([{
+        sectionId: 'free-mode',
+        content: freeContent,
+        shots: getShotsBySection('free-mode'),
+        title: 'Guión Libre'
+      }]);
+    }
   };
 
   const hasContent = editorMode === 'structured' 
@@ -86,12 +92,6 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
             </p>
           </div>
           <div className="flex gap-2">
-            {hasUnsavedChanges && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 border border-amber-200 rounded-md">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <span className="text-sm text-amber-700">Cambios sin guardar</span>
-              </div>
-            )}
             <Button
               variant={editorMode === 'structured' ? 'default' : 'outline'}
               size="sm"
@@ -110,8 +110,26 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
               <FileText className="h-4 w-4" />
               Libre
             </Button>
+            <Button
+              onClick={handleSaveAll}
+              disabled={saveState.isSaving || !hasContent}
+              className="bg-flow-blue hover:bg-flow-blue/90 flex items-center gap-2"
+            >
+              {saveState.isSaving ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {saveState.isSaving ? 'Guardando...' : 'Guardar Todo'}
+            </Button>
           </div>
         </div>
+        
+        {saveState.lastSaved && (
+          <div className="text-sm text-green-600 text-right">
+            Último guardado: {saveState.lastSaved.toLocaleTimeString()}
+          </div>
+        )}
       </div>
 
       {editorMode === 'structured' ? (
@@ -129,6 +147,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
               showCreativeZone={false}
               hideEmptyShots={!hasContent}
               sectionId={section.id}
+              showSaveButton={false}
             />
           ))}
         </div>
@@ -142,6 +161,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
           showCreativeZone={false}
           hideEmptyShots={!hasContent}
           sectionId="free-mode"
+          showSaveButton={false}
         />
       )}
 

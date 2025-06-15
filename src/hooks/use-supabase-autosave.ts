@@ -1,32 +1,22 @@
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Shot, CreativeItem } from './use-advanced-editor';
-import { Section } from './use-simple-editor';
+import { Shot } from './use-advanced-editor';
 
 interface SaveState {
-  draftId: string | null;
-  lastSaved: Date | null;
   isSaving: boolean;
-  hasUnsavedChanges: boolean;
+  lastSaved: Date | null;
 }
 
 export const useSupabaseAutosave = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [saveState, setSaveState] = useState<SaveState>({
-    draftId: null,
-    lastSaved: null,
     isSaving: false,
-    hasUnsavedChanges: false
+    lastSaved: null
   });
-
-  // Track changes to detect unsaved content
-  const markAsChanged = useCallback(() => {
-    setSaveState(prev => ({ ...prev, hasUnsavedChanges: true }));
-  }, []);
 
   // Save specific section to Supabase
   const saveSection = useCallback(async (
@@ -38,8 +28,6 @@ export const useSupabaseAutosave = () => {
     if (!user) return null;
 
     try {
-      setSaveState(prev => ({ ...prev, isSaving: true }));
-
       const sectionData = {
         user_id: user.id,
         section_id: sectionId,
@@ -81,46 +69,59 @@ export const useSupabaseAutosave = () => {
         if (error) throw error;
       }
 
-      const now = new Date();
-      setSaveState(prev => ({
-        ...prev,
-        isSaving: false,
-        lastSaved: now,
-        hasUnsavedChanges: false
-      }));
-
       console.log('Sección guardada en Supabase');
       return true;
 
     } catch (error: any) {
       console.error('Error guardando sección:', error);
+      throw error;
+    }
+  }, [user]);
+
+  // Save all sections at once
+  const saveAllSections = useCallback(async (
+    sections: Array<{
+      sectionId: string;
+      content: string;
+      shots: Shot[];
+      title: string;
+    }>
+  ) => {
+    if (!user || sections.length === 0) return false;
+
+    try {
+      setSaveState(prev => ({ ...prev, isSaving: true }));
+
+      // Save all sections sequentially
+      for (const section of sections) {
+        await saveSection(section.sectionId, section.content, section.shots, section.title);
+      }
+
+      const now = new Date();
+      setSaveState({
+        isSaving: false,
+        lastSaved: now
+      });
+
+      toast({
+        title: "Guardado completado",
+        description: "Todas las secciones han sido guardadas correctamente.",
+      });
+
+      return true;
+
+    } catch (error: any) {
+      console.error('Error guardando secciones:', error);
       setSaveState(prev => ({ ...prev, isSaving: false }));
       
       toast({
         title: "Error al guardar",
-        description: "No se pudo guardar la sección. Intenta de nuevo.",
+        description: "No se pudo guardar el contenido. Intenta de nuevo.",
         variant: "destructive",
       });
       return false;
     }
-  }, [user, toast]);
-
-  // Manual save function
-  const manualSave = useCallback(async (
-    sectionId: string,
-    content: string,
-    sectionShots: Shot[],
-    title?: string
-  ) => {
-    const result = await saveSection(sectionId, content, sectionShots, title);
-    if (result) {
-      toast({
-        title: "Guardado completado",
-        description: "La sección ha sido guardada correctamente.",
-      });
-    }
-    return result;
-  }, [saveSection, toast]);
+  }, [user, saveSection, toast]);
 
   // Load section from Supabase
   const loadSection = useCallback(async (sectionId: string) => {
@@ -137,11 +138,6 @@ export const useSupabaseAutosave = () => {
       if (error) throw error;
 
       if (data) {
-        setSaveState(prev => ({
-          ...prev,
-          lastSaved: new Date(data.updated_at)
-        }));
-
         return {
           id: data.id,
           title: data.title,
@@ -155,27 +151,9 @@ export const useSupabaseAutosave = () => {
     return null;
   }, [user]);
 
-  // Helper function to safely parse JSON with fallback
-  const safeJsonParse = (jsonString: any, fallback: any) => {
-    try {
-      if (typeof jsonString === 'string') {
-        return JSON.parse(jsonString);
-      }
-      if (jsonString && typeof jsonString === 'object') {
-        return jsonString;
-      }
-      return fallback;
-    } catch (error) {
-      console.warn('Error parsing JSON:', error);
-      return fallback;
-    }
-  };
-
   return {
     saveState,
-    markAsChanged,
-    manualSave,
-    loadSection,
-    safeJsonParse
+    saveAllSections,
+    loadSection
   };
 };

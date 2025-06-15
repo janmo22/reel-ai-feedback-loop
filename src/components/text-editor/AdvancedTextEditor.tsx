@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Save, AlertCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useAdvancedEditor } from '@/hooks/use-advanced-editor';
 import { useSupabaseAutosave } from '@/hooks/use-supabase-autosave';
 import { ShotSelector } from './ShotSelector';
@@ -19,6 +19,7 @@ interface AdvancedTextEditorProps {
   showCreativeZone?: boolean;
   hideEmptyShots?: boolean;
   sectionId?: string;
+  showSaveButton?: boolean;
 }
 
 interface HoveredSegment {
@@ -37,7 +38,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   onContentChange,
   showCreativeZone = true,
   hideEmptyShots = false,
-  sectionId = 'default'
+  sectionId = 'default',
+  showSaveButton = true
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [showShotSelector, setShowShotSelector] = useState(false);
@@ -47,7 +49,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     content: editorContent,
     shots,
     selectedText,
-    selectionRange,
     creativeItems,
     textareaRef,
     updateContent,
@@ -56,23 +57,15 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     handleTextSelection,
     addCreativeItem,
     removeCreativeItem,
-    getShotForText,
     toggleTextStrikethrough,
     addSegmentComment,
     updateSegmentComment,
-    removeSegmentComment,
-    loadFromLocalStorage
+    removeSegmentComment
   } = useAdvancedEditor(content);
 
-  const {
-    saveState,
-    markAsChanged,
-    manualSave,
-    loadSection
-  } = useSupabaseAutosave();
+  const { loadSection } = useSupabaseAutosave();
 
   const overlayRef = useRef<HTMLDivElement>(null);
-  const hasUnsavedChangesRef = useRef(false);
 
   // Load saved section on mount
   useEffect(() => {
@@ -86,28 +79,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
 
     loadSavedSection();
   }, [sectionId, loadSection, updateContent]);
-
-  // Track changes
-  useEffect(() => {
-    if (editorContent !== content) {
-      markAsChanged();
-      hasUnsavedChangesRef.current = true;
-    }
-  }, [editorContent, content, markAsChanged]);
-
-  // Warning before leaving page with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (saveState.hasUnsavedChanges || hasUnsavedChangesRef.current) {
-        e.preventDefault();
-        e.returnValue = '¿Estás seguro de que quieres salir? Tienes cambios sin guardar.';
-        return e.returnValue;
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [saveState.hasUnsavedChanges]);
 
   // Auto-resize textarea function
   const autoResizeTextarea = () => {
@@ -147,25 +118,16 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   const handleCreateShot = (name: string, color: string) => {
     createShot(name, color);
     setShowShotSelector(false);
-    markAsChanged();
   };
 
   const handleAssignToShot = (shotId: string) => {
     assignToExistingShot(shotId);
     setShowShotSelector(false);
-    markAsChanged();
   };
 
   const handleContentChange = (newContent: string) => {
     updateContent(newContent);
     setTimeout(autoResizeTextarea, 0);
-  };
-
-  const handleManualSave = async () => {
-    const success = await manualSave(sectionId, editorContent, shots, title);
-    if (success) {
-      hasUnsavedChangesRef.current = false;
-    }
   };
 
   const syncScroll = () => {
@@ -175,6 +137,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     }
   };
 
+  // Render highlighted content
   const renderHighlightedContent = () => {
     if (!editorContent) return '';
     
@@ -300,37 +263,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                   <p className="text-sm text-gray-600">{description}</p>
                 )}
               </div>
-            </div>
-            
-            {/* Save button and status */}
-            <div className="flex items-center gap-2">
-              {(saveState.hasUnsavedChanges || hasUnsavedChangesRef.current) && (
-                <div className="flex items-center gap-1 text-xs text-amber-600">
-                  <AlertCircle className="h-3 w-3" />
-                  <span>Sin guardar</span>
-                </div>
-              )}
-              
-              {saveState.lastSaved && (
-                <span className="text-xs text-green-600">
-                  Guardado: {saveState.lastSaved.toLocaleTimeString()}
-                </span>
-              )}
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleManualSave}
-                disabled={saveState.isSaving}
-                className="flex items-center gap-2"
-              >
-                {saveState.isSaving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                {saveState.isSaving ? 'Guardando...' : 'Guardar'}
-              </Button>
             </div>
           </div>
         </CardHeader>
