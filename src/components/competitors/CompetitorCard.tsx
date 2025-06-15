@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -46,20 +47,36 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
     console.warn('Error parsing external URLs:', e);
   }
 
-  // Function to process Apify image URL
-  const processImageUrl = (url: string | null) => {
+  // Function to create a proxy URL for Apify images
+  const getProxiedImageUrl = (url: string | null) => {
     if (!url) return null;
     
-    // If it's an Apify URL, add parameters to ensure it loads correctly
+    // If it's an Apify URL, try to extract the actual Instagram URL
     if (url.includes('images.apifyusercontent.com')) {
-      // The URL already contains the full encoded path, just ensure we have the right parameters
-      return url;
+      try {
+        // The URL structure is: https://images.apifyusercontent.com/[hash]/cb:1/[base64_encoded_url].jpg
+        const urlParts = url.split('/');
+        if (urlParts.length >= 5) {
+          const encodedPart = urlParts[urlParts.length - 1];
+          // Remove .jpg extension if present
+          const base64Part = encodedPart.replace('.jpg', '');
+          try {
+            const decodedUrl = atob(base64Part);
+            // Return the decoded Instagram URL directly
+            return decodedUrl;
+          } catch (e) {
+            console.warn('Could not decode image URL:', e);
+          }
+        }
+      } catch (e) {
+        console.warn('Error processing Apify URL:', e);
+      }
     }
     
     return url;
   };
 
-  const profileImageUrl = processImageUrl(competitor.profile_picture_url);
+  const profileImageUrl = getProxiedImageUrl(competitor.profile_picture_url);
 
   return (
     <Card className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/95 backdrop-blur-lg overflow-hidden relative">
@@ -79,31 +96,36 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
                       src={profileImageUrl}
                       alt={competitor.display_name || competitor.instagram_username}
                       className="w-full h-full object-cover object-center transition-all duration-300 group-hover:scale-110 rounded-full"
-                      style={{
-                        imageRendering: 'auto'
-                      }}
-                      crossOrigin="anonymous"
-                      referrerPolicy="no-referrer"
+                      loading="lazy"
                       onError={(e) => {
-                        console.log('Image failed to load:', profileImageUrl);
+                        console.log('Primary image failed to load, trying fallback');
                         const img = e.target as HTMLImageElement;
+                        
+                        // If the decoded URL failed, try the original Apify URL
+                        if (img.src !== competitor.profile_picture_url && competitor.profile_picture_url) {
+                          img.src = competitor.profile_picture_url;
+                          return;
+                        }
+                        
+                        // Hide image and show fallback
                         img.style.display = 'none';
                         const fallback = img.parentElement?.querySelector('.fallback-avatar');
                         if (fallback) {
                           (fallback as HTMLElement).style.display = 'flex';
                         }
                       }}
-                      onLoad={(e) => {
-                        console.log('Image loaded successfully:', profileImageUrl);
-                        const img = e.target as HTMLImageElement;
-                        const fallback = img.parentElement?.querySelector('.fallback-avatar');
+                      onLoad={() => {
+                        const fallback = document.querySelector(`[data-competitor="${competitor.id}"] .fallback-avatar`);
                         if (fallback) {
                           (fallback as HTMLElement).style.display = 'none';
                         }
                       }}
                     />
                   ) : null}
-                  <div className="fallback-avatar absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-2xl rounded-full">
+                  <div 
+                    className="fallback-avatar absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-2xl rounded-full"
+                    data-competitor={competitor.id}
+                  >
                     {competitor.instagram_username.substring(0, 2).toUpperCase()}
                   </div>
                 </AspectRatio>
