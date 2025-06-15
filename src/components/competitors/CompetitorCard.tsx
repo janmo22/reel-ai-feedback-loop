@@ -47,6 +47,29 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
     console.warn('Error parsing external URLs:', e);
   }
 
+  // Function to handle profile image error and retry with alternative
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.target as HTMLImageElement;
+    console.log('Profile image failed to load:', competitor.profile_picture_url);
+    
+    // Hide the image and show fallback
+    img.style.display = 'none';
+    const fallbackDiv = img.parentElement?.querySelector('.fallback-avatar');
+    if (fallbackDiv) {
+      (fallbackDiv as HTMLElement).style.display = 'flex';
+    }
+  };
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.log('Profile image loaded successfully:', competitor.profile_picture_url);
+    const img = e.target as HTMLImageElement;
+    img.style.display = 'block';
+    const fallbackDiv = img.parentElement?.querySelector('.fallback-avatar');
+    if (fallbackDiv) {
+      (fallbackDiv as HTMLElement).style.display = 'none';
+    }
+  };
+
   return (
     <Card className="group hover:shadow-2xl transition-all duration-500 border-0 bg-white/95 backdrop-blur-lg overflow-hidden relative">
       {/* Gradient Background */}
@@ -58,26 +81,27 @@ const CompetitorCard: React.FC<CompetitorCardProps> = ({
           <div className="flex items-center gap-6">
             <div className="relative">
               {/* Professional Avatar with High Quality Image */}
-              <div className="w-20 h-20 rounded-full ring-4 ring-white shadow-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+              <div className="w-20 h-20 rounded-full ring-4 ring-white shadow-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 relative">
                 <AspectRatio ratio={1}>
                   {competitor.profile_picture_url ? (
-                    <img
-                      src={competitor.profile_picture_url}
-                      alt={competitor.display_name || competitor.instagram_username}
-                      className="w-full h-full object-cover object-center transition-all duration-300 group-hover:scale-110"
-                      style={{
-                        imageRendering: 'crisp-edges'
-                      }}
-                      onError={(e) => {
-                        console.log('Profile image failed to load:', competitor.profile_picture_url);
-                        e.currentTarget.style.display = 'none';
-                      }}
-                      onLoad={(e) => {
-                        console.log('Profile image loaded successfully:', competitor.profile_picture_url);
-                      }}
-                    />
+                    <>
+                      <img
+                        src={competitor.profile_picture_url}
+                        alt={competitor.display_name || competitor.instagram_username}
+                        className="w-full h-full object-cover object-center transition-all duration-300 group-hover:scale-110 rounded-full"
+                        style={{
+                          imageRendering: 'auto'
+                        }}
+                        onError={handleImageError}
+                        onLoad={handleImageLoad}
+                        crossOrigin="anonymous"
+                      />
+                      <div className="fallback-avatar absolute inset-0 w-full h-full hidden items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-2xl rounded-full">
+                        {competitor.instagram_username.substring(0, 2).toUpperCase()}
+                      </div>
+                    </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-2xl">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-2xl rounded-full">
                       {competitor.instagram_username.substring(0, 2).toUpperCase()}
                     </div>
                   )}

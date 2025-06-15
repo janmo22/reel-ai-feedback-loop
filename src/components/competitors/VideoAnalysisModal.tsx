@@ -57,21 +57,30 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     try {
       const webhookUrl = "https://janmoliner33.app.n8n.cloud/webhook/competitor-analysis";
       
+      // Preparar los datos correctamente estructurados
       const analysisData = {
         video_id: video.id,
         instagram_id: video.instagram_id,
         competitor_username: competitorUsername,
         video_url: video.video_url,
-        caption: video.caption,
-        likes_count: video.likes_count,
-        comments_count: video.comments_count,
-        views_count: video.views_count,
-        duration_seconds: video.duration_seconds,
+        caption: video.caption || '',
+        likes_count: video.likes_count || 0,
+        comments_count: video.comments_count || 0,
+        views_count: video.views_count || 0,
+        duration_seconds: video.duration_seconds || 0,
         hashtags_count: video.hashtags_count || 0,
         posted_at: video.posted_at,
-        thumbnail_url: video.thumbnail_url, // Incluir la portada
-        analysis_notes: analysisNotes,
-        timestamp: new Date().toISOString()
+        thumbnail_url: video.thumbnail_url || '',
+        analysis_notes: analysisNotes.trim(),
+        timestamp: new Date().toISOString(),
+        // Datos adicionales para el análisis
+        competitor_data: {
+          username: competitorUsername,
+          video_metrics: {
+            engagement_rate: video.likes_count && video.views_count ? 
+              ((video.likes_count + video.comments_count) / video.views_count * 100).toFixed(2) : 0
+          }
+        }
       };
 
       console.log('Enviando video para análisis:', analysisData);
@@ -92,7 +101,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
         onClose();
       } else {
         const errorText = await response.text();
-        console.error('Error response:', errorText);
+        console.error('Error response:', response.status, errorText);
         throw new Error(`Error del webhook: ${response.status} - ${errorText}`);
       }
     } catch (error) {
