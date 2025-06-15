@@ -32,49 +32,61 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Call Apify actor
     const apifyToken = Deno.env.get('APIFY_API_KEY')
     if (!apifyToken) {
       throw new Error('APIFY_API_KEY not configured')
     }
 
-    const apifyResponse = await fetch(`https://api.apify.com/v2/acts/apify~instagram-reel-scraper/run-sync-get-dataset-items?token=${apifyToken}`, {
+    // Step 1: Get profile data using instagram-profile-scraper
+    console.log('Fetching profile data...')
+    const profileResponse = await fetch(`https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${apifyToken}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        username: [username], // Username debe ser un array
+        usernames: [username], // Note: this actor uses 'usernames' array
+        resultsType: "profiles"
+      })
+    })
+
+    if (!profileResponse.ok) {
+      const errorText = await profileResponse.text()
+      console.error('Profile scraper API error:', errorText)
+      throw new Error(`Profile scraper API error: ${profileResponse.status}`)
+    }
+
+    const profileData = await profileResponse.json()
+    console.log('Profile data received:', JSON.stringify(profileData[0], null, 2))
+
+    if (!profileData || profileData.length === 0) {
+      throw new Error('No profile data returned from Instagram profile scraper')
+    }
+
+    const profile = profileData[0]
+
+    // Step 2: Get reels data using instagram-reel-scraper
+    console.log('Fetching reels data...')
+    const reelsResponse = await fetch(`https://api.apify.com/v2/acts/apify~instagram-reel-scraper/run-sync-get-dataset-items?token=${apifyToken}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: [username], // This actor uses 'username' array
         resultsLimit: 50
       })
     })
 
-    if (!apifyResponse.ok) {
-      const errorText = await apifyResponse.text()
-      console.error('Apify API error:', errorText)
-      throw new Error(`Apify API error: ${apifyResponse.status}`)
+    if (!reelsResponse.ok) {
+      const errorText = await reelsResponse.text()
+      console.error('Reels scraper API error:', errorText)
+      throw new Error(`Reels scraper API error: ${reelsResponse.status}`)
     }
 
-    const apifyData = await apifyResponse.json()
-    console.log('Apify response received, processing data...')
-    console.log('Sample data structure:', JSON.stringify(apifyData[0], null, 2))
+    const reelsData = await reelsResponse.json()
+    console.log('Reels data received, processing...')
 
-    if (!apifyData || apifyData.length === 0) {
-      throw new Error('No data returned from Instagram scraper')
-    }
-
-    // Process profile data from the first item
-    const firstItem = apifyData[0]
-    const profileData = {
-      fullName: firstItem.ownerFullName || null,
-      profilePicUrl: firstItem.ownerProfilePicUrl || null,
-      followersCount: firstItem.ownerFollowersCount || 0,
-      followsCount: firstItem.ownerFollowsCount || 0,
-      postsCount: firstItem.ownerPostsCount || 0,
-      biography: firstItem.ownerBiography || null,
-      verified: firstItem.ownerIsVerified || false
-    }
-    
     // Determine table names based on profile type
     const profileTableName = isMyProfile ? 'my_profile' : 'competitors'
     const videosTableName = isMyProfile ? 'my_profile_videos' : 'competitor_videos'
@@ -89,21 +101,32 @@ serve(async (req) => {
 
     let profileId = existingProfile?.id
 
+    // Enhanced profile data from instagram-profile-scraper
+    const enhancedProfileData = {
+      instagram_username: profile.username || username,
+      display_name: profile.fullName || null,
+      profile_picture_url: profile.profilePicUrlHD || profile.profilePicUrl || null,
+      follower_count: profile.followersCount || 0,
+      following_count: profile.followsCount || 0,
+      posts_count: profile.postsCount || 0,
+      bio: profile.biography || null,
+      is_verified: profile.verified || false,
+      external_urls: profile.externalUrls ? JSON.stringify(profile.externalUrls) : null,
+      is_business_account: profile.isBusinessAccount || false,
+      business_category: profile.businessCategoryName || null,
+      is_private: profile.private || false,
+      highlight_reel_count: profile.highlightReelCount || 0,
+      igtvVideoCount: profile.igtvVideoCount || 0,
+      last_scraped_at: new Date().toISOString()
+    }
+
     if (!profileId) {
-      // Create new profile
+      // Create new profile with enhanced data
       const { data: newProfile, error: profileError } = await supabase
         .from(profileTableName)
         .insert({
           user_id: userId,
-          instagram_username: username,
-          display_name: profileData.fullName,
-          profile_picture_url: profileData.profilePicUrl,
-          follower_count: profileData.followersCount,
-          following_count: profileData.followsCount,
-          posts_count: profileData.postsCount,
-          bio: profileData.biography,
-          is_verified: profileData.verified,
-          last_scraped_at: new Date().toISOString()
+          ...enhancedProfileData
         })
         .select()
         .single()
@@ -116,98 +139,91 @@ serve(async (req) => {
       profileId = newProfile.id
       console.log(`Created new profile with ID: ${profileId}`)
     } else {
-      // Update existing profile
+      // Update existing profile with enhanced data
       await supabase
         .from(profileTableName)
-        .update({
-          display_name: profileData.fullName,
-          profile_picture_url: profileData.profilePicUrl,
-          follower_count: profileData.followersCount,
-          following_count: profileData.followsCount,
-          posts_count: profileData.postsCount,
-          bio: profileData.biography,
-          is_verified: profileData.verified,
-          last_scraped_at: new Date().toISOString()
-        })
+        .update(enhancedProfileData)
         .eq('id', profileId)
 
       console.log(`Updated existing profile with ID: ${profileId}`)
     }
 
-    // Process videos (reels)
-    console.log(`Processing ${apifyData.length} reels...`)
+    // Process videos (reels) if we have reels data
+    if (reelsData && reelsData.length > 0) {
+      console.log(`Processing ${reelsData.length} reels...`)
 
-    for (const reel of apifyData) {
-      try {
-        // Count hashtags from caption
-        const hashtagCount = reel.caption ? (reel.caption.match(/#\w+/g) || []).length : 0
-        
-        const foreignKeyField = isMyProfile ? 'my_profile_id' : 'competitor_id'
-        
-        // Parse duration properly - convert string to number if needed
-        let durationSeconds = null
-        if (reel.videoDuration) {
-          if (typeof reel.videoDuration === 'string') {
-            const parsed = parseFloat(reel.videoDuration)
-            durationSeconds = isNaN(parsed) ? null : Math.round(parsed)
-          } else if (typeof reel.videoDuration === 'number') {
-            durationSeconds = Math.round(reel.videoDuration)
+      for (const reel of reelsData) {
+        try {
+          // Count hashtags from caption
+          const hashtagCount = reel.caption ? (reel.caption.match(/#\w+/g) || []).length : 0
+          
+          const foreignKeyField = isMyProfile ? 'my_profile_id' : 'competitor_id'
+          
+          // Parse duration properly - convert string to number if needed
+          let durationSeconds = null
+          if (reel.videoDuration) {
+            if (typeof reel.videoDuration === 'string') {
+              const parsed = parseFloat(reel.videoDuration)
+              durationSeconds = isNaN(parsed) ? null : Math.round(parsed)
+            } else if (typeof reel.videoDuration === 'number') {
+              durationSeconds = Math.round(reel.videoDuration)
+            }
           }
-        }
-        
-        // Check if video already exists
-        const { data: existingVideo } = await supabase
-          .from(videosTableName)
-          .select('id')
-          .eq(foreignKeyField, profileId)
-          .eq('instagram_id', reel.id)
-          .single()
-
-        if (!existingVideo) {
-          // Insert new video with proper field mapping and displayUrl as thumbnail
-          const { error: videoError } = await supabase
+          
+          // Check if video already exists
+          const { data: existingVideo } = await supabase
             .from(videosTableName)
-            .insert({
-              [foreignKeyField]: profileId,
-              instagram_id: reel.id,
-              video_url: reel.videoUrl || reel.url,
-              thumbnail_url: reel.displayUrl || null, // Use displayUrl as thumbnail
-              caption: reel.caption || null,
-              likes_count: reel.likesCount || 0,
-              comments_count: reel.commentsCount || 0,
-              views_count: reel.videoPlayCount || reel.videoViewCount || reel.viewsCount || 0,
-              posted_at: reel.timestamp ? new Date(reel.timestamp).toISOString() : null,
-              duration_seconds: durationSeconds,
-              hashtags_count: hashtagCount
-            })
+            .select('id')
+            .eq(foreignKeyField, profileId)
+            .eq('instagram_id', reel.id)
+            .single()
 
-          if (videoError) {
-            console.error('Error inserting video:', reel.id, videoError)
-          } else {
-            console.log(`Inserted video: ${reel.id}`)
-          }
-        } else {
-          // Update existing video with correct field mapping
-          const { error: updateError } = await supabase
-            .from(videosTableName)
-            .update({
-              thumbnail_url: reel.displayUrl || null, // Update thumbnail with displayUrl
-              likes_count: reel.likesCount || 0,
-              comments_count: reel.commentsCount || 0,
-              views_count: reel.videoPlayCount || reel.videoViewCount || reel.viewsCount || 0,
-              hashtags_count: hashtagCount,
-              duration_seconds: durationSeconds
-            })
-            .eq('id', existingVideo.id)
+          if (!existingVideo) {
+            // Insert new video with proper field mapping and displayUrl as thumbnail
+            const { error: videoError } = await supabase
+              .from(videosTableName)
+              .insert({
+                [foreignKeyField]: profileId,
+                instagram_id: reel.id,
+                video_url: reel.videoUrl || reel.url,
+                thumbnail_url: reel.displayUrl || null,
+                caption: reel.caption || null,
+                likes_count: reel.likesCount || 0,
+                comments_count: reel.commentsCount || 0,
+                views_count: reel.videoPlayCount || reel.videoViewCount || reel.viewsCount || 0,
+                posted_at: reel.timestamp ? new Date(reel.timestamp).toISOString() : null,
+                duration_seconds: durationSeconds,
+                hashtags_count: hashtagCount
+              })
 
-          if (updateError) {
-            console.error('Error updating video:', reel.id, updateError)
+            if (videoError) {
+              console.error('Error inserting video:', reel.id, videoError)
+            } else {
+              console.log(`Inserted video: ${reel.id}`)
+            }
           } else {
-            console.log(`Updated video: ${reel.id}`)
+            // Update existing video with correct field mapping
+            const { error: updateError } = await supabase
+              .from(videosTableName)
+              .update({
+                thumbnail_url: reel.displayUrl || null,
+                likes_count: reel.likesCount || 0,
+                comments_count: reel.commentsCount || 0,
+                views_count: reel.videoPlayCount || reel.videoViewCount || reel.viewsCount || 0,
+                hashtags_count: hashtagCount,
+                duration_seconds: durationSeconds
+              })
+              .eq('id', existingVideo.id)
+
+            if (updateError) {
+              console.error('Error updating video:', reel.id, updateError)
+            } else {
+              console.log(`Updated video: ${reel.id}`)
+            }
           }
+        } catch (videoError) {
+          console.error('Error processing video:', reel.id, videoError)
         }
-      } catch (videoError) {
-        console.error('Error processing video:', reel.id, videoError)
       }
     }
 

@@ -14,6 +14,12 @@ export interface CompetitorData {
   posts_count: number | null;
   bio: string | null;
   is_verified: boolean;
+  external_urls: string | null;
+  is_business_account: boolean;
+  business_category: string | null;
+  is_private: boolean;
+  highlight_reel_count: number | null;
+  igtvVideoCount: number | null;
   last_scraped_at: string | null;
   competitor_videos: CompetitorVideo[];
   isLoading?: boolean;
