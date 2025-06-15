@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 
 export interface ShotInfo {
@@ -516,6 +517,13 @@ export const useAdvancedEditor = (initialContent = '') => {
     return null;
   }, [shots]);
 
+  // Add the missing getShotsBySection function
+  const getShotsBySection = useCallback((sectionId: string): Shot[] => {
+    // For this implementation, we'll return all shots since we don't have section-specific filtering yet
+    // This can be enhanced later to filter shots by section if needed
+    return shots;
+  }, [shots]);
+
   return {
     content,
     shots,
@@ -530,6 +538,7 @@ export const useAdvancedEditor = (initialContent = '') => {
     addCreativeItem,
     removeCreativeItem,
     getShotForText,
+    getShotsBySection,
     toggleTextStrikethrough,
     addSegmentComment,
     updateSegmentComment,

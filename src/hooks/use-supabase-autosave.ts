@@ -138,11 +138,24 @@ export const useSupabaseAutosave = () => {
       if (error) throw error;
 
       if (data) {
+        // Fix the type error by properly handling the JSON parsing
+        let parsedShots: Shot[] = [];
+        try {
+          if (data.shots && typeof data.shots === 'string') {
+            parsedShots = JSON.parse(data.shots);
+          } else if (Array.isArray(data.shots)) {
+            parsedShots = data.shots as Shot[];
+          }
+        } catch (parseError) {
+          console.warn('Error parsing shots JSON:', parseError);
+          parsedShots = [];
+        }
+
         return {
           id: data.id,
-          title: data.title,
+          title: data.title || 'Sección sin título',
           content: data.content || '',
-          shots: JSON.parse(data.shots || '[]')
+          shots: parsedShots
         };
       }
     } catch (error) {
