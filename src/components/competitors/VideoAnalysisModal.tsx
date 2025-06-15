@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -104,7 +103,6 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
         following_count: myProfile.following_count || 0,
         posts_count: myProfile.posts_count || 0,
         is_verified: myProfile.is_verified || false,
-        is_business_account: myProfile.is_business_account || false,
         total_my_videos: myProfile.my_profile_videos?.length || 0,
         avg_likes: myProfile.my_profile_videos?.length > 0 
           ? myProfile.my_profile_videos.reduce((sum, v) => sum + (v.likes_count || 0), 0) / myProfile.my_profile_videos.length
