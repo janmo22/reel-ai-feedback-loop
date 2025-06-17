@@ -111,9 +111,6 @@ export const useMyProfileScraping = () => {
           posts_count,
           bio,
           is_verified,
-          is_business_account,
-          business_category,
-          external_urls,
           last_scraped_at,
           my_profile_videos (
             *,
@@ -136,9 +133,9 @@ export const useMyProfileScraping = () => {
         posts_count: profile.posts_count,
         bio: profile.bio,
         is_verified: profile.is_verified || false,
-        is_business_account: profile.is_business_account,
-        business_category: profile.business_category,
-        external_urls: profile.external_urls,
+        is_business_account: null,
+        business_category: null,
+        external_urls: null,
         last_scraped_at: profile.last_scraped_at,
         my_profile_videos: profile.my_profile_videos || []
       })) as MyProfileData[];
@@ -224,9 +221,6 @@ export const useMyProfileScraping = () => {
           posts_count,
           bio,
           is_verified,
-          is_business_account,
-          business_category,
-          external_urls,
           last_scraped_at,
           my_profile_videos (
             *,
@@ -249,9 +243,9 @@ export const useMyProfileScraping = () => {
         posts_count: data.posts_count,
         bio: data.bio,
         is_verified: data.is_verified || false,
-        is_business_account: data.is_business_account,
-        business_category: data.business_category,
-        external_urls: data.external_urls,
+        is_business_account: null,
+        business_category: null,
+        external_urls: null,
         last_scraped_at: data.last_scraped_at,
         my_profile_videos: data.my_profile_videos || []
       } as MyProfileData;
