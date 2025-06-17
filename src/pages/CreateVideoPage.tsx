@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,12 +30,17 @@ const CreateVideoPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  
+  // Initialize with URL params if available
+  const initialSeriesId = searchParams.get('series') || '';
   
   const [title, setTitle] = useState('');
   const [mainSMP, setMainSMP] = useState<SMP>({ id: 'main', text: '', completed: false });
   const [secondarySMPs, setSecondarySMPs] = useState<SMP[]>([]);
-  const [selectedSeries, setSelectedSeries] = useState<string>('');
+  const [selectedSeries, setSelectedSeries] = useState<string>(initialSeriesId);
   const [scriptContent, setScriptContent] = useState('');
+  const [editorKey, setEditorKey] = useState(0); // Force re-render of editor
 
   // Fetch content series
   const { data: contentSeries = [] } = useQuery({
@@ -64,6 +69,26 @@ const CreateVideoPage: React.FC = () => {
 
   // Get selected series info
   const selectedSeriesInfo = validSeries.find(series => series.id === selectedSeries);
+
+  // Clear form when component mounts or when navigating from different routes
+  useEffect(() => {
+    // Only set initial series if it's valid and exists
+    const seriesParam = searchParams.get('series');
+    if (seriesParam && validSeries.some(series => series.id === seriesParam)) {
+      setSelectedSeries(seriesParam);
+    } else {
+      setSelectedSeries('');
+    }
+  }, [searchParams, validSeries]);
+
+  const resetForm = () => {
+    setTitle('');
+    setMainSMP({ id: 'main', text: '', completed: false });
+    setSecondarySMPs([]);
+    setSelectedSeries('');
+    setScriptContent('');
+    setEditorKey(prev => prev + 1); // Force editor reset
+  };
 
   const toggleMainSMPCompleted = () => {
     setMainSMP(prev => ({ ...prev, completed: !prev.completed }));
@@ -109,6 +134,8 @@ const CreateVideoPage: React.FC = () => {
     }
 
     try {
+      console.log('Saving video with series:', selectedSeries);
+      
       const { error } = await supabase
         .from('created_videos')
         .insert({
@@ -121,31 +148,40 @@ const CreateVideoPage: React.FC = () => {
           value_add: scriptContent.trim() || null,
           call_to_action: null,
           shots: [],
-          content_series_id: selectedSeries === 'no-series' ? null : selectedSeries || null,
+          content_series_id: selectedSeries === 'no-series' || selectedSeries === '' ? null : selectedSeries,
           script_annotations: {}
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Save error:', error);
+        throw error;
+      }
 
       toast({
         title: isDraft ? "Borrador guardado" : "Video guardado",
         description: `Tu ${isDraft ? 'borrador' : 'video'} ha sido guardado correctamente.`,
       });
 
-      // Reset form
-      setTitle('');
-      setMainSMP({ id: 'main', text: '', completed: false });
-      setSecondarySMPs([]);
-      setSelectedSeries('');
-      setScriptContent('');
+      // Reset form after successful save
+      resetForm();
 
     } catch (error: any) {
+      console.error('Error saving video:', error);
       toast({
         title: "Error al guardar",
         description: error.message,
         variant: "destructive",
       });
     }
+  };
+
+  const handleSeriesChange = (value: string) => {
+    console.log('Series changed to:', value);
+    setSelectedSeries(value);
+  };
+
+  const handleEditorContentChange = (content: string) => {
+    setScriptContent(content);
   };
 
   return (
@@ -190,12 +226,13 @@ const CreateVideoPage: React.FC = () => {
             {validSeries.length > 0 && (
               <div>
                 <Label htmlFor="series">Content Series (Opcional)</Label>
-                <Select value={selectedSeries} onValueChange={setSelectedSeries}>
+                <Select value={selectedSeries} onValueChange={handleSeriesChange}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Selecciona una serie" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="no-series">Sin serie</SelectItem>
+                    <SelectItem value="">Sin serie</SelectItem>
+                    <SelectItem value="no-series">Sin serie específica</SelectItem>
                     {validSeries.map((series) => (
                       <SelectItem key={series.id} value={series.id}>
                         {series.name}
@@ -289,7 +326,9 @@ const CreateVideoPage: React.FC = () => {
 
         {/* Editor de texto principal */}
         <NotionStyleEditor
-          onContentChange={setScriptContent}
+          key={editorKey}
+          onContentChange={handleEditorContentChange}
+          initialContent=""
         />
 
         {/* Botones de acción */}
@@ -308,6 +347,13 @@ const CreateVideoPage: React.FC = () => {
           >
             <Eye className="h-4 w-4 mr-2" />
             Guardar Video
+          </Button>
+          <Button 
+            onClick={resetForm}
+            variant="outline" 
+            className="px-6"
+          >
+            Limpiar
           </Button>
         </div>
       </div>
