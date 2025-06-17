@@ -3,12 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Video, AIFeedbackResponse } from '@/types';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 export const useVideoResults = (videoId?: string) => {
   const [searchParams] = useSearchParams();
   const queryVideoId = videoId || searchParams.get('videoId');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   
   const [video, setVideo] = useState<Video | null>(null);
   const [feedback, setFeedback] = useState<AIFeedbackResponse[] | null>(null);
@@ -17,12 +19,16 @@ export const useVideoResults = (videoId?: string) => {
   const [unauthorized, setUnauthorized] = useState(false);
 
   const fetchVideo = useCallback(async () => {
+    console.log(`Fetching video data for ID: ${queryVideoId}`);
+    
     if (!queryVideoId) {
+      console.log("No video ID provided");
       setLoading(false);
       return;
     }
     
     if (!user) {
+      console.log("No authenticated user");
       setUnauthorized(true);
       setLoading(false);
       return;
@@ -32,6 +38,7 @@ export const useVideoResults = (videoId?: string) => {
     setError(null);
     
     try {
+      console.log("Fetching video from database...");
       const { data: videoData, error: videoError } = await supabase
         .from('videos')
         .select('*')
@@ -40,6 +47,7 @@ export const useVideoResults = (videoId?: string) => {
         .single();
       
       if (videoError) {
+        console.error("Video fetch error:", videoError);
         if (videoError.code === 'PGRST116') {
           setUnauthorized(true);
           throw new Error('No tienes permiso para acceder a este video o no existe');
@@ -48,17 +56,26 @@ export const useVideoResults = (videoId?: string) => {
       }
       
       if (!videoData) {
+        console.log("No video data found");
         setUnauthorized(true);
         throw new Error('Video no encontrado');
       }
       
+      console.log("Video data found:", videoData);
+      
+      console.log("Fetching feedback data...");
       const { data: feedbackData, error: feedbackError } = await supabase
         .from('feedback')
         .select('*')
         .eq('video_id', queryVideoId)
         .order('created_at', { ascending: false });
       
-      if (feedbackError) throw new Error(feedbackError.message);
+      if (feedbackError) {
+        console.error("Feedback fetch error:", feedbackError);
+        throw new Error(feedbackError.message);
+      }
+      
+      console.log(`Found ${feedbackData?.length || 0} feedback records`);
       
       const isFavorite = 'is_favorite' in videoData ? !!videoData.is_favorite : false;
       
@@ -79,10 +96,12 @@ export const useVideoResults = (videoId?: string) => {
       setVideo(finalVideo);
 
       if (feedbackData && feedbackData.length > 0) {
+        console.log("Processing feedback data...");
         const processedFeedback: AIFeedbackResponse[] = [];
         
         for (const item of feedbackData) {
           try {
+            console.log("Processing feedback item:", item.id);
             const feedbackJson = item.feedback_data as Record<string, any> || {};
             
             const aiResponse: AIFeedbackResponse = {
@@ -223,9 +242,15 @@ export const useVideoResults = (videoId?: string) => {
           }
         }
         
+        console.log(`Processed ${processedFeedback.length} feedback items`);
+        
         if (processedFeedback.length > 0) {
           setFeedback(processedFeedback);
+        } else {
+          console.log("No valid feedback data could be processed");
         }
+      } else {
+        console.log("No feedback data found for this video");
       }
     } catch (err) {
       console.error('Error fetching video:', err);

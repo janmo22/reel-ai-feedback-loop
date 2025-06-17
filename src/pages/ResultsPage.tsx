@@ -19,9 +19,9 @@ const ResultsPage = () => {
   const { feedback, videoData, loading, hasFeedback, toggleFavorite, error, unauthorized } = useVideoResults();
   const { toast } = useToast();
   
-  // Show notification when analysis is ready if coming from the processing state
+  console.log("ResultsPage render - loading:", loading, "hasFeedback:", hasFeedback, "isProcessing:", isProcessing);
+  
   useEffect(() => {
-    // If we're no longer loading and we have feedback and were previously in processing state
     if (!loading && hasFeedback && isProcessing) {
       toast({
         title: "¡Análisis completado!",
@@ -37,8 +37,9 @@ const ResultsPage = () => {
     });
   };
   
-  // Show loading screen if the video is currently being processed or if we're still loading data
-  if (loading || isProcessing) {
+  // Show loading screen if we're still loading data or if explicitly in processing state
+  if (loading || (isProcessing && !hasFeedback)) {
+    console.log("Showing loading screen");
     return (
       <main className="flex-1 py-8 px-4 flex items-center justify-center">
         <LoadingResults />
@@ -48,6 +49,7 @@ const ResultsPage = () => {
   
   // Show error state if there was an error loading the data
   if (error || unauthorized) {
+    console.log("Showing error state:", error);
     return (
       <main className="flex-1 py-8 px-4">
         <div className="container mx-auto max-w-5xl">
@@ -59,6 +61,7 @@ const ResultsPage = () => {
   
   // Ensure feedback data is available and the video belongs to the current user
   if (!hasFeedback || !feedback || !videoData) {
+    console.log("No feedback or video data available");
     return (
       <main className="flex-1 py-8 px-4">
         <div className="container mx-auto max-w-5xl">
@@ -68,18 +71,18 @@ const ResultsPage = () => {
     );
   }
   
+  console.log("Showing results with feedback");
+  
   // Get the first feedback item
   const feedbackItem = feedback[0];
   const fd = feedbackItem.feedback_data;
   
   // Determine content details
   const contentTitle = videoData.title || "Análisis de Reel";
-  // Get content type from either the structured or flat data
   const contentTypeValue = fd?.contentTypeStrategy?.classification || 
                           feedbackItem.contentType || 
                           "Análisis de contenido";
   
-  // Get overall score from either the structured or flat data
   const score = fd?.finalEvaluation?.overallScore || 
                feedbackItem.overallEvaluation?.score || 
                0;

@@ -16,13 +16,11 @@ const LoadingResults = () => {
   const [hasUserStrategy, setHasUserStrategy] = useState(false);
   const [videoStatus, setVideoStatus] = useState<string | null>(null);
   const [checkAttempts, setCheckAttempts] = useState(0);
-  const MAX_CHECK_ATTEMPTS = 60; // 5 minutos máximo (5 segundos * 60)
+  const MAX_CHECK_ATTEMPTS = 60;
   
   useEffect(() => {
-    // If no videoId is provided, we can't check for results
     if (!videoId || !user) return;
     
-    // Check if user has strategy data
     const checkUserStrategy = async () => {
       try {
         const { data, error } = await supabase
@@ -41,10 +39,11 @@ const LoadingResults = () => {
     
     checkUserStrategy();
     
-    // Check video status and feedback periodically
     const checkVideoStatus = async () => {
       try {
-        // Check video status first
+        console.log(`Checking status for video: ${videoId}`);
+        
+        // Check video status
         const { data: videoData, error: videoError } = await supabase
           .from('videos')
           .select('status')
@@ -56,9 +55,10 @@ const LoadingResults = () => {
           return;
         }
         
+        console.log(`Video status: ${videoData.status}`);
         setVideoStatus(videoData.status);
         
-        // If video is in error state, show error
+        // If video is in error state
         if (videoData.status === 'error') {
           toast({
             title: "Error en el análisis",
@@ -81,8 +81,11 @@ const LoadingResults = () => {
           return;
         }
         
+        console.log(`Feedback found: ${feedbackData?.length > 0}`);
+        
         // If feedback exists, redirect to results
         if (feedbackData && feedbackData.length > 0) {
+          console.log("Feedback found, redirecting to results");
           toast({
             title: "¡Análisis completado!",
             description: "Tu reel ha sido analizado correctamente.",
@@ -91,11 +94,10 @@ const LoadingResults = () => {
           return;
         }
         
-        // Increment attempts counter
         setCheckAttempts(prev => {
           const newAttempts = prev + 1;
+          console.log(`Check attempt: ${newAttempts}/${MAX_CHECK_ATTEMPTS}`);
           
-          // If we've reached max attempts, show timeout error
           if (newAttempts >= MAX_CHECK_ATTEMPTS) {
             toast({
               title: "Timeout del análisis",
@@ -119,7 +121,7 @@ const LoadingResults = () => {
     // Set up interval to check every 5 seconds
     const interval = setInterval(checkVideoStatus, 5000);
     
-    // Set up real-time subscription to feedback table as backup
+    // Set up real-time subscription
     const channel = supabase
       .channel('processing-updates')
       .on('postgres_changes', 
@@ -131,20 +133,17 @@ const LoadingResults = () => {
               title: "¡Análisis completado!",
               description: "Tu reel ha sido analizado correctamente.",
             });
-            // Navigate to results
             navigate(`/results?videoId=${videoId}`, { replace: true });
           }
       )
       .subscribe();
       
-    // Cleanup subscription and interval on component unmount
     return () => {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
   }, [videoId, navigate, toast, user]);
   
-  // Show error state if video is in error status
   if (videoStatus === 'error') {
     return (
       <div className="w-full h-full flex items-center justify-center py-16">
@@ -180,7 +179,7 @@ const LoadingResults = () => {
             <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg">
               <Clock className="h-5 w-5" />
               <p className="font-medium">
-                Verificando progreso... (Intento {checkAttempts}/{MAX_CHECK_ATTEMPTS})
+                Verificando progreso... (Intento {checkAttempts}/{60})
               </p>
             </div>
             {checkAttempts > 30 && (
