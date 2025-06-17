@@ -113,15 +113,9 @@ export const useMyProfileScraping = () => {
 
       if (error) throw error;
       
-      // Ensure all profiles have the required fields with default values
-      const profilesWithDefaults = (data || []).map(profile => ({
-        ...profile,
-        is_business_account: profile.is_business_account ?? null,
-        business_category: profile.business_category ?? null,
-        external_urls: profile.external_urls ?? null
-      })) as MyProfileData[];
-      
-      setProfiles(profilesWithDefaults);
+      // The data from Supabase already includes all the required fields
+      // Cast it directly to MyProfileData[] since the query selects all columns
+      setProfiles((data || []) as MyProfileData[]);
     } catch (error) {
       console.error('Error fetching profiles:', error);
       toast({
@@ -204,21 +198,17 @@ export const useMyProfileScraping = () => {
 
       if (error) throw error;
 
-      // Ensure the profile has the required fields with default values
-      const profileWithDefaults = {
-        ...data,
-        is_business_account: data.is_business_account ?? null,
-        business_category: data.business_category ?? null,
-        external_urls: data.external_urls ?? null
-      } as MyProfileData;
+      // The data from Supabase already includes all the required fields
+      // Cast it directly to MyProfileData since the query selects all columns
+      const profileData = data as MyProfileData;
 
       setProfiles(prev => 
         prev.map(profile => 
-          profile.id === profileId ? profileWithDefaults : profile
+          profile.id === profileId ? profileData : profile
         )
       );
 
-      return profileWithDefaults;
+      return profileData;
     } catch (error) {
       console.error('Error refreshing profile:', error);
       toast({
