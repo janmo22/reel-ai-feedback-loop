@@ -2,13 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { BackButton } from '@/components/ui/back-button';
+import BackButton from '@/components/ui/back-button';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Grid3X3, List, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from '@/components/EmptyState';
+import EmptyState from '@/components/EmptyState';
 import MyProfileVideoGrid from '@/components/my-profile/MyProfileVideoGrid';
 import MyProfileVideoTable from '@/components/my-profile/MyProfileVideoTable';
 import MyProfileVideoAnalysisModal from '@/components/my-profile/MyProfileVideoAnalysisModal';
@@ -177,13 +177,16 @@ const MyProfileAnalysisPage = () => {
             <>
               {viewMode === 'grid' ? (
                 <MyProfileVideoGrid 
-                  videos={profile.my_profile_videos} 
-                  onVideoSelect={setSelectedVideo}
+                  profile={profile}
+                  onBack={() => window.history.back()}
                 />
               ) : (
                 <MyProfileVideoTable 
                   videos={profile.my_profile_videos} 
-                  onVideoSelect={setSelectedVideo}
+                  selectedVideos={[]}
+                  onVideoSelection={() => {}}
+                  onDeleteVideo={() => {}}
+                  profileUsername={profile.instagram_username}
                 />
               )}
             </>
@@ -196,6 +199,7 @@ const MyProfileAnalysisPage = () => {
             video={selectedVideo}
             isOpen={!!selectedVideo}
             onClose={() => setSelectedVideo(null)}
+            profileUsername={profile.instagram_username}
           />
         )}
       </div>
