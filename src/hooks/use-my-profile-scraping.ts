@@ -102,7 +102,19 @@ export const useMyProfileScraping = () => {
       const { data, error } = await supabase
         .from('my_profile')
         .select(`
-          *,
+          id,
+          instagram_username,
+          display_name,
+          profile_picture_url,
+          follower_count,
+          following_count,
+          posts_count,
+          bio,
+          is_verified,
+          is_business_account,
+          business_category,
+          external_urls,
+          last_scraped_at,
           my_profile_videos (
             *,
             my_profile_analysis (*)
@@ -113,9 +125,25 @@ export const useMyProfileScraping = () => {
 
       if (error) throw error;
       
-      // The data from Supabase already includes all the required fields
-      // Cast it directly to MyProfileData[] since the query selects all columns
-      setProfiles((data || []) as MyProfileData[]);
+      // Map the data to ensure all required fields are present with proper defaults
+      const profilesWithDefaults = (data || []).map(profile => ({
+        id: profile.id,
+        instagram_username: profile.instagram_username,
+        display_name: profile.display_name,
+        profile_picture_url: profile.profile_picture_url,
+        follower_count: profile.follower_count,
+        following_count: profile.following_count,
+        posts_count: profile.posts_count,
+        bio: profile.bio,
+        is_verified: profile.is_verified || false,
+        is_business_account: profile.is_business_account,
+        business_category: profile.business_category,
+        external_urls: profile.external_urls,
+        last_scraped_at: profile.last_scraped_at,
+        my_profile_videos: profile.my_profile_videos || []
+      })) as MyProfileData[];
+      
+      setProfiles(profilesWithDefaults);
     } catch (error) {
       console.error('Error fetching profiles:', error);
       toast({
@@ -187,7 +215,19 @@ export const useMyProfileScraping = () => {
       const { data, error } = await supabase
         .from('my_profile')
         .select(`
-          *,
+          id,
+          instagram_username,
+          display_name,
+          profile_picture_url,
+          follower_count,
+          following_count,
+          posts_count,
+          bio,
+          is_verified,
+          is_business_account,
+          business_category,
+          external_urls,
+          last_scraped_at,
           my_profile_videos (
             *,
             my_profile_analysis (*)
@@ -198,9 +238,23 @@ export const useMyProfileScraping = () => {
 
       if (error) throw error;
 
-      // The data from Supabase already includes all the required fields
-      // Cast it directly to MyProfileData since the query selects all columns
-      const profileData = data as MyProfileData;
+      // Map the data to ensure all required fields are present with proper defaults
+      const profileData = {
+        id: data.id,
+        instagram_username: data.instagram_username,
+        display_name: data.display_name,
+        profile_picture_url: data.profile_picture_url,
+        follower_count: data.follower_count,
+        following_count: data.following_count,
+        posts_count: data.posts_count,
+        bio: data.bio,
+        is_verified: data.is_verified || false,
+        is_business_account: data.is_business_account,
+        business_category: data.business_category,
+        external_urls: data.external_urls,
+        last_scraped_at: data.last_scraped_at,
+        my_profile_videos: data.my_profile_videos || []
+      } as MyProfileData;
 
       setProfiles(prev => 
         prev.map(profile => 
