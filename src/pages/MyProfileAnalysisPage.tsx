@@ -1,16 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { BackButton } from '@/components/back-button';
+import { BackButton } from '@/components/ui/back-button';
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Grid3X3, List, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from '@/components/empty-state';
-import { MyProfileVideoGrid } from '@/components/my-profile/MyProfileVideoGrid';
-import { MyProfileVideoTable } from '@/components/my-profile/MyProfileVideoTable';
-import { MyProfileVideoAnalysisModal } from '@/components/my-profile/MyProfileVideoAnalysisModal';
+import { EmptyState } from '@/components/EmptyState';
+import MyProfileVideoGrid from '@/components/my-profile/MyProfileVideoGrid';
+import MyProfileVideoTable from '@/components/my-profile/MyProfileVideoTable';
+import MyProfileVideoAnalysisModal from '@/components/my-profile/MyProfileVideoAnalysisModal';
 
 import {
   MyProfileData,
