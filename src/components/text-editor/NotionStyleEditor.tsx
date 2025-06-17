@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useSupabaseAutosave } from '@/hooks/use-supabase-autosave';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Section {
@@ -48,6 +49,20 @@ const NotionStyleEditor: React.FC<NotionStyleEditorProps> = ({
   const [scriptTitle, setScriptTitle] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const lastContentRef = useRef<string>('');
+  
+  // Disable autosave for this component since it's used in CreateVideoPage
+  // and we want manual control over saving
+  const { saveData, isLoading: isSaving } = useSupabaseAutosave({
+    tableName: 'script_drafts',
+    data: {
+      title: scriptTitle,
+      sections: sections,
+      content: sections.map(s => `## ${s.title}\n${s.content}`).join('\n\n')
+    },
+    enabled: false, // Disable autosave
+    userId: user?.id,
+    interval: 5000
+  });
 
   // Initialize with empty state
   useEffect(() => {

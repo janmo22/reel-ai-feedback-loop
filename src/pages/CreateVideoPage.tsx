@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -230,6 +231,7 @@ const CreateVideoPage: React.FC = () => {
                     <SelectValue placeholder="Selecciona una serie" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="">Sin serie</SelectItem>
                     <SelectItem value="no-series">Sin serie específica</SelectItem>
                     {validSeries.map((series) => (
                       <SelectItem key={series.id} value={series.id}>

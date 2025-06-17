@@ -102,16 +102,7 @@ export const useMyProfileScraping = () => {
       const { data, error } = await supabase
         .from('my_profile')
         .select(`
-          id,
-          instagram_username,
-          display_name,
-          profile_picture_url,
-          follower_count,
-          following_count,
-          posts_count,
-          bio,
-          is_verified,
-          last_scraped_at,
+          *,
           my_profile_videos (
             *,
             my_profile_analysis (*)
@@ -122,25 +113,7 @@ export const useMyProfileScraping = () => {
 
       if (error) throw error;
       
-      // Map the data to ensure all required fields are present with proper defaults
-      const profilesWithDefaults = (data || []).map(profile => ({
-        id: profile.id,
-        instagram_username: profile.instagram_username,
-        display_name: profile.display_name,
-        profile_picture_url: profile.profile_picture_url,
-        follower_count: profile.follower_count,
-        following_count: profile.following_count,
-        posts_count: profile.posts_count,
-        bio: profile.bio,
-        is_verified: profile.is_verified || false,
-        is_business_account: null,
-        business_category: null,
-        external_urls: null,
-        last_scraped_at: profile.last_scraped_at,
-        my_profile_videos: profile.my_profile_videos || []
-      })) as MyProfileData[];
-      
-      setProfiles(profilesWithDefaults);
+      setProfiles(data || []);
     } catch (error) {
       console.error('Error fetching profiles:', error);
       toast({
@@ -212,16 +185,7 @@ export const useMyProfileScraping = () => {
       const { data, error } = await supabase
         .from('my_profile')
         .select(`
-          id,
-          instagram_username,
-          display_name,
-          profile_picture_url,
-          follower_count,
-          following_count,
-          posts_count,
-          bio,
-          is_verified,
-          last_scraped_at,
+          *,
           my_profile_videos (
             *,
             my_profile_analysis (*)
@@ -232,31 +196,13 @@ export const useMyProfileScraping = () => {
 
       if (error) throw error;
 
-      // Map the data to ensure all required fields are present with proper defaults
-      const profileData = {
-        id: data.id,
-        instagram_username: data.instagram_username,
-        display_name: data.display_name,
-        profile_picture_url: data.profile_picture_url,
-        follower_count: data.follower_count,
-        following_count: data.following_count,
-        posts_count: data.posts_count,
-        bio: data.bio,
-        is_verified: data.is_verified || false,
-        is_business_account: null,
-        business_category: null,
-        external_urls: null,
-        last_scraped_at: data.last_scraped_at,
-        my_profile_videos: data.my_profile_videos || []
-      } as MyProfileData;
-
       setProfiles(prev => 
         prev.map(profile => 
-          profile.id === profileId ? profileData : profile
+          profile.id === profileId ? data : profile
         )
       );
 
-      return profileData;
+      return data;
     } catch (error) {
       console.error('Error refreshing profile:', error);
       toast({
