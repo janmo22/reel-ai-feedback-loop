@@ -14,9 +14,6 @@ export interface MyProfileData {
   posts_count: number | null;
   bio: string | null;
   is_verified: boolean;
-  is_business_account: boolean | null;
-  business_category: string | null;
-  external_urls: string | null;
   last_scraped_at: string | null;
   my_profile_videos: MyProfileVideo[];
 }
