@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -182,53 +183,50 @@ export const useCompetitorScraping = () => {
     }
   };
 
-  // FIXED: Completely rewritten to properly detect completed analyses
+  // FIXED: Completely simplified analysis status detection
   const getVideoAnalysisStatus = (analysisArray: any[]): 'idle' | 'loading' | 'completed' | 'error' => {
-    console.log('Checking analysis status for:', analysisArray);
+    console.log('Hook: Checking analysis status for:', analysisArray);
     
     if (!analysisArray || analysisArray.length === 0) {
-      console.log('No analysis data found - returning idle');
+      console.log('Hook: No analysis data found - returning idle');
       return 'idle';
     }
     
     const analysis = analysisArray[0];
-    console.log('Analysis object:', {
-      id: analysis.id,
-      status: analysis.analysis_status,
-      hasReelAnalysis: !!analysis.competitor_reel_analysis,
-      hasAdaptationProposal: !!analysis.user_adaptation_proposal,
-      reelAnalysisType: typeof analysis.competitor_reel_analysis,
-      adaptationProposalType: typeof analysis.user_adaptation_proposal
-    });
+    console.log('Hook: Analysis object:', analysis);
     
-    // CRITICAL FIX: Check if there's any actual analysis data, regardless of status
-    const hasAnalysisData = (
-      (analysis.competitor_reel_analysis && 
-       analysis.competitor_reel_analysis !== null && 
-       analysis.competitor_reel_analysis !== '' &&
-       Object.keys(analysis.competitor_reel_analysis).length > 0) ||
-      (analysis.user_adaptation_proposal && 
-       analysis.user_adaptation_proposal !== null && 
-       analysis.user_adaptation_proposal !== '' &&
-       Object.keys(analysis.user_adaptation_proposal).length > 0)
-    );
-    
-    console.log('Has actual analysis data:', hasAnalysisData);
-    
-    // If there's actual data, it's completed regardless of status field
-    if (hasAnalysisData) {
-      console.log('Analysis has data - returning completed');
+    // SIMPLIFIED: If analysis_status is 'completed', trust it
+    if (analysis.analysis_status === 'completed') {
+      console.log('Hook: Analysis status is completed - returning completed');
       return 'completed';
     }
     
-    // If no data but status is pending, it's loading
+    // CRITICAL: Also check for actual data content
+    const hasReelAnalysis = analysis.competitor_reel_analysis && 
+                           typeof analysis.competitor_reel_analysis === 'object' &&
+                           Object.keys(analysis.competitor_reel_analysis).length > 0;
+                           
+    const hasAdaptationProposal = analysis.user_adaptation_proposal && 
+                                 typeof analysis.user_adaptation_proposal === 'object' &&
+                                 Object.keys(analysis.user_adaptation_proposal).length > 0;
+    
+    console.log('Hook: Has reel analysis:', hasReelAnalysis);
+    console.log('Hook: Has adaptation proposal:', hasAdaptationProposal);
+    
+    // If there's actual data, it's completed regardless of status
+    if (hasReelAnalysis || hasAdaptationProposal) {
+      console.log('Hook: Has actual analysis data - returning completed');
+      return 'completed';
+    }
+    
+    // If status is pending, it's loading
     if (analysis.analysis_status === 'pending') {
-      console.log('Status is pending - returning loading');
+      console.log('Hook: Status is pending - returning loading');
       return 'loading';
     }
     
     // Default to idle
-    console.log('No data and status not pending - returning idle');
+    console.log('Hook: No data and status not pending - returning idle');
     return 'idle';
   };
 
@@ -370,7 +368,7 @@ export const useCompetitorScraping = () => {
   };
 
   const updateVideoAnalysisStatus = (videoId: string, status: 'idle' | 'loading' | 'completed' | 'error') => {
-    console.log('Updating analysis status for video', videoId, 'to', status);
+    console.log('Hook: Updating analysis status for video', videoId, 'to', status);
     setCompetitors(prev => 
       prev.map(competitor => ({
         ...competitor,
@@ -383,6 +381,23 @@ export const useCompetitorScraping = () => {
     );
   };
 
+  // NEW: Function to force refresh analysis status for all videos
+  const refreshAllAnalysisStatus = async () => {
+    if (!user) return;
+    
+    try {
+      // Re-fetch all competitors with fresh analysis data
+      await fetchCompetitors();
+      
+      toast({
+        title: "Estado actualizado",
+        description: "Se ha actualizado el estado de todos los análisis",
+      });
+    } catch (error) {
+      console.error('Error refreshing analysis status:', error);
+    }
+  };
+
   return {
     isLoading,
     competitors,
@@ -391,6 +406,7 @@ export const useCompetitorScraping = () => {
     deleteCompetitor,
     deleteVideo,
     refreshCompetitor,
-    updateVideoAnalysisStatus
+    updateVideoAnalysisStatus,
+    refreshAllAnalysisStatus
   };
 };

@@ -19,7 +19,7 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
-  const { deleteVideo, refreshCompetitor, updateVideoAnalysisStatus } = useCompetitorScraping();
+  const { deleteVideo, refreshCompetitor, updateVideoAnalysisStatus, refreshAllAnalysisStatus } = useCompetitorScraping();
 
   const formatNumber = (num: number | null) => {
     if (!num) return '0';
@@ -115,6 +115,12 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  const handleRefreshAnalysisStatus = async () => {
+    await refreshAllAnalysisStatus();
+    // Also refresh this specific competitor
+    await handleRefreshData();
   };
 
   const videos = competitor.competitor_videos || [];
@@ -253,6 +259,7 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
           competitor={competitor}
           onDeleteVideo={handleDeleteVideo}
           onUpdateAnalysisStatus={handleUpdateAnalysisStatus}
+          onRefreshAnalysisStatus={handleRefreshAnalysisStatus}
         />
       </div>
     </div>

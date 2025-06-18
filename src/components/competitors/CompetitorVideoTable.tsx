@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Heart, MessageCircle, Sparkles, ExternalLink, Trash2, Calendar, Clock, Hash, ChevronUp, ChevronDown, CheckCircle, Loader2 } from 'lucide-react';
+import { Eye, Heart, MessageCircle, Sparkles, ExternalLink, Trash2, Calendar, Clock, Hash, ChevronUp, ChevronDown, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 import { CompetitorData, CompetitorVideo } from '@/hooks/use-competitor-scraping';
 import VideoAnalysisModal from './VideoAnalysisModal';
 
@@ -11,6 +11,7 @@ interface CompetitorVideoTableProps {
   competitor: CompetitorData;
   onDeleteVideo: (videoId: string) => void;
   onUpdateAnalysisStatus?: (videoId: string, status: 'idle' | 'loading' | 'completed' | 'error') => void;
+  onRefreshAnalysisStatus?: () => void;
 }
 
 type SortField = 'views_count' | 'likes_count' | 'comments_count' | 'posted_at' | 'duration_seconds';
@@ -19,7 +20,8 @@ type SortDirection = 'asc' | 'desc';
 const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({ 
   competitor, 
   onDeleteVideo,
-  onUpdateAnalysisStatus 
+  onUpdateAnalysisStatus,
+  onRefreshAnalysisStatus 
 }) => {
   const [selectedVideo, setSelectedVideo] = useState<CompetitorVideo | null>(null);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
@@ -124,38 +126,39 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     return url;
   };
 
-  // FIXED: Simplified analysis status detection that matches the hook exactly
+  // SIMPLIFIED: Analysis status detection that matches the hook exactly
   const getAnalysisStatus = (video: CompetitorVideo) => {
     console.log('Table: Getting analysis status for video:', video.id, video.competitor_analysis);
     
     if (!video.competitor_analysis || video.competitor_analysis.length === 0) {
-      console.log('Table: No analysis data found');
+      console.log('Table: No analysis data found - returning idle');
       return 'idle';
     }
     
     const analysis = video.competitor_analysis[0];
-    console.log('Table: Analysis object check:', {
-      hasReelAnalysis: !!analysis.competitor_reel_analysis,
-      hasAdaptationProposal: !!analysis.user_adaptation_proposal,
-      status: analysis.analysis_status
-    });
+    console.log('Table: Analysis object:', analysis);
     
-    // CRITICAL: Check for actual data content, not just existence
-    const hasAnalysisData = (
-      (analysis.competitor_reel_analysis && 
-       analysis.competitor_reel_analysis !== null && 
-       typeof analysis.competitor_reel_analysis === 'object' &&
-       Object.keys(analysis.competitor_reel_analysis).length > 0) ||
-      (analysis.user_adaptation_proposal && 
-       analysis.user_adaptation_proposal !== null && 
-       typeof analysis.user_adaptation_proposal === 'object' &&
-       Object.keys(analysis.user_adaptation_proposal).length > 0)
-    );
+    // SIMPLIFIED: If analysis_status is 'completed', trust it
+    if (analysis.analysis_status === 'completed') {
+      console.log('Table: Analysis status is completed - returning completed');
+      return 'completed';
+    }
     
-    console.log('Table: Has actual analysis data:', hasAnalysisData);
+    // Also check for actual data content
+    const hasReelAnalysis = analysis.competitor_reel_analysis && 
+                           typeof analysis.competitor_reel_analysis === 'object' &&
+                           Object.keys(analysis.competitor_reel_analysis).length > 0;
+                           
+    const hasAdaptationProposal = analysis.user_adaptation_proposal && 
+                                 typeof analysis.user_adaptation_proposal === 'object' &&
+                                 Object.keys(analysis.user_adaptation_proposal).length > 0;
     
-    if (hasAnalysisData) {
-      console.log('Table: Analysis is completed');
+    console.log('Table: Has reel analysis:', hasReelAnalysis);
+    console.log('Table: Has adaptation proposal:', hasAdaptationProposal);
+    
+    // If there's actual data, it's completed regardless of status
+    if (hasReelAnalysis || hasAdaptationProposal) {
+      console.log('Table: Has actual analysis data - returning completed');
       return 'completed';
     }
     
@@ -172,6 +175,22 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
   return (
     <>
       <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
+        {/* Add refresh button */}
+        <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+          <h3 className="font-medium text-gray-900">Videos del Competidor</h3>
+          {onRefreshAnalysisStatus && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRefreshAnalysisStatus}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Actualizar Estado
+            </Button>
+          )}
+        </div>
+        
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50 border-b">
@@ -314,7 +333,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                     )}
                   </TableCell>
                   
-                  {/* FIXED: Status cell with correct analysis detection */}
+                  {/* Status cell with correct analysis detection */}
                   <TableCell className="p-3">
                     {analysisStatus === 'completed' ? (
                       <Badge 
