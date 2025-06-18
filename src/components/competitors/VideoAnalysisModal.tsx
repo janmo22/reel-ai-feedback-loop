@@ -31,14 +31,25 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
 
   useEffect(() => {
     if (video && isOpen) {
-      console.log('Checking existing analysis for video:', video.id, video.competitor_analysis);
+      console.log('Modal: Checking existing analysis for video:', video.id, video.competitor_analysis);
       
-      // Check if video already has analysis with actual data
+      // FIXED: Check if video already has analysis with actual data content
       if (video.competitor_analysis && video.competitor_analysis.length > 0) {
         const analysis = video.competitor_analysis[0];
-        // Check if there's actual analysis data
-        const hasAnalysisData = analysis.competitor_reel_analysis || analysis.user_adaptation_proposal;
-        console.log('Has analysis data:', hasAnalysisData);
+        
+        // Check for actual analysis data content, not just existence
+        const hasAnalysisData = (
+          (analysis.competitor_reel_analysis && 
+           analysis.competitor_reel_analysis !== null && 
+           typeof analysis.competitor_reel_analysis === 'object' &&
+           Object.keys(analysis.competitor_reel_analysis).length > 0) ||
+          (analysis.user_adaptation_proposal && 
+           analysis.user_adaptation_proposal !== null && 
+           typeof analysis.user_adaptation_proposal === 'object' &&
+           Object.keys(analysis.user_adaptation_proposal).length > 0)
+        );
+        
+        console.log('Modal: Has actual analysis data:', hasAnalysisData);
         
         if (hasAnalysisData) {
           setExistingAnalysis(analysis);
@@ -235,7 +246,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
             </div>
           </div>
 
-          {/* Analysis Status Section */}
+          {/* FIXED: Analysis Status Section with better detection */}
           <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 rounded-xl border border-gray-200">
             {existingAnalysis ? (
               <div className="text-center space-y-4">

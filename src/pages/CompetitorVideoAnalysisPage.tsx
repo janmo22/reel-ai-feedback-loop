@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -50,7 +49,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
       if (!videoId) return;
 
       try {
-        console.log('Fetching video data for ID:', videoId);
+        console.log('Page: Fetching video data for ID:', videoId);
         
         const { data, error } = await supabase
           .from('competitor_videos')
@@ -76,8 +75,8 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
 
         if (error) throw error;
 
-        console.log('Video data received:', data);
-        console.log('Analysis data for video ID', videoId, ':', data.competitor_analysis);
+        console.log('Page: Video data received:', data);
+        console.log('Page: Analysis data for video ID', videoId, ':', data.competitor_analysis);
 
         setVideoData({
           ...data,
@@ -133,12 +132,12 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     );
   }
 
-  // Find the analysis that specifically matches this video ID
+  // FIXED: Find the analysis that specifically matches this video ID with better data detection
   const analysis = videoData.competitor_analysis && videoData.competitor_analysis.length > 0 
     ? videoData.competitor_analysis[0] // Since we're filtering by competitor_video_id, there should only be one
     : null;
   
-  console.log('Using analysis for video ID:', videoId, analysis);
+  console.log('Page: Using analysis for video ID:', videoId, analysis);
   
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -157,16 +156,24 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     ? ((videoData.likes_count + videoData.comments_count) / videoData.views_count * 100).toFixed(2)
     : '0';
 
-  // Check for the analysis structure - the analysis should be specifically for this video
-  const isAnalysisComplete = analysis && 
-    analysis.analysis_status === 'completed' && 
-    (analysis.competitor_reel_analysis || analysis.user_adaptation_proposal);
+  // CRITICAL FIX: Check for the analysis structure with better data detection
+  const isAnalysisComplete = analysis && (
+    (analysis.competitor_reel_analysis && 
+     analysis.competitor_reel_analysis !== null && 
+     typeof analysis.competitor_reel_analysis === 'object' &&
+     Object.keys(analysis.competitor_reel_analysis).length > 0) ||
+    (analysis.user_adaptation_proposal && 
+     analysis.user_adaptation_proposal !== null && 
+     typeof analysis.user_adaptation_proposal === 'object' &&
+     Object.keys(analysis.user_adaptation_proposal).length > 0)
+  );
 
-  const isAnalysisPending = analysis && analysis.analysis_status === 'pending';
+  const isAnalysisPending = analysis && analysis.analysis_status === 'pending' && !isAnalysisComplete;
 
-  console.log('Analysis status for video', videoId, ':', analysis?.analysis_status);
-  console.log('Has reel analysis:', !!analysis?.competitor_reel_analysis);
-  console.log('Has adaptation proposal:', !!analysis?.user_adaptation_proposal);
+  console.log('Page: Analysis status for video', videoId, ':', analysis?.analysis_status);
+  console.log('Page: Has reel analysis:', !!(analysis?.competitor_reel_analysis && Object.keys(analysis.competitor_reel_analysis).length > 0));
+  console.log('Page: Has adaptation proposal:', !!(analysis?.user_adaptation_proposal && Object.keys(analysis.user_adaptation_proposal).length > 0));
+  console.log('Page: Is analysis complete:', isAnalysisComplete);
 
   return (
     <div className="min-h-screen bg-gray-50">

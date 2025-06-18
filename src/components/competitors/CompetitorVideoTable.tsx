@@ -124,37 +124,48 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     return url;
   };
 
-  // FIXED: Improved analysis status detection that matches the hook logic
+  // FIXED: Simplified analysis status detection that matches the hook exactly
   const getAnalysisStatus = (video: CompetitorVideo) => {
-    console.log('Getting analysis status for video:', video.id, video.competitor_analysis);
+    console.log('Table: Getting analysis status for video:', video.id, video.competitor_analysis);
     
     if (!video.competitor_analysis || video.competitor_analysis.length === 0) {
-      console.log('No analysis data found');
+      console.log('Table: No analysis data found');
       return 'idle';
     }
     
     const analysis = video.competitor_analysis[0];
-    console.log('Analysis data:', analysis);
-    console.log('Analysis status field:', analysis.analysis_status);
-    console.log('Has reel analysis:', !!analysis.competitor_reel_analysis);
-    console.log('Has adaptation proposal:', !!analysis.user_adaptation_proposal);
+    console.log('Table: Analysis object check:', {
+      hasReelAnalysis: !!analysis.competitor_reel_analysis,
+      hasAdaptationProposal: !!analysis.user_adaptation_proposal,
+      status: analysis.analysis_status
+    });
     
-    // Check if analysis_status is explicitly 'completed' OR if there's actual analysis data
-    const hasActualData = analysis.competitor_reel_analysis || analysis.user_adaptation_proposal;
-    const isStatusCompleted = analysis.analysis_status === 'completed';
+    // CRITICAL: Check for actual data content, not just existence
+    const hasAnalysisData = (
+      (analysis.competitor_reel_analysis && 
+       analysis.competitor_reel_analysis !== null && 
+       typeof analysis.competitor_reel_analysis === 'object' &&
+       Object.keys(analysis.competitor_reel_analysis).length > 0) ||
+      (analysis.user_adaptation_proposal && 
+       analysis.user_adaptation_proposal !== null && 
+       typeof analysis.user_adaptation_proposal === 'object' &&
+       Object.keys(analysis.user_adaptation_proposal).length > 0)
+    );
     
-    if (hasActualData || isStatusCompleted) {
-      console.log('Analysis is completed');
+    console.log('Table: Has actual analysis data:', hasAnalysisData);
+    
+    if (hasAnalysisData) {
+      console.log('Table: Analysis is completed');
       return 'completed';
     }
     
     // Check for local loading status first, then database status
     if (video.analysisStatus === 'loading' || analysis.analysis_status === 'pending') {
-      console.log('Analysis is loading/pending');
+      console.log('Table: Analysis is loading/pending');
       return 'loading';
     }
     
-    console.log('Analysis status is idle');
+    console.log('Table: Analysis status is idle');
     return 'idle';
   };
 
@@ -303,6 +314,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                     )}
                   </TableCell>
                   
+                  {/* FIXED: Status cell with correct analysis detection */}
                   <TableCell className="p-3">
                     {analysisStatus === 'completed' ? (
                       <Badge 

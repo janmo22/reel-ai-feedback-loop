@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -183,37 +182,53 @@ export const useCompetitorScraping = () => {
     }
   };
 
-  // FIXED: Updated helper function to correctly determine video analysis status
+  // FIXED: Completely rewritten to properly detect completed analyses
   const getVideoAnalysisStatus = (analysisArray: any[]): 'idle' | 'loading' | 'completed' | 'error' => {
-    console.log('Analysis array for status check:', analysisArray);
+    console.log('Checking analysis status for:', analysisArray);
     
     if (!analysisArray || analysisArray.length === 0) {
-      console.log('No analysis found, returning idle');
+      console.log('No analysis data found - returning idle');
       return 'idle';
     }
     
     const analysis = analysisArray[0];
-    console.log('Analysis data:', analysis);
-    console.log('Analysis status field:', analysis.analysis_status);
-    console.log('Has reel analysis:', !!analysis.competitor_reel_analysis);
-    console.log('Has adaptation proposal:', !!analysis.user_adaptation_proposal);
+    console.log('Analysis object:', {
+      id: analysis.id,
+      status: analysis.analysis_status,
+      hasReelAnalysis: !!analysis.competitor_reel_analysis,
+      hasAdaptationProposal: !!analysis.user_adaptation_proposal,
+      reelAnalysisType: typeof analysis.competitor_reel_analysis,
+      adaptationProposalType: typeof analysis.user_adaptation_proposal
+    });
     
-    // Check if analysis_status is explicitly 'completed' OR if there's actual analysis data
-    const hasActualData = analysis.competitor_reel_analysis || analysis.user_adaptation_proposal;
-    const isStatusCompleted = analysis.analysis_status === 'completed';
+    // CRITICAL FIX: Check if there's any actual analysis data, regardless of status
+    const hasAnalysisData = (
+      (analysis.competitor_reel_analysis && 
+       analysis.competitor_reel_analysis !== null && 
+       analysis.competitor_reel_analysis !== '' &&
+       Object.keys(analysis.competitor_reel_analysis).length > 0) ||
+      (analysis.user_adaptation_proposal && 
+       analysis.user_adaptation_proposal !== null && 
+       analysis.user_adaptation_proposal !== '' &&
+       Object.keys(analysis.user_adaptation_proposal).length > 0)
+    );
     
-    if (hasActualData || isStatusCompleted) {
-      console.log('Analysis is completed');
+    console.log('Has actual analysis data:', hasAnalysisData);
+    
+    // If there's actual data, it's completed regardless of status field
+    if (hasAnalysisData) {
+      console.log('Analysis has data - returning completed');
       return 'completed';
     }
     
-    // Check if it's pending/loading
+    // If no data but status is pending, it's loading
     if (analysis.analysis_status === 'pending') {
-      console.log('Analysis is pending/loading');
+      console.log('Status is pending - returning loading');
       return 'loading';
     }
     
-    console.log('Analysis status unclear, defaulting to idle');
+    // Default to idle
+    console.log('No data and status not pending - returning idle');
     return 'idle';
   };
 
