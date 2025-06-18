@@ -154,13 +154,13 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
       if (error) throw error;
 
       if (data) {
-        // Parse shots safely
+        // Parse shots safely - fix the type conversion issue
         let parsedShots: SimpleShot[] = [];
         try {
-          if (data.shots && typeof data.shots === 'string') {
-            parsedShots = JSON.parse(data.shots);
-          } else if (Array.isArray(data.shots)) {
-            parsedShots = data.shots as SimpleShot[];
+          if (data.shots) {
+            // Convert from unknown to string first, then parse
+            const shotsString = typeof data.shots === 'string' ? data.shots : JSON.stringify(data.shots);
+            parsedShots = JSON.parse(shotsString) as SimpleShot[];
           }
         } catch (parseError) {
           console.warn('Error parsing shots JSON:', parseError);
