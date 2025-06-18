@@ -39,11 +39,12 @@ serve(async (req) => {
       competitor_reel_analysis: competitor_reel_analysis || null,
       user_adaptation_proposal: user_adaptation_proposal || null,
       overall_score: overall_score,
-      analysis_status: 'completed', // ALWAYS set to completed when data arrives
+      analysis_status: 'completed', // FORCE completed status when data arrives
       updated_at: new Date().toISOString()
     }
 
     console.log('Updating competitor analysis with data:', updateData)
+    console.log('Setting analysis_status to completed for video_id:', video_id)
 
     // Update the competitor_analysis record with the new structured data
     const { data, error } = await supabaseClient
@@ -59,13 +60,36 @@ serve(async (req) => {
 
     if (!data || data.length === 0) {
       console.warn('No competitor analysis record found for video_id:', video_id)
-      throw new Error('No competitor analysis record found')
+      
+      // Try to create a new record if none exists
+      const { data: newData, error: insertError } = await supabaseClient
+        .from('competitor_analysis')
+        .insert({
+          competitor_video_id: video_id,
+          ...updateData
+        })
+        .select()
+
+      if (insertError) {
+        console.error('Error creating competitor analysis:', insertError)
+        throw insertError
+      }
+
+      console.log('Created new competitor analysis record:', newData[0].id, 'with status:', newData[0].analysis_status)
+      
+      return new Response(
+        JSON.stringify({ success: true, analysis_id: newData[0].id, created: true }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
     }
 
     console.log('Successfully updated competitor analysis:', data[0].id, 'with status:', data[0].analysis_status)
 
     return new Response(
-      JSON.stringify({ success: true, analysis_id: data[0].id }),
+      JSON.stringify({ success: true, analysis_id: data[0].id, updated: true }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
