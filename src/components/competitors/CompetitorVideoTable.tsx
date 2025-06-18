@@ -124,19 +124,26 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     return url;
   };
 
+  // Fixed analysis status detection
   const getAnalysisStatus = (video: CompetitorVideo) => {
-    // Check if there's an analysis with completed status
-    const hasCompletedAnalysis = video.competitor_analysis && 
-      video.competitor_analysis.length > 0 && 
-      video.competitor_analysis[0].analysis_status === 'completed';
+    console.log('Getting analysis status for video:', video.id, video.competitor_analysis);
     
-    // Check if there's an analysis with pending status
+    // Check if there's analysis data (the key fix)
+    const hasAnalysisData = video.competitor_analysis && 
+      video.competitor_analysis.length > 0 && 
+      (video.competitor_analysis[0].competitor_reel_analysis || video.competitor_analysis[0].user_adaptation_proposal);
+    
+    console.log('Has analysis data:', hasAnalysisData);
+    
+    if (hasAnalysisData) return 'completed';
+    
+    // Check for pending analysis or local loading status
     const hasPendingAnalysis = video.competitor_analysis && 
       video.competitor_analysis.length > 0 && 
       video.competitor_analysis[0].analysis_status === 'pending';
 
-    if (hasCompletedAnalysis) return 'completed';
     if (hasPendingAnalysis || video.analysisStatus === 'loading') return 'loading';
+    
     return 'idle';
   };
 

@@ -182,13 +182,34 @@ export const useCompetitorScraping = () => {
     }
   };
 
-  // Helper function to determine video analysis status
+  // Updated helper function to determine video analysis status
   const getVideoAnalysisStatus = (analysisArray: any[]): 'idle' | 'loading' | 'completed' | 'error' => {
-    if (!analysisArray || analysisArray.length === 0) return 'idle';
+    console.log('Getting analysis status for analysis array:', analysisArray);
+    
+    if (!analysisArray || analysisArray.length === 0) {
+      console.log('No analysis found, returning idle');
+      return 'idle';
+    }
     
     const analysis = analysisArray[0];
-    if (analysis.analysis_status === 'completed') return 'completed';
-    if (analysis.analysis_status === 'pending') return 'loading';
+    console.log('Analysis object:', analysis);
+    
+    // Check if there's actual analysis data (this is the key fix)
+    const hasAnalysisData = analysis.competitor_reel_analysis || analysis.user_adaptation_proposal;
+    console.log('Has analysis data:', hasAnalysisData);
+    
+    if (hasAnalysisData) {
+      console.log('Analysis data found, returning completed');
+      return 'completed';
+    }
+    
+    // If no analysis data, check the status field
+    if (analysis.analysis_status === 'pending') {
+      console.log('Analysis status is pending, returning loading');
+      return 'loading';
+    }
+    
+    console.log('No analysis data and not pending, returning idle');
     return 'idle';
   };
 

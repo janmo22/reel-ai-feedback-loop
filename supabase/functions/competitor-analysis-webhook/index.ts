@@ -34,13 +34,14 @@ serve(async (req) => {
     }
 
     // Update the competitor_analysis record with the new structured data
+    // Also set analysis_status to 'completed' when data arrives
     const { data, error } = await supabaseClient
       .from('competitor_analysis')
       .update({
         competitor_reel_analysis: competitor_reel_analysis || null,
         user_adaptation_proposal: user_adaptation_proposal || null,
         overall_score: overall_score,
-        analysis_status: 'completed',
+        analysis_status: 'completed', // Always set to completed when data arrives
         updated_at: new Date().toISOString()
       })
       .eq('competitor_video_id', video_id)

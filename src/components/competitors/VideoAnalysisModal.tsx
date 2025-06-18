@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -32,9 +31,20 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
 
   useEffect(() => {
     if (video && isOpen) {
-      // Check if video already has analysis
+      console.log('Checking existing analysis for video:', video.id, video.competitor_analysis);
+      
+      // Check if video already has analysis with actual data
       if (video.competitor_analysis && video.competitor_analysis.length > 0) {
-        setExistingAnalysis(video.competitor_analysis[0]);
+        const analysis = video.competitor_analysis[0];
+        // Check if there's actual analysis data
+        const hasAnalysisData = analysis.competitor_reel_analysis || analysis.user_adaptation_proposal;
+        console.log('Has analysis data:', hasAnalysisData);
+        
+        if (hasAnalysisData) {
+          setExistingAnalysis(analysis);
+        } else {
+          setExistingAnalysis(null);
+        }
       } else {
         setExistingAnalysis(null);
       }
