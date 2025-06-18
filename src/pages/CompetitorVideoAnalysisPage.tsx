@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, ExternalLink, Eye, MessageCircle, Hash, Clock, BarChart3, Lightbulb, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Eye, MessageCircle, Hash, Clock, BarChart3, Lightbulb, AlertCircle, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CompetitorAnalysisResults from '@/components/competitors/CompetitorAnalysisResults';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -130,14 +130,12 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     );
   }
 
-  // MEJORADA: Detección de análisis completado más robusta
   const analysis = videoData.competitor_analysis && videoData.competitor_analysis.length > 0 
     ? videoData.competitor_analysis[0]
     : null;
   
   console.log('📊 PAGE: Using analysis for video ID:', videoId, analysis);
   
-  // ... keep existing code (formatNumber, formatDuration, engagementRate functions)
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
@@ -155,7 +153,6 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     ? ((videoData.likes_count + videoData.comments_count) / videoData.views_count * 100).toFixed(2)
     : '0';
 
-  // MEJORADA: Detección más precisa del estado de análisis
   const isAnalysisComplete = analysis && (
     analysis.analysis_status === 'completed' ||
     (analysis.competitor_reel_analysis && 
@@ -222,19 +219,17 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
             {/* Métricas del video */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
               <div className="text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <Eye className="h-5 w-5 text-gray-600 mx-auto mb-2" />
+                <Eye className="h-5 w-5 text-blue-500 mx-auto mb-2" />
                 <div className="font-semibold text-gray-900">{formatNumber(videoData.views_count)}</div>
                 <div className="text-xs text-gray-600">Views</div>
               </div>
               <div className="text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <div className="w-5 h-5 mx-auto mb-2 flex items-center justify-center">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                </div>
+                <Heart className="h-5 w-5 text-red-500 mx-auto mb-2 fill-current" />
                 <div className="font-semibold text-gray-900">{formatNumber(videoData.likes_count)}</div>
                 <div className="text-xs text-gray-600">Likes</div>
               </div>
               <div className="text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <MessageCircle className="h-5 w-5 text-gray-600 mx-auto mb-2" />
+                <MessageCircle className="h-5 w-5 text-green-500 mx-auto mb-2" />
                 <div className="font-semibold text-gray-900">{formatNumber(videoData.comments_count)}</div>
                 <div className="text-xs text-gray-600">Comentarios</div>
               </div>

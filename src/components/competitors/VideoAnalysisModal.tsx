@@ -33,7 +33,6 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     if (video && isOpen) {
       console.log('🔍 MODAL: Checking existing analysis for video:', video.id, video.competitor_analysis);
       
-      // MEJORADA: Verificar análisis existente con detección más robusta
       if (video.competitor_analysis && video.competitor_analysis.length > 0) {
         const analysis = video.competitor_analysis[0];
         
@@ -43,7 +42,6 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
           hasAdaptationProposal: !!(analysis.user_adaptation_proposal && Object.keys(analysis.user_adaptation_proposal).length > 0)
         });
         
-        // Verificar si hay datos reales de análisis o status completed
         const hasAnalysisData = (
           analysis.analysis_status === 'completed' ||
           (analysis.competitor_reel_analysis && 
@@ -74,7 +72,6 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
 
     setIsAnalyzing(true);
     
-    // Notify parent component that analysis has started
     if (onAnalysisStarted) {
       onAnalysisStarted(video.id);
     }
@@ -132,11 +129,9 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Function to handle image URLs, especially from Apify
   const getImageUrl = (url: string | null) => {
     if (!url) return null;
     
-    // Handle Apify URLs by decoding the base64 part
     if (url.includes('images.apifyusercontent.com')) {
       try {
         const parts = url.split('/');
@@ -203,7 +198,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
                   <div className="text-xs text-blue-700 font-medium">Vistas</div>
                 </div>
                 <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border border-red-200 text-center">
-                  <Heart className="h-6 w-6 text-red-600 mx-auto mb-2" />
+                  <Heart className="h-6 w-6 text-red-600 mx-auto mb-2 fill-current" />
                   <div className="text-2xl font-bold text-red-900">{formatNumber(video.likes_count)}</div>
                   <div className="text-xs text-red-700 font-medium">Likes</div>
                 </div>
@@ -253,7 +248,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
             </div>
           </div>
 
-          {/* MEJORADO: Analysis Status Section con detección más robusta */}
+          {/* Analysis Status Section */}
           <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 rounded-xl border border-gray-200">
             {existingAnalysis ? (
               <div className="text-center space-y-4">
