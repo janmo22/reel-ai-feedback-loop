@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -68,6 +68,77 @@ export const useCompetitorScraping = () => {
   const [competitors, setCompetitors] = useState<CompetitorData[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Real-time subscription to competitor_analysis table changes
+  useEffect(() => {
+    if (!user) return;
+
+    console.log('Setting up real-time subscription for competitor analysis updates...');
+    
+    const channel = supabase
+      .channel('competitor-analysis-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'competitor_analysis'
+        },
+        (payload) => {
+          console.log('Real-time update received for competitor analysis:', payload);
+          
+          // When an analysis is updated, refresh the specific competitor's data
+          if (payload.new && payload.new.competitor_video_id) {
+            refreshAnalysisForVideo(payload.new.competitor_video_id);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up real-time subscription...');
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  // Function to refresh analysis data for a specific video
+  const refreshAnalysisForVideo = async (videoId: string) => {
+    try {
+      console.log('Refreshing analysis for video:', videoId);
+      
+      // Fetch updated analysis data for the specific video
+      const { data: analysisData, error } = await supabase
+        .from('competitor_analysis')
+        .select('*')
+        .eq('competitor_video_id', videoId);
+
+      if (error) {
+        console.error('Error fetching updated analysis:', error);
+        return;
+      }
+
+      // Update the local state with fresh analysis data
+      setCompetitors(prev => 
+        prev.map(competitor => ({
+          ...competitor,
+          competitor_videos: competitor.competitor_videos.map(video => {
+            if (video.id === videoId) {
+              const updatedVideo = {
+                ...video,
+                competitor_analysis: analysisData || [],
+                analysisStatus: getVideoAnalysisStatus(analysisData || [])
+              };
+              console.log('Updated video analysis status:', video.id, updatedVideo.analysisStatus);
+              return updatedVideo;
+            }
+            return video;
+          })
+        }))
+      );
+    } catch (error) {
+      console.error('Error refreshing analysis for video:', error);
+    }
+  };
 
   // SIMPLIFIED: Check if analysis is completed by looking at status OR data content
   const getVideoAnalysisStatus = (analysisArray: any[]): 'idle' | 'loading' | 'completed' | 'error' => {

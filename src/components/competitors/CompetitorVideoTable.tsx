@@ -126,7 +126,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     return url;
   };
 
-  // SIMPLIFIED: Analysis status detection that matches the hook exactly
+  // ENHANCED: More robust analysis status detection
   const getAnalysisStatus = (video: CompetitorVideo) => {
     console.log('Table: Getting analysis status for video:', video.id, video.competitor_analysis);
     
@@ -137,14 +137,15 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     
     const analysis = video.competitor_analysis[0];
     console.log('Table: Analysis object:', analysis);
+    console.log('Table: Analysis status field:', analysis.analysis_status);
     
-    // SIMPLIFIED: If analysis_status is 'completed', trust it
+    // PRIORITY 1: Check if analysis_status is explicitly 'completed'
     if (analysis.analysis_status === 'completed') {
       console.log('Table: Analysis status is completed - returning completed');
       return 'completed';
     }
     
-    // Also check for actual data content
+    // PRIORITY 2: Check for actual data content regardless of status
     const hasReelAnalysis = analysis.competitor_reel_analysis && 
                            typeof analysis.competitor_reel_analysis === 'object' &&
                            Object.keys(analysis.competitor_reel_analysis).length > 0;
@@ -156,13 +157,13 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     console.log('Table: Has reel analysis:', hasReelAnalysis);
     console.log('Table: Has adaptation proposal:', hasAdaptationProposal);
     
-    // If there's actual data, it's completed regardless of status
+    // If there's actual data, it's completed regardless of status field
     if (hasReelAnalysis || hasAdaptationProposal) {
       console.log('Table: Has actual analysis data - returning completed');
       return 'completed';
     }
     
-    // Check for local loading status first, then database status
+    // PRIORITY 3: Check for loading/pending status
     if (video.analysisStatus === 'loading' || analysis.analysis_status === 'pending') {
       console.log('Table: Analysis is loading/pending');
       return 'loading';
@@ -333,7 +334,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                     )}
                   </TableCell>
                   
-                  {/* Status cell with correct analysis detection */}
+                  {/* Enhanced status cell with better detection and clickable completed state */}
                   <TableCell className="p-3">
                     {analysisStatus === 'completed' ? (
                       <Badge 
