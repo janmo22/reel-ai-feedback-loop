@@ -50,6 +50,8 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
       if (!videoId) return;
 
       try {
+        console.log('Fetching video data for ID:', videoId);
+        
         const { data, error } = await supabase
           .from('competitor_videos')
           .select(`
@@ -74,6 +76,9 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
 
         if (error) throw error;
 
+        console.log('Video data received:', data);
+        console.log('Analysis data:', data.competitor_analysis);
+
         setVideoData({
           ...data,
           competitor: data.competitors,
@@ -92,7 +97,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="space-y-8">
             <Skeleton className="h-8 w-64" />
@@ -108,7 +113,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
 
   if (error || !videoData) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <Button
             variant="ghost"
@@ -128,7 +133,10 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     );
   }
 
-  const analysis = videoData.competitor_analysis[0];
+  // Find the most recent analysis for this specific video
+  const analysis = videoData.competitor_analysis && videoData.competitor_analysis.length > 0 
+    ? videoData.competitor_analysis[0] 
+    : null;
   
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -147,28 +155,32 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     ? ((videoData.likes_count + videoData.comments_count) / videoData.views_count * 100).toFixed(2)
     : '0';
 
-  // Fix: Check for the new analysis structure
+  // Check for the new analysis structure
   const isAnalysisComplete = analysis && 
     analysis.analysis_status === 'completed' && 
     (analysis.competitor_reel_analysis || analysis.user_adaptation_proposal);
 
   const isAnalysisPending = analysis && analysis.analysis_status === 'pending';
 
+  console.log('Analysis status:', analysis?.analysis_status);
+  console.log('Has reel analysis:', !!analysis?.competitor_reel_analysis);
+  console.log('Has adaptation proposal:', !!analysis?.user_adaptation_proposal);
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
           <Button
             variant="ghost"
             onClick={() => navigate('/competitors')}
-            className="mb-6"
+            className="mb-6 hover:bg-gray-100"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a competidores
           </Button>
           
-          <div className="border rounded-lg p-6 mb-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -177,66 +189,72 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
                 <p className="text-gray-600">
                   {videoData.competitor.display_name}
                 </p>
+                <div className="mt-2 text-sm text-gray-500">
+                  Video ID: {videoData.id}
+                </div>
               </div>
               <Button
                 onClick={() => window.open(videoData.video_url, '_blank')}
                 variant="outline"
                 size="sm"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Ver original
               </Button>
             </div>
 
-            {/* Métricas del video - diseño minimalista */}
+            {/* Métricas del video */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
-              <div className="text-center p-4 border rounded">
+              <div className="text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <Eye className="h-5 w-5 text-gray-600 mx-auto mb-2" />
                 <div className="font-semibold text-gray-900">{formatNumber(videoData.views_count)}</div>
                 <div className="text-xs text-gray-600">Views</div>
               </div>
-              <div className="text-center p-4 border rounded">
-                <MessageCircle className="h-5 w-5 text-gray-600 mx-auto mb-2" />
+              <div className="text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <div className="w-5 h-5 mx-auto mb-2 flex items-center justify-center">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                </div>
                 <div className="font-semibold text-gray-900">{formatNumber(videoData.likes_count)}</div>
                 <div className="text-xs text-gray-600">Likes</div>
               </div>
-              <div className="text-center p-4 border rounded">
+              <div className="text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <MessageCircle className="h-5 w-5 text-gray-600 mx-auto mb-2" />
                 <div className="font-semibold text-gray-900">{formatNumber(videoData.comments_count)}</div>
                 <div className="text-xs text-gray-600">Comentarios</div>
               </div>
-              <div className="text-center p-4 border rounded">
+              <div className="text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <BarChart3 className="h-5 w-5 text-gray-600 mx-auto mb-2" />
                 <div className="font-semibold text-gray-900">{engagementRate}%</div>
                 <div className="text-xs text-gray-600">Engagement</div>
               </div>
-              <div className="text-center p-4 border rounded">
+              <div className="text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <Clock className="h-5 w-5 text-gray-600 mx-auto mb-2" />
                 <div className="font-semibold text-gray-900">{formatDuration(videoData.duration_seconds)}</div>
                 <div className="text-xs text-gray-600">Duración</div>
               </div>
-              <div className="text-center p-4 border rounded">
+              <div className="text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <Hash className="h-5 w-5 text-gray-600 mx-auto mb-2" />
                 <div className="font-semibold text-gray-900">{videoData.hashtags_count}</div>
                 <div className="text-xs text-gray-600">Hashtags</div>
               </div>
             </div>
 
-            {/* Status del análisis - minimalista */}
-            <div className="pt-4 border-t">
+            {/* Status del análisis */}
+            <div className="pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-gray-600">Estado del análisis:</span>
                   {isAnalysisComplete ? (
-                    <Badge variant="outline" className="border-gray-300 text-gray-700">
+                    <Badge className="bg-green-50 text-green-700 border-green-200">
                       Completado
                     </Badge>
                   ) : isAnalysisPending ? (
-                    <Badge variant="outline" className="border-gray-300 text-gray-700">
+                    <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
                       Procesando...
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="border-gray-300 text-gray-700">
+                    <Badge className="bg-gray-50 text-gray-700 border-gray-200">
                       Sin análisis
                     </Badge>
                   )}
@@ -244,8 +262,8 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
                 {analysis?.overall_score > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">Puntuación:</span>
-                    <div className="w-8 h-8 border rounded-full flex items-center justify-center">
-                      <span className="text-sm font-semibold">{analysis.overall_score}</span>
+                    <div className="w-8 h-8 bg-blue-50 border border-blue-200 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-semibold text-blue-700">{analysis.overall_score}</span>
                     </div>
                   </div>
                 )}
@@ -264,9 +282,9 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
             }} 
           />
         ) : isAnalysisPending ? (
-          <div className="border rounded-lg p-8">
+          <div className="bg-white border border-gray-200 rounded-lg p-8">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-300 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Analizando video...</h3>
               <p className="text-gray-600">
                 El análisis está en proceso. Esto puede tomar unos minutos.
@@ -274,7 +292,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="border rounded-lg p-8">
+          <div className="bg-white border border-gray-200 rounded-lg p-8">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Sin análisis disponible</h3>
@@ -285,7 +303,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
 
         {/* Caption del video */}
         {videoData.caption && (
-          <div className="mt-6 border rounded-lg p-6">
+          <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
             <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
               Caption del video

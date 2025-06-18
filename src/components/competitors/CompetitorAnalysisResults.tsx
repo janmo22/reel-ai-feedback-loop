@@ -26,10 +26,16 @@ interface CompetitorAnalysisResultsProps {
 }
 
 const CompetitorAnalysisResults: React.FC<CompetitorAnalysisResultsProps> = ({ analysisData }) => {
+  console.log('CompetitorAnalysisResults received data:', analysisData);
+  
   if (!analysisData) return null;
 
   // Check if we have the new structured data
   const hasStructuredData = analysisData.competitor_reel_analysis || analysisData.user_adaptation_proposal;
+  
+  console.log('Has structured data:', hasStructuredData);
+  console.log('Reel analysis:', analysisData.competitor_reel_analysis);
+  console.log('User adaptation:', analysisData.user_adaptation_proposal);
   
   if (!hasStructuredData) {
     // Fallback to old format
@@ -42,12 +48,18 @@ const CompetitorAnalysisResults: React.FC<CompetitorAnalysisResultsProps> = ({ a
   return (
     <div className="space-y-6">
       <Tabs defaultValue="viral-analysis" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 border rounded-lg bg-white">
-          <TabsTrigger value="viral-analysis" className="flex items-center gap-2 data-[state=active]:bg-gray-100">
+        <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 rounded-lg">
+          <TabsTrigger 
+            value="viral-analysis" 
+            className="flex items-center gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200"
+          >
             <BarChart3 className="h-4 w-4" />
             Análisis Viral
           </TabsTrigger>
-          <TabsTrigger value="user-adaptation" className="flex items-center gap-2 data-[state=active]:bg-gray-100">
+          <TabsTrigger 
+            value="user-adaptation" 
+            className="flex items-center gap-2 data-[state=active]:bg-green-50 data-[state=active]:text-green-700 data-[state=active]:border-green-200"
+          >
             <Lightbulb className="h-4 w-4" />
             Tu Adaptación
           </TabsTrigger>
@@ -75,7 +87,7 @@ const ViralAnalysisDisplay: React.FC<{ data: any }> = ({ data }) => {
   return (
     <div className="space-y-6">
       {/* Header with title and competitor context */}
-      <div className="border rounded-lg p-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-4">{data.analysisTitle}</h2>
         
         {data.competitorContext && (
@@ -99,43 +111,46 @@ const ViralAnalysisDisplay: React.FC<{ data: any }> = ({ data }) => {
 
       {/* Performance metrics */}
       {data.reelSnapshot && (
-        <Card className="border">
-          <CardHeader>
+        <Card className="bg-white border border-gray-200">
+          <CardHeader className="border-b border-gray-100">
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
+              <BarChart3 className="h-5 w-5 text-blue-600" />
               Métricas de Rendimiento
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div className="text-center p-3 border rounded">
+              <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
                 <Eye className="h-5 w-5 text-gray-600 mx-auto mb-1" />
                 <div className="font-bold text-gray-900">{formatNumber(data.reelSnapshot.views)}</div>
                 <div className="text-xs text-gray-700">Views</div>
               </div>
-              <div className="text-center p-3 border rounded">
+              <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="w-5 h-5 mx-auto mb-1 flex items-center justify-center">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                </div>
                 <div className="font-bold text-gray-900">{formatNumber(data.reelSnapshot.likes)}</div>
                 <div className="text-xs text-gray-700">Likes</div>
               </div>
-              <div className="text-center p-3 border rounded">
-                <MessageCircle className="h-5 w-5 text-gray-600 mx-auto mb-1" />
+              <div className="text-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <MessageCircle className="h-5 w-5 text-blue-600 mx-auto mb-1" />
                 <div className="font-bold text-gray-900">{formatNumber(data.reelSnapshot.comments)}</div>
                 <div className="text-xs text-gray-700">Comentarios</div>
               </div>
-              <div className="text-center p-3 border rounded">
-                <TrendingUp className="h-5 w-5 text-gray-600 mx-auto mb-1" />
+              <div className="text-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-green-600 mx-auto mb-1" />
                 <div className="font-bold text-gray-900">{data.reelSnapshot.estimatedEngagementRate}</div>
                 <div className="text-xs text-gray-700">Engagement</div>
               </div>
             </div>
             
-            <div className="p-3 border rounded">
+            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3">
               <h4 className="font-medium text-gray-900 mb-2">Caption</h4>
               <p className="text-sm text-gray-700 whitespace-pre-wrap">{data.reelSnapshot.caption}</p>
             </div>
             
-            <div className="mt-3 p-3 border rounded">
-              <p className="text-sm text-gray-700">{data.reelSnapshot.performanceRelativeToFollowers}</p>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">{data.reelSnapshot.performanceRelativeToFollowers}</p>
             </div>
           </CardContent>
         </Card>
@@ -143,14 +158,14 @@ const ViralAnalysisDisplay: React.FC<{ data: any }> = ({ data }) => {
 
       {/* Executive Summary */}
       {data.executiveSummaryOfCompetitorReel && (
-        <Card className="border">
-          <CardHeader>
+        <Card className="bg-white border border-gray-200">
+          <CardHeader className="border-b border-gray-100">
             <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
+              <Sparkles className="h-5 w-5 text-purple-600" />
               Resumen Ejecutivo
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <p className="text-gray-700 leading-relaxed">{data.executiveSummaryOfCompetitorReel}</p>
           </CardContent>
         </Card>
@@ -256,29 +271,29 @@ const UserAdaptationDisplay: React.FC<{ data: any }> = ({ data }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="border rounded-lg p-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-xl font-bold text-gray-900 mb-2">{data.adaptationTitle}</h2>
         <p className="text-gray-700">{data.introduction}</p>
       </div>
 
       {/* Alignment Analysis */}
       {data.alignmentWithUserProfile && (
-        <Card className="border">
-          <CardHeader>
+        <Card className="bg-white border border-gray-200">
+          <CardHeader className="border-b border-gray-100">
             <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
+              <Target className="h-5 w-5 text-green-600" />
               Alineación con tu Perfil
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {data.alignmentWithUserProfile.audienceRelevance && (
-                <div className="p-4 border rounded">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                   <h4 className="font-medium mb-2 flex items-center gap-2">
                     {data.alignmentWithUserProfile.audienceRelevance.isRelevant ? (
-                      <CheckCircle className="h-4 w-4 text-gray-600" />
+                      <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
-                      <AlertCircle className="h-4 w-4 text-gray-600" />
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
                     )}
                     Relevancia de Audiencia
                   </h4>
@@ -287,12 +302,12 @@ const UserAdaptationDisplay: React.FC<{ data: any }> = ({ data }) => {
               )}
               
               {data.alignmentWithUserProfile.brandFit && (
-                <div className="p-4 border rounded">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                   <h4 className="font-medium mb-2 flex items-center gap-2">
                     {data.alignmentWithUserProfile.brandFit.isAligned ? (
-                      <CheckCircle className="h-4 w-4 text-gray-600" />
+                      <CheckCircle className="h-4 w-4 text-green-600" />
                     ) : (
-                      <AlertCircle className="h-4 w-4 text-gray-600" />
+                      <AlertCircle className="h-4 w-4 text-yellow-600" />
                     )}
                     Ajuste de Marca
                   </h4>
@@ -302,9 +317,9 @@ const UserAdaptationDisplay: React.FC<{ data: any }> = ({ data }) => {
             </div>
             
             {data.alignmentWithUserProfile.nicheOpportunity && (
-              <div className="p-4 border rounded">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Oportunidad de Nicho</h4>
-                <p className="text-gray-700 text-sm">{data.alignmentWithUserProfile.nicheOpportunity}</p>
+                <p className="text-blue-800 text-sm">{data.alignmentWithUserProfile.nicheOpportunity}</p>
               </div>
             )}
           </CardContent>
@@ -353,25 +368,25 @@ const UserAdaptationDisplay: React.FC<{ data: any }> = ({ data }) => {
 
       {/* Content Blueprint */}
       {data.contentCreationBlueprint && (
-        <Card className="border">
-          <CardHeader>
+        <Card className="bg-white border border-gray-200">
+          <CardHeader className="border-b border-gray-100">
             <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5" />
+              <Lightbulb className="h-5 w-5 text-yellow-600" />
               Blueprint de Contenido
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 border rounded">
+          <CardContent className="pt-6 space-y-4">
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <h3 className="font-bold text-gray-900 text-lg mb-2">{data.contentCreationBlueprint.conceptTitleForUserReel}</h3>
               <p className="text-gray-700 mb-3">{data.contentCreationBlueprint.briefDescription}</p>
-              <div className="p-3 border rounded">
+              <div className="p-3 bg-white border border-yellow-300 rounded">
                 <h4 className="font-medium text-gray-900 mb-1">Mensaje Clave:</h4>
                 <p className="text-gray-700 text-sm italic">"{data.contentCreationBlueprint.keyMessageForUser}"</p>
               </div>
             </div>
             
             {data.contentCreationBlueprint.suggestedElements && (
-              <div className="p-4 border rounded">
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Elementos Sugeridos:</h4>
                 <p className="text-gray-700 text-sm">{data.contentCreationBlueprint.suggestedElements}</p>
               </div>
@@ -382,23 +397,23 @@ const UserAdaptationDisplay: React.FC<{ data: any }> = ({ data }) => {
 
       {/* SEO Recommendations */}
       {data.seoAndDiscoverabilityForUserContent && (
-        <Card className="border">
-          <CardHeader>
+        <Card className="bg-white border border-gray-200">
+          <CardHeader className="border-b border-gray-100">
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
               SEO y Descubribilidad
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6 space-y-4">
             {data.seoAndDiscoverabilityForUserContent.suggestedOptimizedCaption && (
-              <div className="p-4 border rounded">
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Caption Optimizada:</h4>
                 <p className="text-gray-700 text-sm">{data.seoAndDiscoverabilityForUserContent.suggestedOptimizedCaption}</p>
               </div>
             )}
             
             {data.seoAndDiscoverabilityForUserContent.suggestedOptimizedOnScreenText && (
-              <div className="p-4 border rounded">
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Texto en Pantalla:</h4>
                 <p className="text-gray-700 text-sm">{data.seoAndDiscoverabilityForUserContent.suggestedOptimizedOnScreenText}</p>
               </div>
@@ -409,18 +424,18 @@ const UserAdaptationDisplay: React.FC<{ data: any }> = ({ data }) => {
 
       {/* Final Recommendations */}
       {data.finalUserRecommendations && (
-        <Card className="border">
-          <CardHeader>
+        <Card className="bg-white border border-gray-200">
+          <CardHeader className="border-b border-gray-100">
             <CardTitle className="flex items-center gap-2">
-              <Star className="h-5 w-5" />
+              <Star className="h-5 w-5 text-orange-500" />
               Recomendaciones Finales
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6 space-y-4">
             {data.finalUserRecommendations.overallPotentialScoreOfAdaptation && (
-              <div className="text-center p-6 border rounded-lg">
-                <div className="w-20 h-20 mx-auto mb-3 border rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold">{data.finalUserRecommendations.overallPotentialScoreOfAdaptation}</span>
+              <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-lg">
+                <div className="w-20 h-20 mx-auto mb-3 bg-white border-2 border-orange-300 rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-orange-600">{data.finalUserRecommendations.overallPotentialScoreOfAdaptation}</span>
                 </div>
                 <h3 className="font-medium text-gray-900">Potencial de Adaptación</h3>
               </div>
@@ -430,20 +445,20 @@ const UserAdaptationDisplay: React.FC<{ data: any }> = ({ data }) => {
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-900">Top 3 Acciones Clave:</h4>
                 {data.finalUserRecommendations.top3ActionableTakeaways.map((takeaway: string, index: number) => (
-                  <div key={index} className="flex items-start gap-3 p-3 border rounded">
-                    <div className="w-6 h-6 border rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
+                  <div key={index} className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="w-6 h-6 bg-green-100 border border-green-300 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
                       {index + 1}
                     </div>
-                    <span className="text-gray-800 text-sm">{takeaway}</span>
+                    <span className="text-green-800 text-sm">{takeaway}</span>
                   </div>
                 ))}
               </div>
             )}
             
             {data.finalUserRecommendations.finalWordOfAdvice && (
-              <div className="p-4 border rounded">
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">Consejo Final:</h4>
-                <p className="text-gray-700 text-sm italic">"{data.finalUserRecommendations.finalWordOfAdvice}"</p>
+                <p className="text-purple-800 text-sm italic">"{data.finalUserRecommendations.finalWordOfAdvice}"</p>
               </div>
             )}
           </CardContent>
@@ -612,47 +627,15 @@ const StrategyAnalysis: React.FC<{ strategy: any }> = ({ strategy }) => (
 
 // Legacy component for backward compatibility
 const LegacyAnalysisDisplay: React.FC<{ analysisData: any }> = ({ analysisData }) => {
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return 'text-gray-700 border-gray-200';
-    if (score >= 6) return 'text-gray-700 border-gray-200';
-    return 'text-gray-700 border-gray-200';
-  };
-
-  const renderSection = (title: string, icon: React.ReactNode, content: React.ReactNode) => (
-    <div className="mb-8">
-      <div className="flex items-center gap-3 mb-4 pb-2 border-b border-gray-100">
-        <div className="text-gray-700">{icon}</div>
-        <h2 className="text-lg font-medium text-gray-900">{title}</h2>
-      </div>
-      <div className="space-y-4">{content}</div>
-    </div>
-  );
-
   return (
     <div className="space-y-8">
-      {/* Legacy format display */}
-      {analysisData.executiveSummary && (
-        <div className="p-6 border rounded-lg">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="h-5 w-5 text-gray-600" />
-            <h2 className="text-lg font-medium text-gray-900">Resumen Ejecutivo</h2>
-          </div>
-          <p className="text-gray-800 leading-relaxed mb-4">{analysisData.executiveSummary}</p>
-          
-          {analysisData.finalEvaluation_overallScore && (
-            <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
-              <span className="text-sm font-medium text-gray-700">Puntuación:</span>
-              <Badge className={`px-3 py-1 border ${getScoreColor(analysisData.finalEvaluation_overallScore)}`}>
-                {analysisData.finalEvaluation_overallScore}/10
-              </Badge>
-              <Progress 
-                value={analysisData.finalEvaluation_overallScore * 10} 
-                className="flex-1 h-3"
-              />
-            </div>
-          )}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="h-5 w-5 text-gray-600" />
+          <h2 className="text-lg font-medium text-gray-900">Análisis Legacy</h2>
         </div>
-      )}
+        <p className="text-gray-800">No hay datos de análisis estructurado disponibles para este video.</p>
+      </div>
     </div>
   );
 };
