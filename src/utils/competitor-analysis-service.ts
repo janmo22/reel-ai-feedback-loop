@@ -2,8 +2,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CompetitorVideo, CompetitorData } from "@/hooks/use-competitor-scraping";
 
-// Updated to use the correct Railway webhook URL for competitor analysis
-const COMPETITOR_ANALYSIS_WEBHOOK_URL = "https://primary-production-9b33.up.railway.app/webhook-test/d21a77de-3dfb-4a00-8872-1047fa550e57";
+// Updated webhook URL for competitor analysis
+const COMPETITOR_ANALYSIS_WEBHOOK_URL = "https://analizaconflow.app.n8n.cloud/webhook-test/d21a77de-3dfb-4a00-8872-1047fa550e57";
 
 export interface StartAnalysisParams {
   video: CompetitorVideo;

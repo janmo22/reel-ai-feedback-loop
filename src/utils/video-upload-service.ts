@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { VideoUploadResponse } from "@/types";
 
@@ -12,8 +11,8 @@ export interface UploadVideoParams {
   mainMessage: string;
 }
 
-// Updated webhook URL to Railway endpoint
-export const WEBHOOK_URL = "https://primary-production-9b33.up.railway.app/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
+// Updated webhook URL for creator reel analysis
+export const WEBHOOK_URL = "https://analizaconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
 /**
  * Fetch user mission data from the database

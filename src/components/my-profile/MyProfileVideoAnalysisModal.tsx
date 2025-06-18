@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -55,7 +54,8 @@ const MyProfileVideoAnalysisModal: React.FC<MyProfileVideoAnalysisModalProps> = 
     setIsAnalyzing(true);
 
     try {
-      const webhookUrl = "https://janmoliner33.app.n8n.cloud/webhook/my-profile-analysis";
+      // Updated webhook URL for my profile analysis
+      const webhookUrl = "https://analizaconflow.app.n8n.cloud/webhook-test/my-profile-analysis";
       
       const analysisData = {
         video_id: video.id,

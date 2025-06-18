@@ -42,7 +42,8 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const { user } = useAuth();
   
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
-  const WEBHOOK_URL = "https://primary-production-9b33.up.railway.app/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
+  // Updated webhook URL for creator reel analysis
+  const WEBHOOK_URL = "https://analizaconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -267,7 +268,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       formData.append("mainMessage", mainMessage);
       formData.append("videoUrl", videoUrl);
       
-      console.log("Enviando metadatos al webhook RAILWAY con URL del video:", videoUrl);
+      console.log("Enviando metadatos al webhook con URL del video:", videoUrl);
       
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
@@ -275,7 +276,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       });
       
       if (response.ok) {
-        console.log("Datos enviados correctamente al webhook de RAILWAY");
+        console.log("Datos enviados correctamente al webhook");
         
         toast({
           title: "¡Video enviado!",
