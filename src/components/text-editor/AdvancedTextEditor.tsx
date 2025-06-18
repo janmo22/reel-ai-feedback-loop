@@ -20,6 +20,7 @@ interface AdvancedTextEditorProps {
   hideEmptyShots?: boolean;
   sectionId?: string;
   showSaveButton?: boolean;
+  videoContextId?: string; // New prop for video context
 }
 
 interface HoveredSegment {
@@ -39,7 +40,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   showCreativeZone = true,
   hideEmptyShots = false,
   sectionId = 'default',
-  showSaveButton = true
+  showSaveButton = true,
+  videoContextId = 'default' // Default value for backward compatibility
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [showShotSelector, setShowShotSelector] = useState(false);
@@ -61,9 +63,9 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     addSegmentComment,
     updateSegmentComment,
     removeSegmentComment
-  } = useAdvancedEditor(content);
+  } = useAdvancedEditor(content, videoContextId); // Pass videoContextId
 
-  const { loadSection } = useSupabaseAutosave();
+  const { loadSection } = useSupabaseAutosave(videoContextId); // Pass videoContextId
 
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -73,12 +75,12 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       const savedSection = await loadSection(sectionId);
       if (savedSection) {
         updateContent(savedSection.content);
-        console.log('Sección cargada:', savedSection.title);
+        console.log('Sección cargada:', savedSection.title, 'para video context:', videoContextId);
       }
     };
 
     loadSavedSection();
-  }, [sectionId, loadSection, updateContent]);
+  }, [sectionId, loadSection, updateContent, videoContextId]);
 
   // Auto-resize textarea function
   const autoResizeTextarea = () => {

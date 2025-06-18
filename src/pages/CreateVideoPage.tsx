@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
-import NotionStyleEditor from '@/components/text-editor/NotionStyleEditor';
+import NewTextEditor from '@/components/text-editor/NewTextEditor';
 
 interface ContentSeries {
   id: string;
@@ -36,6 +35,11 @@ const CreateVideoPage: React.FC = () => {
   const [secondarySMPs, setSecondarySMPs] = useState<SMP[]>([]);
   const [selectedSeries, setSelectedSeries] = useState<string>('');
   const [scriptContent, setScriptContent] = useState('');
+
+  // Generate unique video context ID for this session
+  const videoContextId = useMemo(() => {
+    return `new-video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }, []); // Empty dependency array means this will only be generated once per component mount
 
   // Fetch content series
   const { data: contentSeries = [] } = useQuery({
@@ -132,12 +136,12 @@ const CreateVideoPage: React.FC = () => {
         description: `Tu ${isDraft ? 'borrador' : 'video'} ha sido guardado correctamente.`,
       });
 
-      // Reset form
-      setTitle('');
-      setMainSMP({ id: 'main', text: '', completed: false });
-      setSecondarySMPs([]);
-      setSelectedSeries('');
-      setScriptContent('');
+      // Reset form and navigate to a new clean page
+      // We navigate away and back to ensure a completely fresh context
+      navigate('/videos');
+      setTimeout(() => {
+        navigate('/create-video');
+      }, 100);
 
     } catch (error: any) {
       toast({
@@ -147,6 +151,8 @@ const CreateVideoPage: React.FC = () => {
       });
     }
   };
+
+  console.log('🎬 CreateVideoPage renderizado con contexto:', videoContextId);
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -287,9 +293,11 @@ const CreateVideoPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Editor de texto principal */}
-        <NotionStyleEditor
+        {/* Editor de texto principal con contexto único */}
+        <NewTextEditor
           onContentChange={setScriptContent}
+          videoContextId={videoContextId}
+          clearOnMount={true} // Always start clean for new videos
         />
 
         {/* Botones de acción */}

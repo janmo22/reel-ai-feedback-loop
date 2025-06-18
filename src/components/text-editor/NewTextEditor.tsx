@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSimpleEditor } from '@/hooks/use-simple-editor';
 import { AdvancedTextEditor } from './AdvancedTextEditor';
 import { CreativeZone } from './CreativeZone';
@@ -12,11 +12,22 @@ import { FileText, Layout, Save } from 'lucide-react';
 
 interface NewTextEditorProps {
   onContentChange?: (content: string) => void;
+  videoContextId?: string; // Optional prop, will generate one if not provided
+  clearOnMount?: boolean; // New prop to control if editor should start clean
 }
 
-const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
+const NewTextEditor: React.FC<NewTextEditorProps> = ({ 
+  onContentChange, 
+  videoContextId,
+  clearOnMount = false 
+}) => {
   const [editorMode, setEditorMode] = useState<'structured' | 'free'>('structured');
   const [freeContent, setFreeContent] = useState('');
+
+  // Generate unique video context ID if not provided
+  const contextId = useMemo(() => {
+    return videoContextId || `video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }, [videoContextId]);
 
   const {
     sections,
@@ -29,10 +40,20 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
     creativeItems,
     addCreativeItem,
     removeCreativeItem,
-    getShotsBySection
-  } = useAdvancedEditor();
+    getShotsBySection,
+    clearEditorState
+  } = useAdvancedEditor('', contextId);
 
-  const { saveState, saveAllSections } = useSupabaseAutosave();
+  const { saveState, saveAllSections } = useSupabaseAutosave(contextId);
+
+  // Clear editor state when starting a new video
+  useEffect(() => {
+    if (clearOnMount) {
+      clearEditorState();
+      setFreeContent('');
+      console.log('Editor limpiado para nuevo video con contexto:', contextId);
+    }
+  }, [clearOnMount, clearEditorState, contextId]);
 
   // Track content changes
   useEffect(() => {
@@ -89,6 +110,10 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
             <h2 className="text-xl font-semibold text-gray-900 mb-1">Estructura del Guión</h2>
             <p className="text-gray-600 text-sm">
               Elige cómo quieres organizar tu contenido
+            </p>
+            {/* Debug info - remove in production */}
+            <p className="text-xs text-gray-400 mt-1">
+              Contexto: {contextId}
             </p>
           </div>
           <div className="flex gap-2">
@@ -148,6 +173,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
               hideEmptyShots={!hasContent}
               sectionId={section.id}
               showSaveButton={false}
+              videoContextId={contextId} // Pass the video context ID
             />
           ))}
         </div>
@@ -162,6 +188,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({ onContentChange }) => {
           hideEmptyShots={!hasContent}
           sectionId="free-mode"
           showSaveButton={false}
+          videoContextId={contextId} // Pass the video context ID
         />
       )}
 

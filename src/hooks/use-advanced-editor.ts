@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 
 export interface ShotInfo {
@@ -50,7 +49,7 @@ export const PRESET_COLORS = [
   '#F97316'  // Orange
 ];
 
-export const useAdvancedEditor = (initialContent = '') => {
+export const useAdvancedEditor = (initialContent = '', videoContextId: string = 'default') => {
   const [content, setContent] = useState(initialContent);
   const [shots, setShots] = useState<Shot[]>([]);
   const [selectedText, setSelectedText] = useState('');
@@ -58,8 +57,13 @@ export const useAdvancedEditor = (initialContent = '') => {
   const [creativeItems, setCreativeItems] = useState<CreativeItem[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Autosave functionality
+  // Autosave functionality with video context
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Generate unique localStorage key for this video context
+  const getStorageKey = useCallback((suffix: string = '') => {
+    return `advancedEditor_${videoContextId}${suffix ? `_${suffix}` : ''}`;
+  }, [videoContextId]);
 
   // Initialize content from parent only once on mount or when initial content changes significantly
   useEffect(() => {
@@ -67,6 +71,13 @@ export const useAdvancedEditor = (initialContent = '') => {
       setContent(initialContent);
     }
   }, [initialContent]);
+
+  // Load saved data for this video context on mount
+  useEffect(() => {
+    if (videoContextId !== 'default') {
+      loadFromLocalStorage();
+    }
+  }, [videoContextId]);
 
   // Autosave effect
   useEffect(() => {
@@ -86,9 +97,9 @@ export const useAdvancedEditor = (initialContent = '') => {
         clearTimeout(autosaveTimeoutRef.current);
       }
     };
-  }, [content, shots, creativeItems]);
+  }, [content, shots, creativeItems, videoContextId]);
 
-  // Save to localStorage
+  // Save to localStorage with video context
   const saveToLocalStorage = useCallback(() => {
     try {
       const editorState = {
@@ -97,34 +108,47 @@ export const useAdvancedEditor = (initialContent = '') => {
         creativeItems,
         timestamp: Date.now()
       };
-      localStorage.setItem('advancedEditor_autosave', JSON.stringify(editorState));
-      console.log('Autoguardado realizado');
+      localStorage.setItem(getStorageKey('autosave'), JSON.stringify(editorState));
+      console.log('Autoguardado realizado para video context:', videoContextId);
     } catch (error) {
       console.error('Error en autoguardado:', error);
     }
-  }, [content, shots, creativeItems]);
+  }, [content, shots, creativeItems, getStorageKey, videoContextId]);
 
-  // Load from localStorage
+  // Load from localStorage with video context
   const loadFromLocalStorage = useCallback(() => {
     try {
-      const saved = localStorage.getItem('advancedEditor_autosave');
+      const saved = localStorage.getItem(getStorageKey('autosave'));
       if (saved) {
         const editorState = JSON.parse(saved);
         setContent(editorState.content || '');
         setShots(editorState.shots || []);
         setCreativeItems(editorState.creativeItems || []);
+        console.log('Autoguardado cargado para video context:', videoContextId);
         return true;
       }
     } catch (error) {
       console.error('Error cargando autoguardado:', error);
     }
     return false;
-  }, []);
+  }, [getStorageKey, videoContextId]);
 
-  // Clear autosave
+  // Clear autosave for this video context
   const clearAutosave = useCallback(() => {
-    localStorage.removeItem('advancedEditor_autosave');
-  }, []);
+    localStorage.removeItem(getStorageKey('autosave'));
+    console.log('Autoguardado limpiado para video context:', videoContextId);
+  }, [getStorageKey, videoContextId]);
+
+  // Clear editor state (for new videos)
+  const clearEditorState = useCallback(() => {
+    setContent('');
+    setShots([]);
+    setCreativeItems([]);
+    setSelectedText('');
+    setSelectionRange(null);
+    clearAutosave();
+    console.log('Estado del editor limpiado para nuevo video');
+  }, [clearAutosave]);
 
   // Helper function to check if text contains only whitespace
   const isOnlyWhitespace = useCallback((text: string) => {
@@ -546,6 +570,7 @@ export const useAdvancedEditor = (initialContent = '') => {
     // Autosave functions
     saveToLocalStorage,
     loadFromLocalStorage,
-    clearAutosave
+    clearAutosave,
+    clearEditorState
   };
 };

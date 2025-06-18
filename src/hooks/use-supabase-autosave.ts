@@ -10,7 +10,7 @@ interface SaveState {
   lastSaved: Date | null;
 }
 
-export const useSupabaseAutosave = () => {
+export const useSupabaseAutosave = (videoContextId: string = 'default') => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [saveState, setSaveState] = useState<SaveState>({
@@ -18,7 +18,7 @@ export const useSupabaseAutosave = () => {
     lastSaved: null
   });
 
-  // Save specific section to Supabase
+  // Save specific section to Supabase with video context
   const saveSection = useCallback(async (
     sectionId: string,
     content: string,
@@ -31,17 +31,19 @@ export const useSupabaseAutosave = () => {
       const sectionData = {
         user_id: user.id,
         section_id: sectionId,
+        video_context_id: videoContextId,
         title: title || 'Sección sin título',
         content,
         shots: JSON.stringify(sectionShots)
       };
 
-      // Check if this section already exists
+      // Check if this section already exists for this video context
       const { data: existingSection, error: fetchError } = await supabase
         .from('section_drafts')
         .select('id')
         .eq('user_id', user.id)
         .eq('section_id', sectionId)
+        .eq('video_context_id', videoContextId)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
@@ -69,14 +71,14 @@ export const useSupabaseAutosave = () => {
         if (error) throw error;
       }
 
-      console.log('Sección guardada en Supabase');
+      console.log('Sección guardada en Supabase para video context:', videoContextId);
       return true;
 
     } catch (error: any) {
       console.error('Error guardando sección:', error);
       throw error;
     }
-  }, [user]);
+  }, [user, videoContextId]);
 
   // Save all sections at once
   const saveAllSections = useCallback(async (
@@ -123,7 +125,7 @@ export const useSupabaseAutosave = () => {
     }
   }, [user, saveSection, toast]);
 
-  // Load section from Supabase
+  // Load section from Supabase with video context
   const loadSection = useCallback(async (sectionId: string) => {
     if (!user) return null;
 
@@ -133,6 +135,7 @@ export const useSupabaseAutosave = () => {
         .select('*')
         .eq('user_id', user.id)
         .eq('section_id', sectionId)
+        .eq('video_context_id', videoContextId)
         .maybeSingle();
 
       if (error) throw error;
@@ -163,7 +166,7 @@ export const useSupabaseAutosave = () => {
       console.error('Error cargando sección:', error);
     }
     return null;
-  }, [user]);
+  }, [user, videoContextId]);
 
   return {
     saveState,
