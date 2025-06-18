@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, ExternalLink, Heart, Eye, MessageCircle, Hash, Clock, Calendar, BarChart3, Lightbulb, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Eye, MessageCircle, Hash, Clock, BarChart3, Lightbulb, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import CompetitorAnalysisResults from '@/components/competitors/CompetitorAnalysisResults';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -96,12 +96,9 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="space-y-8">
             <Skeleton className="h-8 w-64" />
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-              <Skeleton className="h-96" />
-              <div className="lg:col-span-3 space-y-4">
-                <Skeleton className="h-32" />
-                <Skeleton className="h-32" />
-              </div>
+            <div className="space-y-4">
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
             </div>
           </div>
         </div>
@@ -116,7 +113,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
           <Button
             variant="ghost"
             onClick={() => navigate('/competitors')}
-            className="mb-6 text-gray-600 hover:text-gray-900"
+            className="mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver
@@ -146,20 +143,11 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '--';
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
-
   const engagementRate = videoData.views_count > 0 
     ? ((videoData.likes_count + videoData.comments_count) / videoData.views_count * 100).toFixed(2)
     : '0';
 
-  // Check if analysis is complete
+  // Fix: Check for the new analysis structure
   const isAnalysisComplete = analysis && 
     analysis.analysis_status === 'completed' && 
     (analysis.competitor_reel_analysis || analysis.user_adaptation_proposal);
@@ -167,21 +155,21 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
   const isAnalysisPending = analysis && analysis.analysis_status === 'pending';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
           <Button
             variant="ghost"
             onClick={() => navigate('/competitors')}
-            className="mb-6 text-gray-600 hover:text-gray-900"
+            className="mb-6"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver a competidores
           </Button>
           
-          <div className="bg-white rounded-lg border p-6 mb-6">
-            <div className="flex items-start justify-between mb-4">
+          <div className="border rounded-lg p-6 mb-6">
+            <div className="flex items-start justify-between mb-6">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
                   Análisis de @{videoData.competitor.instagram_username}
@@ -200,55 +188,55 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
               </Button>
             </div>
 
-            {/* Métricas del video */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <Eye className="h-5 w-5 text-blue-600 mx-auto mb-1" />
-                <div className="font-semibold text-blue-900">{formatNumber(videoData.views_count)}</div>
-                <div className="text-xs text-blue-700">Views</div>
+            {/* Métricas del video - diseño minimalista */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+              <div className="text-center p-4 border rounded">
+                <Eye className="h-5 w-5 text-gray-600 mx-auto mb-2" />
+                <div className="font-semibold text-gray-900">{formatNumber(videoData.views_count)}</div>
+                <div className="text-xs text-gray-600">Views</div>
               </div>
-              <div className="text-center p-3 bg-red-50 rounded-lg">
-                <Heart className="h-5 w-5 text-red-600 mx-auto mb-1" />
-                <div className="font-semibold text-red-900">{formatNumber(videoData.likes_count)}</div>
-                <div className="text-xs text-red-700">Likes</div>
+              <div className="text-center p-4 border rounded">
+                <MessageCircle className="h-5 w-5 text-gray-600 mx-auto mb-2" />
+                <div className="font-semibold text-gray-900">{formatNumber(videoData.likes_count)}</div>
+                <div className="text-xs text-gray-600">Likes</div>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded-lg">
-                <MessageCircle className="h-5 w-5 text-green-600 mx-auto mb-1" />
-                <div className="font-semibold text-green-900">{formatNumber(videoData.comments_count)}</div>
-                <div className="text-xs text-green-700">Comentarios</div>
+              <div className="text-center p-4 border rounded">
+                <MessageCircle className="h-5 w-5 text-gray-600 mx-auto mb-2" />
+                <div className="font-semibold text-gray-900">{formatNumber(videoData.comments_count)}</div>
+                <div className="text-xs text-gray-600">Comentarios</div>
               </div>
-              <div className="text-center p-3 bg-purple-50 rounded-lg">
-                <BarChart3 className="h-5 w-5 text-purple-600 mx-auto mb-1" />
-                <div className="font-semibold text-purple-900">{engagementRate}%</div>
-                <div className="text-xs text-purple-700">Engagement</div>
+              <div className="text-center p-4 border rounded">
+                <BarChart3 className="h-5 w-5 text-gray-600 mx-auto mb-2" />
+                <div className="font-semibold text-gray-900">{engagementRate}%</div>
+                <div className="text-xs text-gray-600">Engagement</div>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <Clock className="h-5 w-5 text-gray-600 mx-auto mb-1" />
+              <div className="text-center p-4 border rounded">
+                <Clock className="h-5 w-5 text-gray-600 mx-auto mb-2" />
                 <div className="font-semibold text-gray-900">{formatDuration(videoData.duration_seconds)}</div>
-                <div className="text-xs text-gray-700">Duración</div>
+                <div className="text-xs text-gray-600">Duración</div>
               </div>
-              <div className="text-center p-3 bg-orange-50 rounded-lg">
-                <Hash className="h-5 w-5 text-orange-600 mx-auto mb-1" />
-                <div className="font-semibold text-orange-900">{videoData.hashtags_count}</div>
-                <div className="text-xs text-orange-700">Hashtags</div>
+              <div className="text-center p-4 border rounded">
+                <Hash className="h-5 w-5 text-gray-600 mx-auto mb-2" />
+                <div className="font-semibold text-gray-900">{videoData.hashtags_count}</div>
+                <div className="text-xs text-gray-600">Hashtags</div>
               </div>
             </div>
 
-            {/* Status del análisis */}
-            <div className="mt-4 pt-4 border-t border-gray-100">
+            {/* Status del análisis - minimalista */}
+            <div className="pt-4 border-t">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-gray-600">Estado del análisis:</span>
                   {isAnalysisComplete ? (
-                    <Badge variant="default" className="bg-green-100 text-green-800">
+                    <Badge variant="outline" className="border-gray-300 text-gray-700">
                       Completado
                     </Badge>
                   ) : isAnalysisPending ? (
-                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    <Badge variant="outline" className="border-gray-300 text-gray-700">
                       Procesando...
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-gray-600">
+                    <Badge variant="outline" className="border-gray-300 text-gray-700">
                       Sin análisis
                     </Badge>
                   )}
@@ -256,8 +244,8 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
                 {analysis?.overall_score > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">Puntuación:</span>
-                    <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-semibold text-white">{analysis.overall_score}</span>
+                    <div className="w-8 h-8 border rounded-full flex items-center justify-center">
+                      <span className="text-sm font-semibold">{analysis.overall_score}</span>
                     </div>
                   </div>
                 )}
@@ -276,9 +264,9 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
             }} 
           />
         ) : isAnalysisPending ? (
-          <div className="bg-white rounded-lg border p-8">
+          <div className="border rounded-lg p-8">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-300 mx-auto mb-4"></div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Analizando video...</h3>
               <p className="text-gray-600">
                 El análisis está en proceso. Esto puede tomar unos minutos.
@@ -286,7 +274,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg border p-8">
+          <div className="border rounded-lg p-8">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Sin análisis disponible</h3>
@@ -297,7 +285,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
 
         {/* Caption del video */}
         {videoData.caption && (
-          <div className="mt-6 bg-white rounded-lg border p-6">
+          <div className="mt-6 border rounded-lg p-6">
             <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
               Caption del video
