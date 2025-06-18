@@ -1,5 +1,5 @@
 
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Star } from "lucide-react";
 import { useVideoResults } from "@/hooks/use-video-results";
@@ -14,9 +14,19 @@ import { useEffect } from "react";
 const ResultsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
   const { user } = useAuth();
+  
+  // Get videoId from either URL params or query parameters
+  const searchParams = new URLSearchParams(location.search);
+  const videoId = params.videoId || searchParams.get('videoId');
+  
+  console.log("ResultsPage - videoId from params:", params.videoId);
+  console.log("ResultsPage - videoId from query:", searchParams.get('videoId'));
+  console.log("ResultsPage - final videoId:", videoId);
+  
   const isProcessing = location.state?.videoData?.isProcessing === true;
-  const { feedback, videoData, loading, hasFeedback, toggleFavorite, error, unauthorized } = useVideoResults();
+  const { feedback, videoData, loading, hasFeedback, toggleFavorite, error, unauthorized } = useVideoResults(videoId);
   const { toast } = useToast();
   
   console.log("ResultsPage render - loading:", loading, "hasFeedback:", hasFeedback, "isProcessing:", isProcessing);
@@ -36,6 +46,14 @@ const ResultsPage = () => {
       description: "Funcionalidad de compartir en desarrollo."
     });
   };
+  
+  // Redirect to correct URL format if needed
+  useEffect(() => {
+    if (videoId && !params.videoId && searchParams.get('videoId')) {
+      // If we have videoId in query params but not in URL params, redirect
+      navigate(`/results/${videoId}`, { replace: true, state: location.state });
+    }
+  }, [videoId, params.videoId, searchParams, navigate, location.state]);
   
   // Show loading screen if we're still loading data or if explicitly in processing state
   if (loading || (isProcessing && !hasFeedback)) {

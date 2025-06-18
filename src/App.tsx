@@ -37,6 +37,7 @@ const App = () => (
               <Route path="videos" element={<VideosPage />} />
               <Route path="upload" element={<UploadPage />} />
               <Route path="results/:videoId" element={<ResultsPage />} />
+              <Route path="results" element={<ResultsPage />} />
               <Route path="history" element={<HistoryPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="strategy" element={<StrategyPage />} />
