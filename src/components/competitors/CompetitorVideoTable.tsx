@@ -124,26 +124,37 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     return url;
   };
 
-  // Fixed analysis status detection
+  // FIXED: Improved analysis status detection that matches the hook logic
   const getAnalysisStatus = (video: CompetitorVideo) => {
     console.log('Getting analysis status for video:', video.id, video.competitor_analysis);
     
-    // Check if there's analysis data (the key fix)
-    const hasAnalysisData = video.competitor_analysis && 
-      video.competitor_analysis.length > 0 && 
-      (video.competitor_analysis[0].competitor_reel_analysis || video.competitor_analysis[0].user_adaptation_proposal);
+    if (!video.competitor_analysis || video.competitor_analysis.length === 0) {
+      console.log('No analysis data found');
+      return 'idle';
+    }
     
-    console.log('Has analysis data:', hasAnalysisData);
+    const analysis = video.competitor_analysis[0];
+    console.log('Analysis data:', analysis);
+    console.log('Analysis status field:', analysis.analysis_status);
+    console.log('Has reel analysis:', !!analysis.competitor_reel_analysis);
+    console.log('Has adaptation proposal:', !!analysis.user_adaptation_proposal);
     
-    if (hasAnalysisData) return 'completed';
+    // Check if analysis_status is explicitly 'completed' OR if there's actual analysis data
+    const hasActualData = analysis.competitor_reel_analysis || analysis.user_adaptation_proposal;
+    const isStatusCompleted = analysis.analysis_status === 'completed';
     
-    // Check for pending analysis or local loading status
-    const hasPendingAnalysis = video.competitor_analysis && 
-      video.competitor_analysis.length > 0 && 
-      video.competitor_analysis[0].analysis_status === 'pending';
-
-    if (hasPendingAnalysis || video.analysisStatus === 'loading') return 'loading';
+    if (hasActualData || isStatusCompleted) {
+      console.log('Analysis is completed');
+      return 'completed';
+    }
     
+    // Check for local loading status first, then database status
+    if (video.analysisStatus === 'loading' || analysis.analysis_status === 'pending') {
+      console.log('Analysis is loading/pending');
+      return 'loading';
+    }
+    
+    console.log('Analysis status is idle');
     return 'idle';
   };
 

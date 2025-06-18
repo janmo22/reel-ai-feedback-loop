@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -182,9 +183,9 @@ export const useCompetitorScraping = () => {
     }
   };
 
-  // Updated helper function to determine video analysis status
+  // FIXED: Updated helper function to correctly determine video analysis status
   const getVideoAnalysisStatus = (analysisArray: any[]): 'idle' | 'loading' | 'completed' | 'error' => {
-    console.log('Getting analysis status for analysis array:', analysisArray);
+    console.log('Analysis array for status check:', analysisArray);
     
     if (!analysisArray || analysisArray.length === 0) {
       console.log('No analysis found, returning idle');
@@ -192,24 +193,27 @@ export const useCompetitorScraping = () => {
     }
     
     const analysis = analysisArray[0];
-    console.log('Analysis object:', analysis);
+    console.log('Analysis data:', analysis);
+    console.log('Analysis status field:', analysis.analysis_status);
+    console.log('Has reel analysis:', !!analysis.competitor_reel_analysis);
+    console.log('Has adaptation proposal:', !!analysis.user_adaptation_proposal);
     
-    // Check if there's actual analysis data (this is the key fix)
-    const hasAnalysisData = analysis.competitor_reel_analysis || analysis.user_adaptation_proposal;
-    console.log('Has analysis data:', hasAnalysisData);
+    // Check if analysis_status is explicitly 'completed' OR if there's actual analysis data
+    const hasActualData = analysis.competitor_reel_analysis || analysis.user_adaptation_proposal;
+    const isStatusCompleted = analysis.analysis_status === 'completed';
     
-    if (hasAnalysisData) {
-      console.log('Analysis data found, returning completed');
+    if (hasActualData || isStatusCompleted) {
+      console.log('Analysis is completed');
       return 'completed';
     }
     
-    // If no analysis data, check the status field
+    // Check if it's pending/loading
     if (analysis.analysis_status === 'pending') {
-      console.log('Analysis status is pending, returning loading');
+      console.log('Analysis is pending/loading');
       return 'loading';
     }
     
-    console.log('No analysis data and not pending, returning idle');
+    console.log('Analysis status unclear, defaulting to idle');
     return 'idle';
   };
 

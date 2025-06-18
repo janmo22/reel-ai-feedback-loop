@@ -33,17 +33,22 @@ serve(async (req) => {
       throw new Error('Missing video_id in request body')
     }
 
+    // CRITICAL FIX: Always set analysis_status to 'completed' when we receive analysis data
+    // This ensures the frontend can properly detect completed analyses
+    const updateData = {
+      competitor_reel_analysis: competitor_reel_analysis || null,
+      user_adaptation_proposal: user_adaptation_proposal || null,
+      overall_score: overall_score,
+      analysis_status: 'completed', // ALWAYS set to completed when data arrives
+      updated_at: new Date().toISOString()
+    }
+
+    console.log('Updating competitor analysis with data:', updateData)
+
     // Update the competitor_analysis record with the new structured data
-    // Also set analysis_status to 'completed' when data arrives
     const { data, error } = await supabaseClient
       .from('competitor_analysis')
-      .update({
-        competitor_reel_analysis: competitor_reel_analysis || null,
-        user_adaptation_proposal: user_adaptation_proposal || null,
-        overall_score: overall_score,
-        analysis_status: 'completed', // Always set to completed when data arrives
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('competitor_video_id', video_id)
       .select()
 
@@ -57,7 +62,7 @@ serve(async (req) => {
       throw new Error('No competitor analysis record found')
     }
 
-    console.log('Successfully updated competitor analysis:', data[0].id)
+    console.log('Successfully updated competitor analysis:', data[0].id, 'with status:', data[0].analysis_status)
 
     return new Response(
       JSON.stringify({ success: true, analysis_id: data[0].id }),
