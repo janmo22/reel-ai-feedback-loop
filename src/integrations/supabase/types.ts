@@ -17,7 +17,7 @@ export type Database = {
           created_at: string
           feedback_data: Json | null
           id: string
-          overall_score: number
+          overall_score: number | null
           updated_at: string
           user_adaptation_proposal: Json | null
         }
@@ -28,7 +28,7 @@ export type Database = {
           created_at?: string
           feedback_data?: Json | null
           id?: string
-          overall_score: number
+          overall_score?: number | null
           updated_at?: string
           user_adaptation_proposal?: Json | null
         }
@@ -39,7 +39,7 @@ export type Database = {
           created_at?: string
           feedback_data?: Json | null
           id?: string
-          overall_score?: number
+          overall_score?: number | null
           updated_at?: string
           user_adaptation_proposal?: Json | null
         }

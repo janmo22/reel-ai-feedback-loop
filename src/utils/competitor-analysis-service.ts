@@ -30,7 +30,8 @@ export const startCompetitorVideoAnalysis = async ({ video, competitor }: StartA
           updated_at: new Date().toISOString(),
           // Reset analysis data when restarting
           competitor_reel_analysis: null,
-          user_adaptation_proposal: null
+          user_adaptation_proposal: null,
+          overall_score: 0
         })
         .eq('competitor_video_id', video.id);
     } else {
@@ -39,7 +40,7 @@ export const startCompetitorVideoAnalysis = async ({ video, competitor }: StartA
         .insert({
           competitor_video_id: video.id,
           analysis_status: 'pending',
-          overall_score: 0,
+          overall_score: 0, // Set a default value instead of NULL
           feedback_data: {},
           competitor_reel_analysis: null,
           user_adaptation_proposal: null
