@@ -62,7 +62,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
               follower_count,
               is_verified
             ),
-            competitor_analysis (
+            competitor_analysis!competitor_analysis_competitor_video_id_fkey (
               overall_score,
               feedback_data,
               competitor_reel_analysis,
@@ -77,7 +77,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
         if (error) throw error;
 
         console.log('Video data received:', data);
-        console.log('Analysis data:', data.competitor_analysis);
+        console.log('Analysis data for video ID', videoId, ':', data.competitor_analysis);
 
         setVideoData({
           ...data,
@@ -133,9 +133,9 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     );
   }
 
-  // Find the most recent analysis that matches this specific video ID
+  // Find the analysis that specifically matches this video ID
   const analysis = videoData.competitor_analysis && videoData.competitor_analysis.length > 0 
-    ? videoData.competitor_analysis.find(a => a.competitor_reel_analysis || a.user_adaptation_proposal) || videoData.competitor_analysis[0]
+    ? videoData.competitor_analysis[0] // Since we're filtering by competitor_video_id, there should only be one
     : null;
   
   console.log('Using analysis for video ID:', videoId, analysis);
@@ -157,14 +157,14 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     ? ((videoData.likes_count + videoData.comments_count) / videoData.views_count * 100).toFixed(2)
     : '0';
 
-  // Check for the new analysis structure
+  // Check for the analysis structure - the analysis should be specifically for this video
   const isAnalysisComplete = analysis && 
     analysis.analysis_status === 'completed' && 
     (analysis.competitor_reel_analysis || analysis.user_adaptation_proposal);
 
   const isAnalysisPending = analysis && analysis.analysis_status === 'pending';
 
-  console.log('Analysis status:', analysis?.analysis_status);
+  console.log('Analysis status for video', videoId, ':', analysis?.analysis_status);
   console.log('Has reel analysis:', !!analysis?.competitor_reel_analysis);
   console.log('Has adaptation proposal:', !!analysis?.user_adaptation_proposal);
 

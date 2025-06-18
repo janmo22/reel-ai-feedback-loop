@@ -129,14 +129,14 @@ export const useCompetitorScraping = () => {
       // Remove temporary competitor and add real one
       setCompetitors(prev => prev.filter(c => c.id !== tempCompetitor.id));
       
-      // Fetch the complete competitor data with analysis
+      // Fetch the complete competitor data with analysis using proper join
       const { data: completeCompetitor, error: fetchError } = await supabase
         .from('competitors')
         .select(`
           *,
           competitor_videos!inner (
             *,
-            competitor_analysis (*)
+            competitor_analysis!competitor_analysis_competitor_video_id_fkey (*)
           )
         `)
         .eq('id', data.competitor.id)
@@ -148,8 +148,13 @@ export const useCompetitorScraping = () => {
         const basicCompetitor = ensureCompetitorData(data.competitor);
         setCompetitors(prev => [basicCompetitor, ...prev]);
       } else {
-        // Ensure complete competitor has all required fields
+        // Ensure complete competitor has all required fields and proper analysis status
         const enhancedCompetitor = ensureCompetitorData(completeCompetitor);
+        // Add analysis status to each video based on their specific analysis
+        enhancedCompetitor.competitor_videos = enhancedCompetitor.competitor_videos.map(video => ({
+          ...video,
+          analysisStatus: getVideoAnalysisStatus(video.competitor_analysis)
+        }));
         setCompetitors(prev => [enhancedCompetitor, ...prev]);
       }
 
@@ -177,6 +182,16 @@ export const useCompetitorScraping = () => {
     }
   };
 
+  // Helper function to determine video analysis status
+  const getVideoAnalysisStatus = (analysisArray: any[]): 'idle' | 'loading' | 'completed' | 'error' => {
+    if (!analysisArray || analysisArray.length === 0) return 'idle';
+    
+    const analysis = analysisArray[0];
+    if (analysis.analysis_status === 'completed') return 'completed';
+    if (analysis.analysis_status === 'pending') return 'loading';
+    return 'idle';
+  };
+
   const fetchCompetitors = async () => {
     if (!user) return;
 
@@ -187,7 +202,7 @@ export const useCompetitorScraping = () => {
           *,
           competitor_videos (
             *,
-            competitor_analysis (*)
+            competitor_analysis!competitor_analysis_competitor_video_id_fkey (*)
           )
         `)
         .eq('user_id', user.id)
@@ -195,15 +210,13 @@ export const useCompetitorScraping = () => {
 
       if (error) throw error;
       
-      // Ensure all competitors have the required fields and add analysis status
+      // Ensure all competitors have the required fields and proper analysis status
       const enhancedCompetitors: CompetitorData[] = (data || []).map(competitor => {
         const enhancedCompetitor = ensureCompetitorData(competitor);
-        // Add analysis status to each video
+        // Add analysis status to each video based on their specific analysis
         enhancedCompetitor.competitor_videos = enhancedCompetitor.competitor_videos.map(video => ({
           ...video,
-          analysisStatus: video.competitor_analysis && video.competitor_analysis.length > 0 
-            ? (video.competitor_analysis[0].analysis_status === 'completed' ? 'completed' : 'loading')
-            : 'idle'
+          analysisStatus: getVideoAnalysisStatus(video.competitor_analysis)
         }));
         return enhancedCompetitor;
       });
@@ -283,7 +296,7 @@ export const useCompetitorScraping = () => {
           *,
           competitor_videos (
             *,
-            competitor_analysis (*)
+            competitor_analysis!competitor_analysis_competitor_video_id_fkey (*)
           )
         `)
         .eq('id', competitorId)
@@ -291,14 +304,11 @@ export const useCompetitorScraping = () => {
 
       if (error) throw error;
 
-      // Ensure refreshed competitor has all required fields
+      // Ensure refreshed competitor has all required fields and proper analysis status
       const enhancedCompetitor = ensureCompetitorData(data);
-      // Add analysis status to each video
       enhancedCompetitor.competitor_videos = enhancedCompetitor.competitor_videos.map(video => ({
         ...video,
-        analysisStatus: video.competitor_analysis && video.competitor_analysis.length > 0 
-          ? (video.competitor_analysis[0].analysis_status === 'completed' ? 'completed' : 'loading')
-          : 'idle'
+        analysisStatus: getVideoAnalysisStatus(video.competitor_analysis)
       }));
 
       setCompetitors(prev => 
@@ -320,6 +330,7 @@ export const useCompetitorScraping = () => {
   };
 
   const updateVideoAnalysisStatus = (videoId: string, status: 'idle' | 'loading' | 'completed' | 'error') => {
+    console.log('Updating analysis status for video', videoId, 'to', status);
     setCompetitors(prev => 
       prev.map(competitor => ({
         ...competitor,
