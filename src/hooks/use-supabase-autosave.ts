@@ -3,11 +3,24 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Shot } from './use-advanced-editor';
 
 interface SaveState {
   isSaving: boolean;
   lastSaved: Date | null;
+}
+
+// Simplified Shot interface to avoid circular reference
+interface SimpleShot {
+  id: string;
+  name: string;
+  color: string;
+  textSegments: Array<{
+    id: string;
+    startIndex: number;
+    endIndex: number;
+    isStrikethrough?: boolean;
+    comments?: Array<{ id: string; text: string }>;
+  }>;
 }
 
 export const useSupabaseAutosave = (videoContextId: string = 'default') => {
@@ -22,7 +35,7 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
   const saveSection = useCallback(async (
     sectionId: string,
     content: string,
-    sectionShots: Shot[],
+    sectionShots: SimpleShot[],
     title?: string
   ) => {
     if (!user) return null;
@@ -85,7 +98,7 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
     sections: Array<{
       sectionId: string;
       content: string;
-      shots: Shot[];
+      shots: SimpleShot[];
       title: string;
     }>
   ) => {
@@ -141,14 +154,13 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
       if (error) throw error;
 
       if (data) {
-        // Fix the type error by properly handling the JSON parsing
-        let parsedShots: Shot[] = [];
+        // Parse shots safely
+        let parsedShots: SimpleShot[] = [];
         try {
           if (data.shots && typeof data.shots === 'string') {
             parsedShots = JSON.parse(data.shots);
           } else if (Array.isArray(data.shots)) {
-            // Properly cast from Json[] to Shot[] using unknown first
-            parsedShots = data.shots as unknown as Shot[];
+            parsedShots = data.shots as SimpleShot[];
           }
         } catch (parseError) {
           console.warn('Error parsing shots JSON:', parseError);
