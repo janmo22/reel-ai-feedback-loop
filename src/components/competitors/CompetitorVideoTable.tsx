@@ -126,57 +126,64 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
     return url;
   };
 
-  // ENHANCED: More robust analysis status detection
+  // SIMPLIFICADA: Función de detección de estado más directa y confiable
   const getAnalysisStatus = (video: CompetitorVideo) => {
-    console.log('Table: Getting analysis status for video:', video.id, video.competitor_analysis);
+    console.log(`🎯 TABLE: Getting analysis status for video ${video.id}`);
     
+    // PRIORIDAD 1: Usar el estado calculado del hook si existe
+    if (video.analysisStatus) {
+      console.log(`📊 TABLE: Using hook-calculated status: ${video.analysisStatus}`);
+      return video.analysisStatus;
+    }
+    
+    // PRIORIDAD 2: Verificar datos de análisis directamente
     if (!video.competitor_analysis || video.competitor_analysis.length === 0) {
-      console.log('Table: No analysis data found - returning idle');
+      console.log('📋 TABLE: No analysis data - returning idle');
       return 'idle';
     }
     
     const analysis = video.competitor_analysis[0];
-    console.log('Table: Analysis object:', analysis);
-    console.log('Table: Analysis status field:', analysis.analysis_status);
+    console.log(`📊 TABLE: Analysis for video ${video.id}:`, {
+      status: analysis.analysis_status,
+      hasReelAnalysis: !!(analysis.competitor_reel_analysis && Object.keys(analysis.competitor_reel_analysis).length > 0),
+      hasAdaptationProposal: !!(analysis.user_adaptation_proposal && Object.keys(analysis.user_adaptation_proposal).length > 0)
+    });
     
-    // PRIORITY 1: Check if analysis_status is explicitly 'completed'
+    // Si el status es 'completed', es completed
     if (analysis.analysis_status === 'completed') {
-      console.log('Table: Analysis status is completed - returning completed');
+      console.log('✅ TABLE: Analysis status is completed');
       return 'completed';
     }
     
-    // PRIORITY 2: Check for actual data content regardless of status
-    const hasReelAnalysis = analysis.competitor_reel_analysis && 
-                           typeof analysis.competitor_reel_analysis === 'object' &&
-                           Object.keys(analysis.competitor_reel_analysis).length > 0;
-                           
-    const hasAdaptationProposal = analysis.user_adaptation_proposal && 
-                                 typeof analysis.user_adaptation_proposal === 'object' &&
-                                 Object.keys(analysis.user_adaptation_proposal).length > 0;
+    // Si hay datos reales, es completed (independientemente del status)
+    const hasActualData = (
+      (analysis.competitor_reel_analysis && 
+       typeof analysis.competitor_reel_analysis === 'object' &&
+       Object.keys(analysis.competitor_reel_analysis).length > 0) ||
+      (analysis.user_adaptation_proposal && 
+       typeof analysis.user_adaptation_proposal === 'object' &&
+       Object.keys(analysis.user_adaptation_proposal).length > 0)
+    );
     
-    console.log('Table: Has reel analysis:', hasReelAnalysis);
-    console.log('Table: Has adaptation proposal:', hasAdaptationProposal);
-    
-    // If there's actual data, it's completed regardless of status field
-    if (hasReelAnalysis || hasAdaptationProposal) {
-      console.log('Table: Has actual analysis data - returning completed');
+    if (hasActualData) {
+      console.log('✅ TABLE: Found actual analysis data - forcing completed');
       return 'completed';
     }
     
-    // PRIORITY 3: Check for loading/pending status
-    if (video.analysisStatus === 'loading' || analysis.analysis_status === 'pending') {
-      console.log('Table: Analysis is loading/pending');
+    // Si status es pending sin datos, está loading
+    if (analysis.analysis_status === 'pending') {
+      console.log('⏳ TABLE: Status is pending - returning loading');
       return 'loading';
     }
     
-    console.log('Table: Analysis status is idle');
+    console.log('❓ TABLE: Defaulting to idle');
     return 'idle';
   };
 
   return (
     <>
       <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
-        {/* Add refresh button */}
+        {/* Enhanced header with better refresh button */}
         <div className="p-4 border-b border-gray-100 flex justify-between items-center">
           <h3 className="font-medium text-gray-900">Videos del Competidor</h3>
           {onRefreshAnalysisStatus && (
@@ -184,7 +191,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
               variant="outline"
               size="sm"
               onClick={onRefreshAnalysisStatus}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
             >
               <RefreshCw className="h-4 w-4" />
               Actualizar Estado
@@ -334,7 +341,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
                     )}
                   </TableCell>
                   
-                  {/* Enhanced status cell with better detection and clickable completed state */}
+                  {/* MEJORADA: Status cell con detección más precisa */}
                   <TableCell className="p-3">
                     {analysisStatus === 'completed' ? (
                       <Badge 
@@ -398,6 +405,7 @@ const CompetitorVideoTable: React.FC<CompetitorVideoTableProps> = ({
           </TableBody>
         </Table>
         
+        {/* ... keep existing code (empty state) */}
         {sortedVideos.length === 0 && (
           <div className="p-8 text-center text-gray-500">
             <div className="mb-4">

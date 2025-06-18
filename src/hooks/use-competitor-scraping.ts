@@ -69,14 +69,135 @@ export const useCompetitorScraping = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Real-time subscription to competitor_analysis table changes
+  // SIMPLIFICADA: Función mejorada para detectar estado de análisis de forma más confiable
+  const getVideoAnalysisStatus = (analysisArray: any[]): 'idle' | 'loading' | 'completed' | 'error' => {
+    console.log('🔍 IMPROVED: Analyzing status for video with analysis data:', analysisArray);
+    
+    if (!analysisArray || analysisArray.length === 0) {
+      console.log('📋 IMPROVED: No analysis found - status: IDLE');
+      return 'idle';
+    }
+    
+    const analysis = analysisArray[0];
+    console.log('📊 IMPROVED: Analysis object details:', {
+      id: analysis.id,
+      status: analysis.analysis_status,
+      hasReelAnalysis: !!(analysis.competitor_reel_analysis && Object.keys(analysis.competitor_reel_analysis).length > 0),
+      hasAdaptationProposal: !!(analysis.user_adaptation_proposal && Object.keys(analysis.user_adaptation_proposal).length > 0),
+      createdAt: analysis.created_at,
+      updatedAt: analysis.updated_at
+    });
+    
+    // PRIORIDAD 1: Si el status es explícitamente 'completed', confiar en él
+    if (analysis.analysis_status === 'completed') {
+      console.log('✅ IMPROVED: Status is explicitly completed - returning COMPLETED');
+      return 'completed';
+    }
+    
+    // PRIORIDAD 2: Verificar si hay datos reales de análisis
+    const hasActualData = (
+      (analysis.competitor_reel_analysis && 
+       typeof analysis.competitor_reel_analysis === 'object' &&
+       Object.keys(analysis.competitor_reel_analysis).length > 0) ||
+      (analysis.user_adaptation_proposal && 
+       typeof analysis.user_adaptation_proposal === 'object' &&
+       Object.keys(analysis.user_adaptation_proposal).length > 0)
+    );
+    
+    if (hasActualData) {
+      console.log('✅ IMPROVED: Found actual analysis data - forcing COMPLETED status');
+      return 'completed';
+    }
+    
+    // PRIORIDAD 3: Si status es pending pero no hay datos, está loading
+    if (analysis.analysis_status === 'pending') {
+      console.log('⏳ IMPROVED: Status is pending - returning LOADING');
+      return 'loading';
+    }
+    
+    console.log('❓ IMPROVED: Defaulting to IDLE');
+    return 'idle';
+  };
+
+  // MEJORADA: Función para obtener datos frescos con logging detallado
+  const fetchCompetitorsWithFreshData = async () => {
+    if (!user) return;
+
+    console.log('🔄 SYNC: Starting fresh competitor data fetch...');
+    
+    try {
+      const { data, error } = await supabase
+        .from('competitors')
+        .select(`
+          *,
+          competitor_videos (
+            *,
+            competitor_analysis!competitor_analysis_competitor_video_id_fkey (*)
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ SYNC: Error fetching competitors:', error);
+        throw error;
+      }
+      
+      console.log('📦 SYNC: Raw data received from database:', data);
+      
+      // Procesar y enriquecer datos con estado correcto
+      const enhancedCompetitors: CompetitorData[] = (data || []).map(competitor => {
+        console.log(`🏢 SYNC: Processing competitor ${competitor.instagram_username} with ${competitor.competitor_videos?.length || 0} videos`);
+        
+        const enhancedCompetitor = ensureCompetitorData(competitor);
+        
+        // Aplicar estado de análisis correcto a cada video
+        enhancedCompetitor.competitor_videos = enhancedCompetitor.competitor_videos.map(video => {
+          const originalStatus = video.analysisStatus;
+          const newStatus = getVideoAnalysisStatus(video.competitor_analysis);
+          
+          console.log(`🎥 SYNC: Video ${video.id} status: ${originalStatus} → ${newStatus}`);
+          
+          return {
+            ...video,
+            analysisStatus: newStatus
+          };
+        });
+        
+        return enhancedCompetitor;
+      });
+      
+      console.log('✅ SYNC: Successfully processed all competitors with fresh analysis statuses');
+      setCompetitors(enhancedCompetitors);
+      
+      return enhancedCompetitors;
+    } catch (error) {
+      console.error('❌ SYNC: Error in fetchCompetitorsWithFreshData:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los competidores",
+        variant: "destructive"
+      });
+      return [];
+    }
+  };
+
+  // AUTOMÁTICO: Forzar refresh cuando se carga la página
+  useEffect(() => {
+    if (user) {
+      console.log('🚀 INIT: Auto-refreshing competitors on page load...');
+      fetchCompetitorsWithFreshData();
+    }
+  }, [user]);
+
+  // Real-time subscription mejorada con logging
   useEffect(() => {
     if (!user) return;
 
-    console.log('Setting up real-time subscription for competitor analysis updates...');
+    console.log('📡 REALTIME: Setting up enhanced real-time subscription...');
     
     const channel = supabase
-      .channel('competitor-analysis-changes')
+      .channel('competitor-analysis-changes-enhanced')
       .on(
         'postgres_changes',
         {
@@ -85,10 +206,10 @@ export const useCompetitorScraping = () => {
           table: 'competitor_analysis'
         },
         (payload) => {
-          console.log('Real-time update received for competitor analysis:', payload);
+          console.log('📡 REALTIME: Analysis update received:', payload);
           
-          // When an analysis is updated, refresh the specific competitor's data
           if (payload.new && payload.new.competitor_video_id) {
+            console.log(`🔔 REALTIME: Refreshing analysis for video ${payload.new.competitor_video_id}`);
             refreshAnalysisForVideo(payload.new.competitor_video_id);
           }
         }
@@ -96,7 +217,7 @@ export const useCompetitorScraping = () => {
       .subscribe();
 
     return () => {
-      console.log('Cleaning up real-time subscription...');
+      console.log('🔌 REALTIME: Cleaning up enhanced subscription...');
       supabase.removeChannel(channel);
     };
   }, [user]);
@@ -104,7 +225,7 @@ export const useCompetitorScraping = () => {
   // Function to refresh analysis data for a specific video
   const refreshAnalysisForVideo = async (videoId: string) => {
     try {
-      console.log('Refreshing analysis for video:', videoId);
+      console.log('🔄 REFRESH: Refreshing analysis for video:', videoId);
       
       // Fetch updated analysis data for the specific video
       const { data: analysisData, error } = await supabase
@@ -113,9 +234,11 @@ export const useCompetitorScraping = () => {
         .eq('competitor_video_id', videoId);
 
       if (error) {
-        console.error('Error fetching updated analysis:', error);
+        console.error('❌ REFRESH: Error fetching updated analysis:', error);
         return;
       }
+
+      console.log('📊 REFRESH: Fresh analysis data received:', analysisData);
 
       // Update the local state with fresh analysis data
       setCompetitors(prev => 
@@ -123,69 +246,22 @@ export const useCompetitorScraping = () => {
           ...competitor,
           competitor_videos: competitor.competitor_videos.map(video => {
             if (video.id === videoId) {
-              const updatedVideo = {
+              const newStatus = getVideoAnalysisStatus(analysisData || []);
+              console.log(`🎥 REFRESH: Video ${videoId} updated with status: ${newStatus}`);
+              
+              return {
                 ...video,
                 competitor_analysis: analysisData || [],
-                analysisStatus: getVideoAnalysisStatus(analysisData || [])
+                analysisStatus: newStatus
               };
-              console.log('Updated video analysis status:', video.id, updatedVideo.analysisStatus);
-              return updatedVideo;
             }
             return video;
           })
         }))
       );
     } catch (error) {
-      console.error('Error refreshing analysis for video:', error);
+      console.error('❌ REFRESH: Error refreshing analysis for video:', error);
     }
-  };
-
-  // SIMPLIFIED: Check if analysis is completed by looking at status OR data content
-  const getVideoAnalysisStatus = (analysisArray: any[]): 'idle' | 'loading' | 'completed' | 'error' => {
-    console.log('Hook: Checking analysis status for:', analysisArray);
-    
-    if (!analysisArray || analysisArray.length === 0) {
-      console.log('Hook: No analysis data found - returning idle');
-      return 'idle';
-    }
-    
-    const analysis = analysisArray[0];
-    console.log('Hook: Analysis object:', analysis);
-    console.log('Hook: Analysis status field:', analysis.analysis_status);
-    
-    // Check status first - if it's completed, trust it
-    if (analysis.analysis_status === 'completed') {
-      console.log('Hook: Status is completed - returning completed');
-      return 'completed';
-    }
-    
-    // Also check for actual data content as backup
-    const hasReelAnalysis = analysis.competitor_reel_analysis && 
-                           typeof analysis.competitor_reel_analysis === 'object' &&
-                           Object.keys(analysis.competitor_reel_analysis).length > 0;
-                           
-    const hasAdaptationProposal = analysis.user_adaptation_proposal && 
-                                 typeof analysis.user_adaptation_proposal === 'object' &&
-                                 Object.keys(analysis.user_adaptation_proposal).length > 0;
-    
-    console.log('Hook: Has reel analysis:', hasReelAnalysis);
-    console.log('Hook: Has adaptation proposal:', hasAdaptationProposal);
-    
-    // If there's actual data but status is wrong, it's completed
-    if (hasReelAnalysis || hasAdaptationProposal) {
-      console.log('Hook: Has actual analysis data but status is wrong - returning completed');
-      return 'completed';
-    }
-    
-    // If status is pending, it's loading
-    if (analysis.analysis_status === 'pending') {
-      console.log('Hook: Status is pending - returning loading');
-      return 'loading';
-    }
-    
-    // Default to idle
-    console.log('Hook: Defaulting to idle');
-    return 'idle';
   };
 
   const scrapeCompetitor = async (username: string): Promise<CompetitorData | null> => {
@@ -245,37 +321,9 @@ export const useCompetitorScraping = () => {
         throw new Error(data.error || 'Error desconocido en el scraping');
       }
 
-      // Remove temporary competitor and add real one
+      // Remove temporary competitor and refresh all data
       setCompetitors(prev => prev.filter(c => c.id !== tempCompetitor.id));
-      
-      // Fetch the complete competitor data with analysis using proper join
-      const { data: completeCompetitor, error: fetchError } = await supabase
-        .from('competitors')
-        .select(`
-          *,
-          competitor_videos!inner (
-            *,
-            competitor_analysis!competitor_analysis_competitor_video_id_fkey (*)
-          )
-        `)
-        .eq('id', data.competitor.id)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching complete competitor:', fetchError);
-        // If fetch fails, still add the basic competitor data with all required fields
-        const basicCompetitor = ensureCompetitorData(data.competitor);
-        setCompetitors(prev => [basicCompetitor, ...prev]);
-      } else {
-        // Ensure complete competitor has all required fields and proper analysis status
-        const enhancedCompetitor = ensureCompetitorData(completeCompetitor);
-        // Add analysis status to each video based on their specific analysis
-        enhancedCompetitor.competitor_videos = enhancedCompetitor.competitor_videos.map(video => ({
-          ...video,
-          analysisStatus: getVideoAnalysisStatus(video.competitor_analysis)
-        }));
-        setCompetitors(prev => [enhancedCompetitor, ...prev]);
-      }
+      await fetchCompetitorsWithFreshData();
 
       toast({
         title: "¡Competidor agregado!",
@@ -301,45 +349,8 @@ export const useCompetitorScraping = () => {
     }
   };
 
-  const fetchCompetitors = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('competitors')
-        .select(`
-          *,
-          competitor_videos (
-            *,
-            competitor_analysis!competitor_analysis_competitor_video_id_fkey (*)
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      // Ensure all competitors have the required fields and proper analysis status
-      const enhancedCompetitors: CompetitorData[] = (data || []).map(competitor => {
-        const enhancedCompetitor = ensureCompetitorData(competitor);
-        // Add analysis status to each video based on their specific analysis
-        enhancedCompetitor.competitor_videos = enhancedCompetitor.competitor_videos.map(video => ({
-          ...video,
-          analysisStatus: getVideoAnalysisStatus(video.competitor_analysis)
-        }));
-        return enhancedCompetitor;
-      });
-      
-      setCompetitors(enhancedCompetitors);
-    } catch (error) {
-      console.error('Error fetching competitors:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los competidores",
-        variant: "destructive"
-      });
-    }
-  };
+  // RENOMBRADA: fetchCompetitors ahora usa la nueva función con datos frescos
+  const fetchCompetitors = fetchCompetitorsWithFreshData;
 
   const deleteCompetitor = async (competitorId: string) => {
     try {
@@ -439,7 +450,7 @@ export const useCompetitorScraping = () => {
   };
 
   const updateVideoAnalysisStatus = (videoId: string, status: 'idle' | 'loading' | 'completed' | 'error') => {
-    console.log('Hook: Updating analysis status for video', videoId, 'to', status);
+    console.log('🔄 UPDATE: Manually updating analysis status for video', videoId, 'to', status);
     setCompetitors(prev => 
       prev.map(competitor => ({
         ...competitor,
@@ -452,22 +463,22 @@ export const useCompetitorScraping = () => {
     );
   };
 
-  // ENHANCED: Function to force refresh analysis status for all videos
+  // MEJORADA: Función para forzar refresh de todos los estados de análisis
   const refreshAllAnalysisStatus = async () => {
     if (!user) return;
     
     try {
-      console.log('Forcing refresh of all analysis status...');
+      console.log('🔄 FORCE REFRESH: Starting complete refresh of all analysis statuses...');
       
-      // Re-fetch all competitors with fresh analysis data
-      await fetchCompetitors();
+      // Usar la función mejorada que obtiene datos frescos
+      await fetchCompetitorsWithFreshData();
       
       toast({
         title: "Estado actualizado",
         description: "Se ha actualizado el estado de todos los análisis",
       });
     } catch (error) {
-      console.error('Error refreshing analysis status:', error);
+      console.error('❌ FORCE REFRESH: Error refreshing analysis status:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado de los análisis",

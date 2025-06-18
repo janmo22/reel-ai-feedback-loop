@@ -49,7 +49,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
       if (!videoId) return;
 
       try {
-        console.log('Page: Fetching video data for ID:', videoId);
+        console.log('🔍 PAGE: Fetching video data for ID:', videoId);
         
         const { data, error } = await supabase
           .from('competitor_videos')
@@ -75,8 +75,8 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
 
         if (error) throw error;
 
-        console.log('Page: Video data received:', data);
-        console.log('Page: Analysis data for video ID', videoId, ':', data.competitor_analysis);
+        console.log('📦 PAGE: Video data received:', data);
+        console.log('📊 PAGE: Analysis data for video ID', videoId, ':', data.competitor_analysis);
 
         setVideoData({
           ...data,
@@ -84,7 +84,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
           competitor_analysis: data.competitor_analysis || []
         });
       } catch (err) {
-        console.error('Error fetching video data:', err);
+        console.error('❌ PAGE: Error fetching video data:', err);
         setError('No se pudo cargar el análisis del video');
       } finally {
         setLoading(false);
@@ -132,13 +132,14 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     );
   }
 
-  // FIXED: Find the analysis that specifically matches this video ID with better data detection
+  // MEJORADA: Detección de análisis completado más robusta
   const analysis = videoData.competitor_analysis && videoData.competitor_analysis.length > 0 
-    ? videoData.competitor_analysis[0] // Since we're filtering by competitor_video_id, there should only be one
+    ? videoData.competitor_analysis[0]
     : null;
   
-  console.log('Page: Using analysis for video ID:', videoId, analysis);
+  console.log('📊 PAGE: Using analysis for video ID:', videoId, analysis);
   
+  // ... keep existing code (formatNumber, formatDuration, engagementRate functions)
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
@@ -156,8 +157,9 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     ? ((videoData.likes_count + videoData.comments_count) / videoData.views_count * 100).toFixed(2)
     : '0';
 
-  // CRITICAL FIX: Check for the analysis structure with better data detection
+  // MEJORADA: Detección más precisa del estado de análisis
   const isAnalysisComplete = analysis && (
+    analysis.analysis_status === 'completed' ||
     (analysis.competitor_reel_analysis && 
      analysis.competitor_reel_analysis !== null && 
      typeof analysis.competitor_reel_analysis === 'object' &&
@@ -168,12 +170,18 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
      Object.keys(analysis.user_adaptation_proposal).length > 0)
   );
 
-  const isAnalysisPending = analysis && analysis.analysis_status === 'pending' && !isAnalysisComplete;
+  const isAnalysisPending = analysis && 
+    analysis.analysis_status === 'pending' && 
+    !isAnalysisComplete;
 
-  console.log('Page: Analysis status for video', videoId, ':', analysis?.analysis_status);
-  console.log('Page: Has reel analysis:', !!(analysis?.competitor_reel_analysis && Object.keys(analysis.competitor_reel_analysis).length > 0));
-  console.log('Page: Has adaptation proposal:', !!(analysis?.user_adaptation_proposal && Object.keys(analysis.user_adaptation_proposal).length > 0));
-  console.log('Page: Is analysis complete:', isAnalysisComplete);
+  console.log('🎯 PAGE: Analysis status summary for video', videoId, ':', {
+    hasAnalysis: !!analysis,
+    status: analysis?.analysis_status,
+    isComplete: isAnalysisComplete,
+    isPending: isAnalysisPending,
+    hasReelAnalysis: !!(analysis?.competitor_reel_analysis && Object.keys(analysis.competitor_reel_analysis).length > 0),
+    hasAdaptationProposal: !!(analysis?.user_adaptation_proposal && Object.keys(analysis.user_adaptation_proposal).length > 0)
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -256,15 +264,15 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
                   <span className="text-sm text-gray-600">Estado del análisis:</span>
                   {isAnalysisComplete ? (
                     <Badge className="bg-green-50 text-green-700 border-green-200">
-                      Completado
+                      ✅ Completado
                     </Badge>
                   ) : isAnalysisPending ? (
                     <Badge className="bg-blue-50 text-blue-700 border-blue-200">
-                      Procesando...
+                      ⏳ Procesando...
                     </Badge>
                   ) : (
                     <Badge className="bg-gray-50 text-gray-700 border-gray-200">
-                      Sin análisis
+                      ❌ Sin análisis
                     </Badge>
                   )}
                 </div>

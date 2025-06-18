@@ -31,14 +31,21 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
 
   useEffect(() => {
     if (video && isOpen) {
-      console.log('Modal: Checking existing analysis for video:', video.id, video.competitor_analysis);
+      console.log('🔍 MODAL: Checking existing analysis for video:', video.id, video.competitor_analysis);
       
-      // FIXED: Check if video already has analysis with actual data content
+      // MEJORADA: Verificar análisis existente con detección más robusta
       if (video.competitor_analysis && video.competitor_analysis.length > 0) {
         const analysis = video.competitor_analysis[0];
         
-        // Check for actual analysis data content, not just existence
+        console.log('📊 MODAL: Analysis details:', {
+          status: analysis.analysis_status,
+          hasReelAnalysis: !!(analysis.competitor_reel_analysis && Object.keys(analysis.competitor_reel_analysis).length > 0),
+          hasAdaptationProposal: !!(analysis.user_adaptation_proposal && Object.keys(analysis.user_adaptation_proposal).length > 0)
+        });
+        
+        // Verificar si hay datos reales de análisis o status completed
         const hasAnalysisData = (
+          analysis.analysis_status === 'completed' ||
           (analysis.competitor_reel_analysis && 
            analysis.competitor_reel_analysis !== null && 
            typeof analysis.competitor_reel_analysis === 'object' &&
@@ -49,7 +56,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
            Object.keys(analysis.user_adaptation_proposal).length > 0)
         );
         
-        console.log('Modal: Has actual analysis data:', hasAnalysisData);
+        console.log('✅ MODAL: Has actual analysis data:', hasAnalysisData);
         
         if (hasAnalysisData) {
           setExistingAnalysis(analysis);
@@ -246,7 +253,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
             </div>
           </div>
 
-          {/* FIXED: Analysis Status Section with better detection */}
+          {/* MEJORADO: Analysis Status Section con detección más robusta */}
           <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-6 rounded-xl border border-gray-200">
             {existingAnalysis ? (
               <div className="text-center space-y-4">

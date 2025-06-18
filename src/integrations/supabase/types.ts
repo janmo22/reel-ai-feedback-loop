@@ -15,7 +15,6 @@ export type Database = {
           competitor_reel_analysis: Json | null
           competitor_video_id: string
           created_at: string
-          feedback_data: Json | null
           id: string
           overall_score: number | null
           updated_at: string
@@ -26,7 +25,6 @@ export type Database = {
           competitor_reel_analysis?: Json | null
           competitor_video_id: string
           created_at?: string
-          feedback_data?: Json | null
           id?: string
           overall_score?: number | null
           updated_at?: string
@@ -37,7 +35,6 @@ export type Database = {
           competitor_reel_analysis?: Json | null
           competitor_video_id?: string
           created_at?: string
-          feedback_data?: Json | null
           id?: string
           overall_score?: number | null
           updated_at?: string
