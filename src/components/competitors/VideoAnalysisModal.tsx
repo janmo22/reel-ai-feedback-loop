@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { Sparkles, Clock, Eye, Heart, MessageCircle, Calendar, Loader2, CheckCir
 import { CompetitorData, CompetitorVideo } from '@/hooks/use-competitor-scraping';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { startCompetitorVideoAnalysis } from '@/utils/competitor-analysis-service';
 
 interface VideoAnalysisModalProps {
@@ -25,6 +26,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
   onAnalysisStarted
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [existingAnalysis, setExistingAnalysis] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
