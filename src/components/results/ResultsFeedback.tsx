@@ -1,3 +1,4 @@
+
 import AIFeedbackCard from "@/components/AIFeedbackCard";
 import FeedbackCard from "@/components/FeedbackCard";
 import { AIFeedbackResponse } from "@/types";
@@ -54,7 +55,7 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   const hookSubcategories = fd?.videoStructureAndPacing?.hook ? [
     {
       name: "Hook verbal",
-      feedback: fd.videoStructureAndPacing.hook.attentionGrabbingComment || ""
+      feedback: fd.videoStructureAndPacing.hook.spokenHookAnalysis || fd.videoStructureAndPacing.hook.attentionGrabbingComment || ""
     },
     {
       name: "Hook visual",
@@ -80,59 +81,59 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
       name: "Disrupción de patrón",
       feedback: fd.videoStructureAndPacing.hook.patternDisruptionComment || ""
     }
-  ] : [];
+  ].filter(item => item.feedback.trim() !== "") : [];
 
   const hookStrengthsWeaknesses = fd?.videoStructureAndPacing?.hook ? [
-    {
+    ...(fd.videoStructureAndPacing.hook.strengths ? [{
       name: "Fortalezas",
-      feedback: fd.videoStructureAndPacing.hook.strengths || "",
+      feedback: fd.videoStructureAndPacing.hook.strengths,
       isHighlighted: true
-    },
-    {
+    }] : []),
+    ...(fd.videoStructureAndPacing.hook.weaknesses ? [{
       name: "Debilidades",
-      feedback: fd.videoStructureAndPacing.hook.weaknesses || "",
+      feedback: fd.videoStructureAndPacing.hook.weaknesses,
       isHighlighted: true,
       className: "whitespace-pre-wrap"
-    }
+    }] : [])
   ] : [];
 
   const structureCategories = [
-    ...(fd?.videoStructureAndPacing?.valueDelivery ? [
+    ...(fd?.videoStructureAndPacing?.valueDelivery?.comment ? [
       {
         name: "Valor principal",
-        feedback: fd.videoStructureAndPacing.valueDelivery.comment || "",
-        suggestions: [fd.videoStructureAndPacing.valueDelivery.recommendations || ""]
+        feedback: fd.videoStructureAndPacing.valueDelivery.comment,
+        suggestions: fd.videoStructureAndPacing.valueDelivery.recommendations ? [fd.videoStructureAndPacing.valueDelivery.recommendations] : []
       }
     ] : []),
     ...(fd?.videoStructureAndPacing?.buildUpAndPacingComment ? [{
       name: "Desarrollo y ritmo",
-      feedback: fd.videoStructureAndPacing.buildUpAndPacingComment || "",
-      suggestions: [fd.videoStructureAndPacing.buildUpAndPacingRecommendations || ""]
+      feedback: fd.videoStructureAndPacing.buildUpAndPacingComment,
+      suggestions: fd.videoStructureAndPacing.buildUpAndPacingRecommendations ? [fd.videoStructureAndPacing.buildUpAndPacingRecommendations] : []
     }] : []),
-    ...(fd?.videoStructureAndPacing?.ctaAndEnding ? [{
+    ...(fd?.videoStructureAndPacing?.ctaAndEnding?.comment ? [{
       name: "Call to Action (CTA)",
-      feedback: fd.videoStructureAndPacing.ctaAndEnding.comment || "",
-      suggestions: [fd.videoStructureAndPacing.ctaAndEnding.recommendations || ""]
+      feedback: fd.videoStructureAndPacing.ctaAndEnding.comment,
+      suggestions: fd.videoStructureAndPacing.ctaAndEnding.recommendations ? [fd.videoStructureAndPacing.ctaAndEnding.recommendations] : []
     }] : [])
   ];
 
   const seoCategories = fd?.seoAndDiscoverability ? [
-    {
+    ...(fd.seoAndDiscoverability.thematicClarityComment ? [{
       name: "Claridad temática",
-      feedback: fd.seoAndDiscoverability.thematicClarityComment || ""
-    },
-    {
+      feedback: fd.seoAndDiscoverability.thematicClarityComment
+    }] : []),
+    ...(fd.seoAndDiscoverability.keywordIdentificationComment ? [{
       name: "Análisis de palabras clave",
-      feedback: fd.seoAndDiscoverability.keywordIdentificationComment || ""
-    },
-    {
+      feedback: fd.seoAndDiscoverability.keywordIdentificationComment
+    }] : []),
+    ...(fd.seoAndDiscoverability.hashtagsSEOAnalysis ? [{
       name: "Análisis de hashtags",
-      feedback: fd.seoAndDiscoverability.hashtagsSEOAnalysis || ""
-    },
-    {
+      feedback: fd.seoAndDiscoverability.hashtagsSEOAnalysis
+    }] : []),
+    ...(fd.seoAndDiscoverability.searchBarPotentialComment ? [{
       name: "Potencial de búsqueda",
-      feedback: fd.seoAndDiscoverability.searchBarPotentialComment || ""
-    },
+      feedback: fd.seoAndDiscoverability.searchBarPotentialComment
+    }] : []),
     {
       name: "Esto te va a dar más Flow",
       feedback: "Ocultar el texto en los primeros segundos del vídeo desde la aplicación propia para que el algoritmo te indexe mejor",
@@ -141,51 +142,51 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
   ] : [];
 
   const strategicCategories = fd?.strategicAlignment ? [
-    {
+    ...(fd.strategicAlignment.creatorConsistencyComment ? [{
       name: "Consistencia del creador",
-      feedback: fd.strategicAlignment.creatorConsistencyComment || ""
-    },
-    {
+      feedback: fd.strategicAlignment.creatorConsistencyComment
+    }] : []),
+    ...(fd.strategicAlignment.targetAudienceClarityComment ? [{
       name: "Claridad de audiencia objetivo",
-      feedback: fd.strategicAlignment.targetAudienceClarityComment || ""
-    },
-    {
+      feedback: fd.strategicAlignment.targetAudienceClarityComment
+    }] : []),
+    ...(fd.strategicAlignment.valuePropositionClarityComment ? [{
       name: "Propuesta de valor",
-      feedback: fd.strategicAlignment.valuePropositionClarityComment || "",
-      suggestions: [fd.strategicAlignment.recommendations || ""]
-    }
+      feedback: fd.strategicAlignment.valuePropositionClarityComment,
+      suggestions: fd.strategicAlignment.recommendations ? [fd.strategicAlignment.recommendations] : []
+    }] : [])
   ] : [];
 
   const contentTypeCategories = fd?.contentTypeStrategy ? [
-    {
+    ...(fd.contentTypeStrategy.classification ? [{
       name: "Clasificación",
-      feedback: `Tipo de contenido: ${fd.contentTypeStrategy.classification || "No especificado"}`,
-      suggestions: [fd.contentTypeStrategy.recommendations || ""]
-    },
+      feedback: `Tipo de contenido: ${fd.contentTypeStrategy.classification}`,
+      suggestions: fd.contentTypeStrategy.recommendations ? [fd.contentTypeStrategy.recommendations] : []
+    }] : []),
     ...(fd.contentTypeStrategy.seriesClarityAndHookComment ? [{
       name: "Claridad de serie",
-      feedback: fd.contentTypeStrategy.seriesClarityAndHookComment || ""
+      feedback: fd.contentTypeStrategy.seriesClarityAndHookComment
     }] : []),
     ...(fd.contentTypeStrategy.trendAdaptationCritique ? [{
       name: "Adaptación de tendencias",
-      feedback: fd.contentTypeStrategy.trendAdaptationCritique || ""
+      feedback: fd.contentTypeStrategy.trendAdaptationCritique
     }] : [])
   ] : [];
 
   const engagementCategories = fd?.engagementOptimization ? [
-    {
+    ...(fd.engagementOptimization.interactionHierarchyComment ? [{
       name: "Interacción",
-      feedback: fd.engagementOptimization.interactionHierarchyComment || "",
-      suggestions: [fd.engagementOptimization.recommendations || ""]
-    },
-    {
+      feedback: fd.engagementOptimization.interactionHierarchyComment,
+      suggestions: fd.engagementOptimization.recommendations ? [fd.engagementOptimization.recommendations] : []
+    }] : []),
+    ...(fd.engagementOptimization.watchTimePotentialComment ? [{
       name: "Tiempo de visualización",
-      feedback: fd.engagementOptimization.watchTimePotentialComment || ""
-    },
-    {
+      feedback: fd.engagementOptimization.watchTimePotentialComment
+    }] : []),
+    ...(fd.engagementOptimization.viralityFactorsComment ? [{
       name: "Factores de viralidad",
-      feedback: fd.engagementOptimization.viralityFactorsComment || ""
-    }
+      feedback: fd.engagementOptimization.viralityFactorsComment
+    }] : [])
   ] : [];
 
   const suggestedOptimizedCopy = fd?.seoAndDiscoverability?.suggestedOptimizedCopy || "";
@@ -250,6 +251,13 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                 <h3 className="text-xl font-semibold flex items-center m-0">
                   <Rocket className="mr-3 text-blue-500" /> Análisis del Hook
                 </h3>
+                {fd?.videoStructureAndPacing?.hook?.overallEffectivenessScore && (
+                  <ScoreBubble 
+                    score={fd.videoStructureAndPacing.hook.overallEffectivenessScore} 
+                    size="sm" 
+                    showLabel={false} 
+                  />
+                )}
               </div>
               <p className="text-slate-600 mb-6">Un hook efectivo es crucial para captar la atención en los primeros segundos y evitar que los usuarios deslicen.</p>
               
@@ -417,15 +425,15 @@ const ResultsFeedback = ({ feedbackItem }: ResultsFeedbackProps) => {
                   title="Elementos Nativos de la Plataforma"
                   overallScore={feedbackItem.overallEvaluation.score}
                   categories={[
-                    {
+                    ...(fd.platformNativeElements.identifiedElements ? [{
                       name: "Elementos identificados",
-                      feedback: fd.platformNativeElements.identifiedElements || "",
-                    },
-                    {
+                      feedback: fd.platformNativeElements.identifiedElements,
+                    }] : []),
+                    ...(fd.platformNativeElements.integrationEffectivenessComment ? [{
                       name: "Efectividad de integración",
-                      feedback: fd.platformNativeElements.integrationEffectivenessComment || "",
-                      suggestions: [fd.platformNativeElements.recommendations || ""]
-                    }
+                      feedback: fd.platformNativeElements.integrationEffectivenessComment,
+                      suggestions: fd.platformNativeElements.recommendations ? [fd.platformNativeElements.recommendations] : []
+                    }] : [])
                   ].map(cat => ({
                     ...cat,
                     name: <CategoryTitle key={cat.name} name={cat.name} />,
