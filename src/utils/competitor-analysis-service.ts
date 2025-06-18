@@ -25,7 +25,13 @@ export const startCompetitorVideoAnalysis = async ({ video, competitor }: StartA
       console.log(`Analysis for video ${video.id} already exists. Updating status to pending.`);
       await supabase
         .from('competitor_analysis')
-        .update({ analysis_status: 'pending', updated_at: new Date().toISOString() })
+        .update({ 
+          analysis_status: 'pending', 
+          updated_at: new Date().toISOString(),
+          // Reset analysis data when restarting
+          competitor_reel_analysis: null,
+          user_adaptation_proposal: null
+        })
         .eq('competitor_video_id', video.id);
     } else {
       await supabase
@@ -35,6 +41,8 @@ export const startCompetitorVideoAnalysis = async ({ video, competitor }: StartA
           analysis_status: 'pending',
           overall_score: 0,
           feedback_data: {},
+          competitor_reel_analysis: null,
+          user_adaptation_proposal: null
         });
     }
 

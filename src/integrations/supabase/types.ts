@@ -12,30 +12,36 @@ export type Database = {
       competitor_analysis: {
         Row: {
           analysis_status: string
+          competitor_reel_analysis: Json | null
           competitor_video_id: string
           created_at: string
-          feedback_data: Json
+          feedback_data: Json | null
           id: string
           overall_score: number
           updated_at: string
+          user_adaptation_proposal: Json | null
         }
         Insert: {
           analysis_status?: string
+          competitor_reel_analysis?: Json | null
           competitor_video_id: string
           created_at?: string
-          feedback_data: Json
+          feedback_data?: Json | null
           id?: string
           overall_score: number
           updated_at?: string
+          user_adaptation_proposal?: Json | null
         }
         Update: {
           analysis_status?: string
+          competitor_reel_analysis?: Json | null
           competitor_video_id?: string
           created_at?: string
-          feedback_data?: Json
+          feedback_data?: Json | null
           id?: string
           overall_score?: number
           updated_at?: string
+          user_adaptation_proposal?: Json | null
         }
         Relationships: [
           {

@@ -30,6 +30,8 @@ interface VideoData {
   competitor_analysis: Array<{
     overall_score: number;
     feedback_data: any;
+    competitor_reel_analysis: any;
+    user_adaptation_proposal: any;
     created_at: string;
   }>;
 }
@@ -59,6 +61,8 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
             competitor_analysis (
               overall_score,
               feedback_data,
+              competitor_reel_analysis,
+              user_adaptation_proposal,
               created_at
             )
           `)
@@ -263,7 +267,13 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
           {/* Contenido principal */}
           <div className="lg:col-span-2">
             {analysis ? (
-              <CompetitorAnalysisResults analysisData={analysis.feedback_data} />
+              <CompetitorAnalysisResults 
+                analysisData={{
+                  ...analysis.feedback_data,
+                  competitor_reel_analysis: analysis.competitor_reel_analysis,
+                  user_adaptation_proposal: analysis.user_adaptation_proposal
+                }} 
+              />
             ) : (
               <div className="text-center py-16">
                 <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
