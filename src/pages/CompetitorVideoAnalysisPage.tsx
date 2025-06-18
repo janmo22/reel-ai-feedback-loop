@@ -29,7 +29,6 @@ interface VideoData {
   };
   competitor_analysis: Array<{
     overall_score: number;
-    feedback_data: any;
     competitor_reel_analysis: any;
     user_adaptation_proposal: any;
     created_at: string;
@@ -63,7 +62,6 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
             ),
             competitor_analysis!competitor_analysis_competitor_video_id_fkey (
               overall_score,
-              feedback_data,
               competitor_reel_analysis,
               user_adaptation_proposal,
               created_at,
@@ -276,7 +274,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
                     </Badge>
                   )}
                 </div>
-                {analysis?.overall_score > 0 && (
+                {analysis?.overall_score && analysis.overall_score > 0 && (
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">Puntuación:</span>
                     <div className="w-8 h-8 bg-blue-50 border border-blue-200 rounded-full flex items-center justify-center">
@@ -293,7 +291,6 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
         {isAnalysisComplete ? (
           <CompetitorAnalysisResults 
             analysisData={{
-              ...analysis.feedback_data,
               competitor_reel_analysis: analysis.competitor_reel_analysis,
               user_adaptation_proposal: analysis.user_adaptation_proposal
             }} 
