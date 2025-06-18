@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,7 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
-  const { deleteVideo, refreshCompetitor } = useCompetitorScraping();
+  const { deleteVideo, refreshCompetitor, updateVideoAnalysisStatus } = useCompetitorScraping();
 
   const formatNumber = (num: number | null) => {
     if (!num) return '0';
@@ -82,6 +81,22 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
       competitor_videos: prev.competitor_videos.filter(video => video.id !== videoId)
     }));
     setSelectedVideos(prev => prev.filter(id => id !== videoId));
+  };
+
+  const handleUpdateAnalysisStatus = (videoId: string, status: 'idle' | 'loading' | 'completed' | 'error') => {
+    setCompetitor(prev => ({
+      ...prev,
+      competitor_videos: prev.competitor_videos.map(video => 
+        video.id === videoId 
+          ? { ...video, analysisStatus: status }
+          : video
+      )
+    }));
+    
+    // Also update the global state
+    if (updateVideoAnalysisStatus) {
+      updateVideoAnalysisStatus(videoId, status);
+    }
   };
 
   const handleRefreshData = async () => {
@@ -237,6 +252,7 @@ const CompetitorVideoGrid: React.FC<CompetitorVideoGridProps> = ({ competitor: i
         <CompetitorVideoTable
           competitor={competitor}
           onDeleteVideo={handleDeleteVideo}
+          onUpdateAnalysisStatus={handleUpdateAnalysisStatus}
         />
       </div>
     </div>

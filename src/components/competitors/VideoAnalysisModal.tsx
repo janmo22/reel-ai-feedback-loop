@@ -6,24 +6,26 @@ import { Sparkles, Clock, Eye, Heart, MessageCircle, Calendar, Loader2, CheckCir
 import { CompetitorData, CompetitorVideo } from '@/hooks/use-competitor-scraping';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useToast } from 'sonner';
 import { startCompetitorVideoAnalysis } from '@/utils/competitor-analysis-service';
 
 interface VideoAnalysisModalProps {
   video: CompetitorVideo | null;
+  competitor: CompetitorData;
   isOpen: boolean;
   onClose: () => void;
-  competitor: CompetitorData;
+  onAnalysisStarted?: (videoId: string) => void;
 }
 
 const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
   video,
+  competitor,
   isOpen,
   onClose,
-  competitor
+  onAnalysisStarted
 }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [existingAnalysis, setExistingAnalysis] = useState<any>(null);
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,19 +39,32 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
     }
   }, [video, isOpen]);
 
-  const handleAnalyze = async () => {
+  const handleStartAnalysis = async () => {
     if (!video) return;
-    
+
     setIsAnalyzing(true);
     
+    // Notify parent component that analysis has started
+    if (onAnalysisStarted) {
+      onAnalysisStarted(video.id);
+    }
+
     try {
       await startCompetitorVideoAnalysis({ video, competitor });
-
-      toast.success('Análisis iniciado correctamente. Recibirás los resultados en unos minutos.');
+      
+      toast({
+        title: "Análisis iniciado",
+        description: "El análisis del video ha comenzado. Los resultados estarán listos en unos minutos.",
+      });
+      
       onClose();
     } catch (error) {
       console.error('Error starting analysis:', error);
-      toast.error(error instanceof Error ? error.message : 'Error al iniciar el análisis. Inténtalo de nuevo.');
+      toast({
+        title: "Error",
+        description: "No se pudo iniciar el análisis del video",
+        variant: "destructive"
+      });
     } finally {
       setIsAnalyzing(false);
     }
@@ -241,7 +256,7 @@ const VideoAnalysisModal: React.FC<VideoAnalysisModalProps> = ({
                     mejores prácticas y recomendaciones personalizadas.
                   </p>
                   <Button
-                    onClick={handleAnalyze}
+                    onClick={handleStartAnalysis}
                     disabled={isAnalyzing}
                     className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                   >

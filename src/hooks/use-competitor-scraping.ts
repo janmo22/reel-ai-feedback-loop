@@ -38,6 +38,7 @@ export interface CompetitorVideo {
   hashtags_count: number | null;
   is_selected_for_analysis: boolean;
   competitor_analysis: any[];
+  analysisStatus?: 'idle' | 'loading' | 'completed' | 'error';
 }
 
 // Helper function to ensure competitor data has all required fields
@@ -194,10 +195,18 @@ export const useCompetitorScraping = () => {
 
       if (error) throw error;
       
-      // Ensure all competitors have the required fields
-      const enhancedCompetitors: CompetitorData[] = (data || []).map(competitor => 
-        ensureCompetitorData(competitor)
-      );
+      // Ensure all competitors have the required fields and add analysis status
+      const enhancedCompetitors: CompetitorData[] = (data || []).map(competitor => {
+        const enhancedCompetitor = ensureCompetitorData(competitor);
+        // Add analysis status to each video
+        enhancedCompetitor.competitor_videos = enhancedCompetitor.competitor_videos.map(video => ({
+          ...video,
+          analysisStatus: video.competitor_analysis && video.competitor_analysis.length > 0 
+            ? (video.competitor_analysis[0].analysis_status === 'completed' ? 'completed' : 'loading')
+            : 'idle'
+        }));
+        return enhancedCompetitor;
+      });
       
       setCompetitors(enhancedCompetitors);
     } catch (error) {
@@ -284,6 +293,13 @@ export const useCompetitorScraping = () => {
 
       // Ensure refreshed competitor has all required fields
       const enhancedCompetitor = ensureCompetitorData(data);
+      // Add analysis status to each video
+      enhancedCompetitor.competitor_videos = enhancedCompetitor.competitor_videos.map(video => ({
+        ...video,
+        analysisStatus: video.competitor_analysis && video.competitor_analysis.length > 0 
+          ? (video.competitor_analysis[0].analysis_status === 'completed' ? 'completed' : 'loading')
+          : 'idle'
+      }));
 
       setCompetitors(prev => 
         prev.map(competitor => 
@@ -303,6 +319,19 @@ export const useCompetitorScraping = () => {
     }
   };
 
+  const updateVideoAnalysisStatus = (videoId: string, status: 'idle' | 'loading' | 'completed' | 'error') => {
+    setCompetitors(prev => 
+      prev.map(competitor => ({
+        ...competitor,
+        competitor_videos: competitor.competitor_videos.map(video => 
+          video.id === videoId 
+            ? { ...video, analysisStatus: status }
+            : video
+        )
+      }))
+    );
+  };
+
   return {
     isLoading,
     competitors,
@@ -310,6 +339,7 @@ export const useCompetitorScraping = () => {
     fetchCompetitors,
     deleteCompetitor,
     deleteVideo,
-    refreshCompetitor
+    refreshCompetitor,
+    updateVideoAnalysisStatus
   };
 };

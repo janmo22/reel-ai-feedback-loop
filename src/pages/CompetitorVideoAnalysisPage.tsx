@@ -133,10 +133,12 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
     );
   }
 
-  // Find the most recent analysis for this specific video
+  // Find the most recent analysis that matches this specific video ID
   const analysis = videoData.competitor_analysis && videoData.competitor_analysis.length > 0 
-    ? videoData.competitor_analysis[0] 
+    ? videoData.competitor_analysis.find(a => a.competitor_reel_analysis || a.user_adaptation_proposal) || videoData.competitor_analysis[0]
     : null;
+  
+  console.log('Using analysis for video ID:', videoId, analysis);
   
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -180,7 +182,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
             Volver a competidores
           </Button>
           
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+          <div className="bg-white rounded-lg p-6 mb-6 border border-gray-200">
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">
@@ -197,7 +199,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
                 onClick={() => window.open(videoData.video_url, '_blank')}
                 variant="outline"
                 size="sm"
-                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                className="border-gray-200 text-gray-700 hover:bg-gray-50"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Ver original
@@ -250,7 +252,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
                       Completado
                     </Badge>
                   ) : isAnalysisPending ? (
-                    <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                    <Badge className="bg-blue-50 text-blue-700 border-blue-200">
                       Procesando...
                     </Badge>
                   ) : (
@@ -282,7 +284,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
             }} 
           />
         ) : isAnalysisPending ? (
-          <div className="bg-white border border-gray-200 rounded-lg p-8">
+          <div className="bg-white rounded-lg p-8 border border-gray-200">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Analizando video...</h3>
@@ -292,7 +294,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white border border-gray-200 rounded-lg p-8">
+          <div className="bg-white rounded-lg p-8 border border-gray-200">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Sin análisis disponible</h3>
@@ -303,7 +305,7 @@ const CompetitorVideoAnalysisPage: React.FC = () => {
 
         {/* Caption del video */}
         {videoData.caption && (
-          <div className="mt-6 bg-white border border-gray-200 rounded-lg p-6">
+          <div className="mt-6 bg-white rounded-lg p-6 border border-gray-200">
             <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
               Caption del video
