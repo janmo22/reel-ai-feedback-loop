@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -130,14 +129,12 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       const start = textareaRef.current.selectionStart;
       const end = textareaRef.current.selectionEnd;
       
-      const shotId = `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const newShot = {
-        id: shotId,
+        id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name,
         color,
         textSegments: [{
           id: `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          shotId: shotId, // Add the missing shotId property
           startIndex: start,
           endIndex: end - 1,
           text: selectedText,
@@ -162,7 +159,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       if (existingShot) {
         const newSegment = {
           id: `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          shotId: shotId, // Add the missing shotId property
           startIndex: start,
           endIndex: end - 1,
           text: selectedText,

@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { Shot } from './use-advanced-editor';
 
@@ -9,7 +8,7 @@ const globalShotsRepository: { [videoContextId: string]: Shot[] } = {};
 const sectionShotsStorage: { [videoContextId: string]: { [sectionId: string]: string[] } } = {};
 
 // Listeners for section-specific updates
-const sectionShotsListeners: { [videoContextId: string]: { [sectionId: string]: Set<() => void> } } = {};
+const sectionShotsListeners: { [videoContextId: string]: { [sectionId: string]: Set<(shots: Shot[]) => void> } } = {};
 
 export const useSectionShots = (videoContextId: string = 'default', sectionId: string = 'default') => {
   // Initialize storage if it doesn't exist
