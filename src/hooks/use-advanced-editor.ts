@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSharedShots } from './use-shared-shots';
 import { useSupabaseAutosave } from './use-supabase-autosave';
@@ -300,16 +301,20 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
   }, [content, adjustShotSegments]);
 
   const createShot = useCallback((name: string, color: string) => {
-    if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) return null;
+    if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) {
+      console.warn('No se puede crear toma: texto no válido');
+      return null;
+    }
 
     const start = selectionRange.start;
     const end = selectionRange.end - 1;
 
-    console.log('Creando nueva toma:', { name, selectedText, start, end, videoContextId });
+    console.log('🎬 Creando nueva toma:', { name, selectedText, start, end, videoContextId });
 
     // Handle overlapping segments
     const overlapping = findOverlappingSegments(start, end);
     if (overlapping.length > 0) {
+      console.log('Manejando segmentos superpuestos:', overlapping.length);
       setShots(prevShots => 
         prevShots.map(shot => ({
           ...shot,
@@ -351,14 +356,14 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
     }
 
     const newShot: Shot = {
-      id: `shot-${Date.now()}`,
+      id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name,
       color,
       textSegments: []
     };
 
     const newSegment: TextSegment = {
-      id: `segment-${Date.now()}`,
+      id: `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       text: selectedText,
       shotId: newShot.id,
       startIndex: start,
@@ -369,8 +374,14 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
 
     newShot.textSegments.push(newSegment);
     
-    console.log('Agregando nueva toma al estado global:', newShot);
-    setShots(prev => [...prev, newShot]);
+    console.log('✅ Toma creada exitosamente:', { id: newShot.id, name, segmentCount: newShot.textSegments.length });
+    
+    // Add to global shots
+    setShots(prev => {
+      const updated = [...prev, newShot];
+      console.log('🔄 Actualizando shots globales:', { antes: prev.length, después: updated.length });
+      return updated;
+    });
     
     // Clear selection
     setSelectedText('');

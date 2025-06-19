@@ -7,35 +7,48 @@ const globalShotsStorage: { [videoContextId: string]: Shot[] } = {};
 const shotsListeners: { [videoContextId: string]: Set<(shots: Shot[]) => void> } = {};
 
 export const useSharedShots = (videoContextId: string = 'default') => {
+  // Initialize global storage and listeners for this context if they don't exist
+  if (!globalShotsStorage[videoContextId]) {
+    globalShotsStorage[videoContextId] = [];
+  }
+  if (!shotsListeners[videoContextId]) {
+    shotsListeners[videoContextId] = new Set();
+  }
+
   const [shots, setShotsLocal] = useState<Shot[]>(() => 
     globalShotsStorage[videoContextId] || []
   );
 
-  // Initialize listeners set for this video context
-  useEffect(() => {
-    if (!shotsListeners[videoContextId]) {
-      shotsListeners[videoContextId] = new Set();
-    }
-  }, [videoContextId]);
-
   // Register this component as a listener
   useEffect(() => {
     const updateShots = (newShots: Shot[]) => {
+      console.log('Actualizando shots locales:', newShots.length);
       setShotsLocal(newShots);
     };
 
-    shotsListeners[videoContextId]?.add(updateShots);
+    shotsListeners[videoContextId].add(updateShots);
+
+    // Sync with current global state
+    setShotsLocal(globalShotsStorage[videoContextId]);
 
     return () => {
-      shotsListeners[videoContextId]?.delete(updateShots);
+      shotsListeners[videoContextId].delete(updateShots);
     };
   }, [videoContextId]);
 
   // Function to update shots globally
   const setShots = useCallback((newShots: Shot[] | ((prev: Shot[]) => Shot[])) => {
+    const currentShots = globalShotsStorage[videoContextId] || [];
     const updatedShots = typeof newShots === 'function' 
-      ? newShots(globalShotsStorage[videoContextId] || [])
+      ? newShots(currentShots)
       : newShots;
+    
+    console.log('Actualizando tomas globalmente:', {
+      videoContextId,
+      antes: currentShots.length,
+      después: updatedShots.length,
+      listenersCount: shotsListeners[videoContextId]?.size || 0
+    });
     
     // Update global storage
     globalShotsStorage[videoContextId] = updatedShots;
@@ -43,12 +56,6 @@ export const useSharedShots = (videoContextId: string = 'default') => {
     // Notify all listeners in this video context
     shotsListeners[videoContextId]?.forEach(listener => {
       listener(updatedShots);
-    });
-
-    console.log('Tomas actualizadas globalmente:', {
-      videoContextId,
-      shotsCount: updatedShots.length,
-      listenersCount: shotsListeners[videoContextId]?.size || 0
     });
   }, [videoContextId]);
 
@@ -63,10 +70,8 @@ export const useSharedShots = (videoContextId: string = 'default') => {
   // Clear shots for this video context
   const clearShots = useCallback(() => {
     console.log('Limpiando tomas para video context:', videoContextId);
-    delete globalShotsStorage[videoContextId];
-    delete shotsListeners[videoContextId];
-    setShotsLocal([]);
-  }, [videoContextId]);
+    setShots([]);
+  }, [videoContextId, setShots]);
 
   return {
     shots,
