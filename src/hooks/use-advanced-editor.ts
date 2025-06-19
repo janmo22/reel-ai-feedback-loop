@@ -581,6 +581,11 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
     return shots;
   }, [shots]);
 
+  // Add the missing getAllShots function
+  const getAllShots = useCallback((): Shot[] => {
+    return shots;
+  }, [shots]);
+
   return {
     content,
     shots,
@@ -596,6 +601,7 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
     removeCreativeItem,
     getShotForText,
     getShotsBySection,
+    getAllShots,
     toggleTextStrikethrough,
     addSegmentComment,
     updateSegmentComment,
