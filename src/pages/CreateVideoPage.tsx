@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -168,6 +167,7 @@ const CreateVideoPage: React.FC = () => {
   const handleEditorContentChange = (content: string, sections: any[]) => {
     setScriptContent(content);
     setEditorSections(sections);
+    console.log('Contenido del editor actualizado con secciones completas:', sections);
   };
 
   const saveVideo = async (isDraft = true) => {
@@ -187,15 +187,27 @@ const CreateVideoPage: React.FC = () => {
       const valueContent = editorSections.find(s => s.id === 'value')?.content || '';
       const ctaContent = editorSections.find(s => s.id === 'cta')?.content || '';
 
-      // Collect all shots from all sections
+      // Collect all shots from all sections with complete text segment data
       const allShots: any[] = [];
       editorSections.forEach(section => {
         if (section.shots && Array.isArray(section.shots)) {
           section.shots.forEach((shot: any) => {
-            // Avoid duplicates by checking if shot already exists
             const existingShot = allShots.find(s => s.id === shot.id);
             if (!existingShot) {
-              allShots.push(shot);
+              // Ensure text segments include all necessary data
+              const completeShot = {
+                ...shot,
+                textSegments: shot.textSegments?.map((segment: any) => ({
+                  id: segment.id,
+                  text: segment.text || '',
+                  startIndex: segment.startIndex || 0,
+                  endIndex: segment.endIndex || 0,
+                  isStrikethrough: segment.isStrikethrough || false,
+                  comments: segment.comments || []
+                })) || []
+              };
+              allShots.push(completeShot);
+              console.log('Toma agregada con segmentos completos:', completeShot);
             }
           });
         }
@@ -219,11 +231,16 @@ const CreateVideoPage: React.FC = () => {
         }
       };
 
-      console.log('Guardando video con datos:', videoData);
+      console.log('Guardando video con tomas completas:', {
+        ...videoData,
+        shots: allShots.map(shot => ({
+          ...shot,
+          textSegmentsCount: shot.textSegments?.length || 0
+        }))
+      });
 
       let error;
       if (isEditing && editVideoId) {
-        // Update existing video
         const result = await supabase
           .from('created_videos')
           .update(videoData)
@@ -231,7 +248,6 @@ const CreateVideoPage: React.FC = () => {
           .eq('user_id', user.id);
         error = result.error;
       } else {
-        // Create new video
         const result = await supabase
           .from('created_videos')
           .insert(videoData);
@@ -245,7 +261,6 @@ const CreateVideoPage: React.FC = () => {
         description: `Tu ${isDraft ? 'borrador' : 'video'} ha sido ${isEditing ? 'actualizado' : 'guardado'} correctamente.`,
       });
 
-      // Navigate back to videos page
       navigate('/videos');
 
     } catch (error: any) {

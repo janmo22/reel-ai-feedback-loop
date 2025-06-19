@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSimpleEditor } from '@/hooks/use-simple-editor';
 import { AdvancedTextEditor } from './AdvancedTextEditor';
@@ -20,9 +21,9 @@ interface InitialData {
 
 interface NewTextEditorProps {
   onContentChange?: (content: string, sections?: any[]) => void;
-  videoContextId?: string; // Optional prop, will generate one if not provided
-  clearOnMount?: boolean; // New prop to control if editor should start clean
-  initialData?: InitialData; // New prop for loading existing data
+  videoContextId?: string;
+  clearOnMount?: boolean;
+  initialData?: InitialData;
 }
 
 const NewTextEditor: React.FC<NewTextEditorProps> = ({ 
@@ -35,7 +36,6 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
   const [freeContent, setFreeContent] = useState('');
   const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
 
-  // Generate unique video context ID if not provided
   const contextId = useMemo(() => {
     return videoContextId || `video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }, [videoContextId]);
@@ -47,7 +47,6 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
     loadInitialContent
   } = useSimpleEditor();
 
-  // Use shared shots system to get global shots for this video context
   const { shots: globalShots, setShots, initializeShots } = useSharedShots(contextId);
 
   const {
@@ -55,23 +54,11 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
     addCreativeItem,
     removeCreativeItem,
     getShotsBySection,
-    clearEditorState
+    clearEditorState,
+    getAllShots
   } = useAdvancedEditor('', contextId);
 
   const { saveState, saveAllSections } = useSupabaseAutosave(contextId);
-
-  // Helper function to add shots using setShots
-  const addGlobalShot = (name: string, color: string, shotData?: any) => {
-    const newShot = {
-      id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name,
-      color,
-      textSegments: [],
-      ...shotData
-    };
-    setShots(prev => [...prev, newShot]);
-    return newShot;
-  };
 
   // Load initial data when editing
   useEffect(() => {
@@ -82,14 +69,13 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       if (typeof loadInitialContent === 'function') {
         loadInitialContent(initialData);
       } else {
-        // Fallback: Update sections manually
         if (initialData.hook) updateSectionContent('hook', initialData.hook);
         if (initialData.build_up) updateSectionContent('buildup', initialData.build_up);
         if (initialData.value_add) updateSectionContent('value', initialData.value_add);
         if (initialData.call_to_action) updateSectionContent('cta', initialData.call_to_action);
       }
       
-      // Load shots
+      // Load shots with proper text segments
       if (initialData.shots && Array.isArray(initialData.shots)) {
         const shotsToLoad = initialData.shots.map(shot => ({
           id: shot.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -99,6 +85,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
           ...shot
         }));
         initializeShots(shotsToLoad);
+        console.log('Tomas cargadas con segmentos:', shotsToLoad);
       }
       
       setIsInitialDataLoaded(true);
@@ -120,23 +107,57 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
     const currentContent = editorMode === 'structured' ? getAllContent() : freeContent;
     
     if (editorMode === 'structured') {
-      // Provide detailed section information
-      const sectionsWithShots = sections.map(section => ({
-        ...section,
-        shots: getShotsBySection(section.id)
-      }));
+      // Get all shots with complete text segments data
+      const allCurrentShots = getAllShots();
+      
+      // Provide detailed section information with shots that include text segments
+      const sectionsWithShots = sections.map(section => {
+        // Get shots specific to this section
+        const sectionShots = getShotsBySection(section.id);
+        
+        // Ensure each shot has complete text segment data including strikethrough state
+        const completeShots = sectionShots.map(shot => ({
+          ...shot,
+          textSegments: shot.textSegments?.map(segment => ({
+            id: segment.id,
+            text: segment.text,
+            startIndex: segment.startIndex,
+            endIndex: segment.endIndex,
+            isStrikethrough: segment.isStrikethrough || false,
+            comments: segment.comments || []
+          })) || []
+        }));
+        
+        return {
+          ...section,
+          shots: completeShots
+        };
+      });
+      
+      console.log('Enviando datos de secciones con tomas completas:', sectionsWithShots);
       onContentChange?.(currentContent, sectionsWithShots);
     } else {
-      // For free mode, create a single section
+      // For free mode, get all shots with complete data
+      const allCurrentShots = getAllShots();
       const freeModeSection = [{
         id: 'free-mode',
         title: 'Guión Libre',
         content: freeContent,
-        shots: globalShots
+        shots: allCurrentShots.map(shot => ({
+          ...shot,
+          textSegments: shot.textSegments?.map(segment => ({
+            id: segment.id,
+            text: segment.text,
+            startIndex: segment.startIndex,
+            endIndex: segment.endIndex,
+            isStrikethrough: segment.isStrikethrough || false,
+            comments: segment.comments || []
+          })) || []
+        }))
       }];
       onContentChange?.(currentContent, freeModeSection);
     }
-  }, [sections, freeContent, editorMode, onContentChange, getAllContent, getShotsBySection, globalShots]);
+  }, [sections, freeContent, editorMode, onContentChange, getAllContent, getShotsBySection, getAllShots]);
 
   const switchMode = (mode: 'structured' | 'free') => {
     if (mode === 'free' && editorMode === 'structured') {
@@ -154,18 +175,47 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
 
   const handleSaveAll = async () => {
     if (editorMode === 'structured') {
-      const sectionsToSave = sections.map(section => ({
-        sectionId: section.id,
-        content: section.content,
-        shots: getShotsBySection(section.id), // Use section-specific shots
-        title: section.title
-      }));
+      const sectionsToSave = sections.map(section => {
+        const sectionShots = getShotsBySection(section.id);
+        // Ensure complete shot data with text segments
+        const completeSectionShots = sectionShots.map(shot => ({
+          ...shot,
+          textSegments: shot.textSegments?.map(segment => ({
+            id: segment.id,
+            text: segment.text,
+            startIndex: segment.startIndex,
+            endIndex: segment.endIndex,
+            isStrikethrough: segment.isStrikethrough || false,
+            comments: segment.comments || []
+          })) || []
+        }));
+        
+        return {
+          sectionId: section.id,
+          content: section.content,
+          shots: completeSectionShots,
+          title: section.title
+        };
+      });
       await saveAllSections(sectionsToSave);
     } else {
+      const allCurrentShots = getAllShots();
+      const completeFreeShots = allCurrentShots.map(shot => ({
+        ...shot,
+        textSegments: shot.textSegments?.map(segment => ({
+          id: segment.id,
+          text: segment.text,
+          startIndex: segment.startIndex,
+          endIndex: segment.endIndex,
+          isStrikethrough: segment.isStrikethrough || false,
+          comments: segment.comments || []
+        })) || []
+      }));
+      
       await saveAllSections([{
         sectionId: 'free-mode',
         content: freeContent,
-        shots: globalShots, // Use global shots
+        shots: completeFreeShots,
         title: 'Guión Libre'
       }]);
     }
@@ -184,7 +234,6 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
             <p className="text-gray-600 text-sm">
               Elige cómo quieres organizar tu contenido
             </p>
-            {/* Show shots count indicator */}
             {globalShots.length > 0 && (
               <div className="flex items-center gap-2 mt-2">
                 <Camera className="h-4 w-4 text-flow-blue" />
@@ -193,7 +242,6 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
                 </span>
               </div>
             )}
-            {/* Debug info - remove in production */}
             <p className="text-xs text-gray-400 mt-1">
               Contexto: {contextId}
             </p>
@@ -255,7 +303,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
               hideEmptyShots={!hasContent}
               sectionId={section.id}
               showSaveButton={false}
-              videoContextId={contextId} // Pass the video context ID
+              videoContextId={contextId}
             />
           ))}
         </div>
@@ -270,7 +318,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
           hideEmptyShots={!hasContent}
           sectionId="free-mode"
           showSaveButton={false}
-          videoContextId={contextId} // Pass the video context ID
+          videoContextId={contextId}
         />
       )}
 
