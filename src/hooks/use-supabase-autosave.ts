@@ -17,77 +17,81 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
     lastSaved: null
   });
 
-  // Save specific section to Supabase with video context
+  // Save specific section to Supabase with video context using upsert
   const saveSection = useCallback(async (
     sectionId: string,
     content: string,
     sectionShots: any[],
     title?: string
   ) => {
-    if (!user) return null;
+    if (!user) {
+      console.warn('No hay usuario autenticado para guardar');
+      return null;
+    }
+
+    if (!videoContextId || videoContextId === 'default') {
+      console.warn('Video context ID no válido:', videoContextId);
+      return null;
+    }
 
     try {
-      console.log('Guardando sección:', sectionId, 'para video context:', videoContextId);
+      console.log('Guardando sección:', {
+        sectionId,
+        videoContextId,
+        userId: user.id,
+        contentLength: content.length,
+        shotsCount: sectionShots.length
+      });
       
       const sectionData = {
         user_id: user.id,
         section_id: sectionId,
         video_context_id: videoContextId,
         title: title || 'Sección sin título',
-        content,
-        shots: JSON.stringify(sectionShots)
+        content: content || '',
+        shots: JSON.stringify(sectionShots || []),
+        updated_at: new Date().toISOString()
       };
 
-      // Check if this section already exists for this video context
-      const { data: existingSection, error: fetchError } = await supabase
+      // Usar upsert (ON CONFLICT) para evitar problemas de duplicados
+      const { data, error } = await supabase
         .from('section_drafts')
+        .upsert(sectionData, {
+          onConflict: 'user_id,section_id,video_context_id',
+          ignoreDuplicates: false
+        })
         .select('id')
-        .eq('user_id', user.id)
-        .eq('section_id', sectionId)
-        .eq('video_context_id', videoContextId)
-        .maybeSingle();
+        .single();
 
-      if (fetchError) {
-        console.error('Error al buscar sección existente:', fetchError);
-        throw fetchError;
+      if (error) {
+        console.error('Error en upsert de sección:', {
+          error,
+          sectionData: {
+            ...sectionData,
+            content: `${content.substring(0, 50)}...`,
+            shots: `${sectionShots.length} tomas`
+          }
+        });
+        throw error;
       }
 
-      if (existingSection) {
-        // Update existing section
-        const { error } = await supabase
-          .from('section_drafts')
-          .update({
-            content,
-            shots: JSON.stringify(sectionShots),
-            title: title || 'Sección sin título',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingSection.id);
-
-        if (error) {
-          console.error('Error al actualizar sección:', error);
-          throw error;
-        }
-        console.log('Sección actualizada correctamente');
-      } else {
-        // Create new section
-        const { data, error } = await supabase
-          .from('section_drafts')
-          .insert(sectionData)
-          .select('id')
-          .single();
-
-        if (error) {
-          console.error('Error al crear sección:', error);
-          throw error;
-        }
-        console.log('Nueva sección creada:', data?.id);
-      }
-
+      console.log('Sección guardada exitosamente:', {
+        id: data?.id,
+        sectionId,
+        videoContextId
+      });
+      
       return true;
 
     } catch (error: any) {
-      console.error('Error guardando sección:', error);
+      console.error('Error guardando sección:', {
+        error: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        sectionId,
+        videoContextId
+      });
       throw error;
     }
   }, [user, videoContextId]);
@@ -106,31 +110,71 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
       return false;
     }
 
+    if (!videoContextId || videoContextId === 'default') {
+      console.error('Video context ID no válido para guardar:', videoContextId);
+      toast({
+        title: "Error de configuración",
+        description: "ID de contexto de video no válido",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     try {
       setSaveState(prev => ({ ...prev, isSaving: true }));
-      console.log('Iniciando guardado de', sections.length, 'secciones para video context:', videoContextId);
+      console.log('Iniciando guardado masivo:', {
+        sectionsCount: sections.length,
+        videoContextId,
+        userId: user.id
+      });
 
-      // Save all sections sequentially
+      // Save all sections sequentially with better error handling
+      const results = [];
       for (const section of sections) {
-        await saveSection(section.sectionId, section.content, section.shots, section.title);
+        try {
+          const result = await saveSection(section.sectionId, section.content, section.shots, section.title);
+          results.push({ sectionId: section.sectionId, success: result !== null });
+        } catch (error) {
+          console.error(`Error guardando sección ${section.sectionId}:`, error);
+          results.push({ sectionId: section.sectionId, success: false, error });
+        }
       }
 
-      const now = new Date();
-      setSaveState({
-        isSaving: false,
-        lastSaved: now
-      });
+      const successCount = results.filter(r => r.success).length;
+      const failedCount = results.length - successCount;
 
-      toast({
-        title: "Guardado completado",
-        description: "Todas las secciones han sido guardadas correctamente.",
-      });
+      if (failedCount === 0) {
+        const now = new Date();
+        setSaveState({
+          isSaving: false,
+          lastSaved: now
+        });
 
-      console.log('Guardado completado exitosamente');
-      return true;
+        toast({
+          title: "Guardado completado",
+          description: `${successCount} secciones guardadas correctamente.`,
+        });
+
+        console.log('Guardado completado exitosamente:', {
+          successCount,
+          videoContextId
+        });
+        return true;
+      } else {
+        setSaveState(prev => ({ ...prev, isSaving: false }));
+        
+        toast({
+          title: "Guardado parcial",
+          description: `${successCount} secciones guardadas, ${failedCount} fallaron.`,
+          variant: "destructive",
+        });
+
+        console.warn('Guardado parcial:', { successCount, failedCount, results });
+        return false;
+      }
 
     } catch (error: any) {
-      console.error('Error guardando secciones:', error);
+      console.error('Error en guardado masivo:', error);
       setSaveState(prev => ({ ...prev, isSaving: false }));
       
       toast({
@@ -144,10 +188,18 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
 
   // Load section from Supabase with video context
   const loadSection = useCallback(async (sectionId: string) => {
-    if (!user) return null;
+    if (!user) {
+      console.warn('No hay usuario para cargar sección');
+      return null;
+    }
+
+    if (!videoContextId || videoContextId === 'default') {
+      console.warn('Video context ID no válido para cargar:', videoContextId);
+      return null;
+    }
 
     try {
-      console.log('Cargando sección:', sectionId, 'para video context:', videoContextId);
+      console.log('Cargando sección:', { sectionId, videoContextId, userId: user.id });
       
       const { data, error } = await supabase
         .from('section_drafts')
@@ -180,13 +232,21 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
           parsedShots = [];
         }
 
-        console.log('Sección cargada correctamente:', data.title);
+        console.log('Sección cargada correctamente:', {
+          id: data.id,
+          title: data.title,
+          contentLength: data.content?.length || 0,
+          shotsCount: parsedShots.length
+        });
+        
         return {
           id: data.id,
           title: data.title || 'Sección sin título',
           content: data.content || '',
           shots: parsedShots
         };
+      } else {
+        console.log('No se encontró la sección:', { sectionId, videoContextId });
       }
     } catch (error) {
       console.error('Error cargando sección:', error);
@@ -194,9 +254,63 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
     return null;
   }, [user, videoContextId]);
 
+  // Load all shots for the video context
+  const loadAllShots = useCallback(async () => {
+    if (!user || !videoContextId || videoContextId === 'default') {
+      return [];
+    }
+
+    try {
+      console.log('Cargando todas las tomas para video context:', videoContextId);
+      
+      const { data, error } = await supabase
+        .from('section_drafts')
+        .select('shots')
+        .eq('user_id', user.id)
+        .eq('video_context_id', videoContextId);
+
+      if (error) {
+        console.error('Error cargando tomas:', error);
+        return [];
+      }
+
+      // Merge all shots from all sections
+      const allShots: any[] = [];
+      const shotIds = new Set<string>();
+
+      data?.forEach(record => {
+        if (record.shots) {
+          try {
+            const shots = typeof record.shots === 'string' 
+              ? JSON.parse(record.shots) 
+              : record.shots;
+            
+            if (Array.isArray(shots)) {
+              shots.forEach(shot => {
+                if (shot && shot.id && !shotIds.has(shot.id)) {
+                  shotIds.add(shot.id);
+                  allShots.push(shot);
+                }
+              });
+            }
+          } catch (parseError) {
+            console.warn('Error parsing shots from section:', parseError);
+          }
+        }
+      });
+
+      console.log('Tomas cargadas desde DB:', allShots.length);
+      return allShots;
+    } catch (error) {
+      console.error('Error cargando todas las tomas:', error);
+      return [];
+    }
+  }, [user, videoContextId]);
+
   return {
     saveState,
     saveAllSections,
-    loadSection
+    loadSection,
+    loadAllShots
   };
 };

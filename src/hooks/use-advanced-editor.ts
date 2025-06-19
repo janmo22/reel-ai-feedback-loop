@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useSharedShots } from './use-shared-shots';
+import { useSupabaseAutosave } from './use-supabase-autosave';
 
 export interface ShotInfo {
   id: string;
@@ -49,32 +51,35 @@ export const PRESET_COLORS = [
   '#F97316'  // Orange
 ];
 
-// Global shots storage per video context
-const globalShotsStorage: { [videoContextId: string]: Shot[] } = {};
-
 export const useAdvancedEditor = (initialContent = '', videoContextId: string = 'default') => {
   const [content, setContent] = useState(initialContent);
-  // Use global shots storage to share shots across all sections
-  const [shots, setShotsState] = useState<Shot[]>(() => globalShotsStorage[videoContextId] || []);
   const [selectedText, setSelectedText] = useState('');
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
   const [creativeItems, setCreativeItems] = useState<CreativeItem[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Sync local shots with global storage
-  const setShots = useCallback((newShots: Shot[] | ((prev: Shot[]) => Shot[])) => {
-    setShotsState(prevShots => {
-      const updatedShots = typeof newShots === 'function' ? newShots(prevShots) : newShots;
-      globalShotsStorage[videoContextId] = updatedShots;
-      console.log('Tomas actualizadas globalmente para video context:', videoContextId, updatedShots.length);
-      return updatedShots;
-    });
-  }, [videoContextId]);
+  // Use shared shots system
+  const { shots, setShots, initializeShots, clearShots } = useSharedShots(videoContextId);
+  const { loadAllShots } = useSupabaseAutosave(videoContextId);
 
-  // Update global storage when shots change
+  // Load shots from database when video context changes
   useEffect(() => {
-    globalShotsStorage[videoContextId] = shots;
-  }, [shots, videoContextId]);
+    const loadShotsFromDB = async () => {
+      if (videoContextId && videoContextId !== 'default') {
+        try {
+          const savedShots = await loadAllShots();
+          if (savedShots && savedShots.length > 0) {
+            console.log('Cargando tomas desde DB para video context:', videoContextId, savedShots.length);
+            initializeShots(savedShots);
+          }
+        } catch (error) {
+          console.error('Error cargando tomas desde DB:', error);
+        }
+      }
+    };
+
+    loadShotsFromDB();
+  }, [videoContextId, loadAllShots, initializeShots]);
 
   // Autosave functionality with video context
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -128,9 +133,9 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
         timestamp: Date.now()
       };
       localStorage.setItem(getStorageKey('autosave'), JSON.stringify(editorState));
-      console.log('Autoguardado realizado para video context:', videoContextId);
+      console.log('Autoguardado local realizado para video context:', videoContextId);
     } catch (error) {
-      console.error('Error en autoguardado:', error);
+      console.error('Error en autoguardado local:', error);
     }
   }, [content, shots, creativeItems, getStorageKey, videoContextId]);
 
@@ -141,39 +146,36 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
       if (saved) {
         const editorState = JSON.parse(saved);
         setContent(editorState.content || '');
-        // Load shots into global storage
-        if (editorState.shots && Array.isArray(editorState.shots)) {
-          globalShotsStorage[videoContextId] = editorState.shots;
-          setShotsState(editorState.shots);
+        // Initialize shots if they exist in localStorage and aren't already loaded
+        if (editorState.shots && Array.isArray(editorState.shots) && shots.length === 0) {
+          initializeShots(editorState.shots);
         }
         setCreativeItems(editorState.creativeItems || []);
-        console.log('Autoguardado cargado para video context:', videoContextId);
+        console.log('Autoguardado local cargado para video context:', videoContextId);
         return true;
       }
     } catch (error) {
-      console.error('Error cargando autoguardado:', error);
+      console.error('Error cargando autoguardado local:', error);
     }
     return false;
-  }, [getStorageKey, videoContextId]);
+  }, [getStorageKey, videoContextId, shots.length, initializeShots]);
 
   // Clear autosave for this video context
   const clearAutosave = useCallback(() => {
     localStorage.removeItem(getStorageKey('autosave'));
-    console.log('Autoguardado limpiado para video context:', videoContextId);
+    console.log('Autoguardado local limpiado para video context:', videoContextId);
   }, [getStorageKey, videoContextId]);
 
   // Clear editor state (for new videos)
   const clearEditorState = useCallback(() => {
     setContent('');
-    setShots([]);
+    clearShots();
     setCreativeItems([]);
     setSelectedText('');
     setSelectionRange(null);
-    // Clear global storage for this video context
-    delete globalShotsStorage[videoContextId];
     clearAutosave();
-    console.log('Estado del editor limpiado para nuevo video');
-  }, [clearAutosave, videoContextId, setShots]);
+    console.log('Estado del editor limpiado para nuevo video con contexto:', videoContextId);
+  }, [clearAutosave, videoContextId, clearShots]);
 
   // Helper function to check if text contains only whitespace
   const isOnlyWhitespace = useCallback((text: string) => {
@@ -374,8 +376,9 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
     setSelectedText('');
     setSelectionRange(null);
     
+    console.log('Nueva toma creada:', { name, id: newShot.id, videoContextId });
     return newShot;
-  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments, content, setShots]);
+  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments, content, setShots, videoContextId]);
 
   const assignToExistingShot = useCallback((shotId: string) => {
     if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) return;
