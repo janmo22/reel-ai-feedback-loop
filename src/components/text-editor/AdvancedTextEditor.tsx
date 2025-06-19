@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useAdvancedEditor } from '@/hooks/use-advanced-editor';
 import { useSupabaseAutosave } from '@/hooks/use-supabase-autosave';
+import { useSectionShots } from '@/hooks/use-section-shots';
 import { ShotSelector } from './ShotSelector';
 import { ShotDisplay } from './ShotDisplay';
 import { CreativeZone } from './CreativeZone';
@@ -20,7 +21,7 @@ interface AdvancedTextEditorProps {
   hideEmptyShots?: boolean;
   sectionId?: string;
   showSaveButton?: boolean;
-  videoContextId?: string; // New prop for video context
+  videoContextId?: string;
 }
 
 interface HoveredSegment {
@@ -41,21 +42,27 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   hideEmptyShots = false,
   sectionId = 'default',
   showSaveButton = true,
-  videoContextId = 'default' // Default value for backward compatibility
+  videoContextId = 'default'
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [showShotSelector, setShowShotSelector] = useState(false);
   const [hoveredSegment, setHoveredSegment] = useState<HoveredSegment | null>(null);
   
+  // Use section-specific shots instead of global shots
+  const {
+    shots: sectionShots,
+    addShotToSection,
+    updateShotInSection,
+    getAllAvailableShots,
+    assignExistingShotToSection
+  } = useSectionShots(videoContextId, sectionId);
+  
   const {
     content: editorContent,
-    shots,
     selectedText,
     creativeItems,
     textareaRef,
     updateContent,
-    createShot,
-    assignToExistingShot,
     handleTextSelection,
     addCreativeItem,
     removeCreativeItem,
@@ -63,9 +70,9 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     addSegmentComment,
     updateSegmentComment,
     removeSegmentComment
-  } = useAdvancedEditor(content, videoContextId); // Pass videoContextId
+  } = useAdvancedEditor(content, videoContextId);
 
-  const { loadSection } = useSupabaseAutosave(videoContextId); // Pass videoContextId
+  const { loadSection } = useSupabaseAutosave(videoContextId);
 
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -118,12 +125,56 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   };
 
   const handleCreateShot = (name: string, color: string) => {
-    createShot(name, color);
+    if (textareaRef.current && selectedText) {
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      
+      const newShot = {
+        id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name,
+        color,
+        textSegments: [{
+          id: `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          startIndex: start,
+          endIndex: end - 1,
+          text: selectedText,
+          comments: []
+        }]
+      };
+      
+      addShotToSection(newShot);
+    }
     setShowShotSelector(false);
   };
 
   const handleAssignToShot = (shotId: string) => {
-    assignToExistingShot(shotId);
+    if (textareaRef.current && selectedText) {
+      const start = textareaRef.current.selectionStart;
+      const end = textareaRef.current.selectionEnd;
+      
+      // Get the shot from available shots
+      const availableShots = getAllAvailableShots();
+      const existingShot = availableShots.find(s => s.id === shotId);
+      
+      if (existingShot) {
+        const newSegment = {
+          id: `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          startIndex: start,
+          endIndex: end - 1,
+          text: selectedText,
+          comments: []
+        };
+        
+        const updatedShot = {
+          ...existingShot,
+          textSegments: [...existingShot.textSegments, newSegment]
+        };
+        
+        // Update the shot and ensure it's assigned to this section
+        updateShotInSection(shotId, updatedShot);
+        assignExistingShotToSection(shotId);
+      }
+    }
     setShowShotSelector(false);
   };
 
@@ -139,7 +190,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     }
   };
 
-  // Render highlighted content
+  // Render highlighted content using section-specific shots
   const renderHighlightedContent = () => {
     if (!editorContent) return '';
     
@@ -157,7 +208,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
       comments: string[];
     }> = [];
     
-    shots.forEach(shot => {
+    // Use only section-specific shots for highlighting
+    sectionShots.forEach(shot => {
       shot.textSegments.forEach(segment => {
         allSegments.push({
           startIndex: segment.startIndex,
@@ -237,7 +289,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     };
   }, []);
 
-  const shouldShowShots = !hideEmptyShots || (editorContent.trim().length > 0 && shots.length > 0);
+  const shouldShowShots = !hideEmptyShots || (editorContent.trim().length > 0 && sectionShots.length > 0);
 
   return (
     <div className="space-y-4">
@@ -319,7 +371,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
                 <div className="absolute top-full mt-2 left-0 z-20">
                   <ShotSelector
                     selectedText={selectedText}
-                    existingShots={shots}
+                    existingShots={getAllAvailableShots()}
                     onCreateShot={handleCreateShot}
                     onAssignToShot={handleAssignToShot}
                     onClose={() => setShowShotSelector(false)}
@@ -330,7 +382,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
 
             {shouldShowShots && (
               <ShotDisplay 
-                shots={shots} 
+                shots={sectionShots}
                 onToggleStrikethrough={toggleTextStrikethrough}
                 onAddSegmentComment={addSegmentComment}
                 onUpdateSegmentComment={updateSegmentComment}
