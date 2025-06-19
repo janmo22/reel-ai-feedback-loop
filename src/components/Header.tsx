@@ -22,8 +22,13 @@ const Header = () => {
     return email.substring(0, 2).toUpperCase();
   };
   
-  // Para páginas públicas (landing, auth), mostramos el header completo
-  if (isLandingPage || isAuthPage) {
+  // Don't show header on landing page (it has its own header)
+  if (isLandingPage) {
+    return null;
+  }
+  
+  // Para páginas públicas (auth), mostramos el header completo
+  if (isAuthPage) {
     return (
       <header className="border-b bg-white/95 backdrop-blur-md sticky top-0 z-40 w-full">
         <div className="container flex h-16 items-center justify-between px-4">
@@ -49,10 +54,10 @@ const Header = () => {
                   {user && <DropdownMenuItem className="font-medium">{user.email}</DropdownMenuItem>}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/history" className="font-medium">Mi historial</Link>
+                    <Link to="/dashboard/history" className="font-medium">Mi historial</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/settings" className="font-medium">Ajustes</Link>
+                    <Link to="/dashboard/settings" className="font-medium">Ajustes</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()} className="font-medium">
@@ -106,7 +111,7 @@ const Header = () => {
               {user && <DropdownMenuItem className="font-medium">{user.email}</DropdownMenuItem>}
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/settings" className="font-medium">Ajustes</Link>
+                <Link to="/dashboard/settings" className="font-medium">Ajustes</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => signOut()} className="font-medium">
