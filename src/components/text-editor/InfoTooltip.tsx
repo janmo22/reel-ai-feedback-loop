@@ -1,54 +1,28 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from 'lucide-react';
 
 interface InfoTooltipProps {
-  segmentId: string;
-  x: number;
-  y: number;
-  shotName?: string;
-  comments?: string[];
+  content: string;
 }
 
-export const InfoTooltip: React.FC<InfoTooltipProps> = ({
-  segmentId,
-  x,
-  y,
-  shotName,
-  comments
-}) => {
-  if (!comments || comments.length === 0) {
-    return null;
-  }
-
+export const InfoTooltip: React.FC<InfoTooltipProps> = ({ content }) => {
   return (
-    <div
-      className="fixed z-50 pointer-events-none"
-      style={{
-        left: x,
-        top: y - 10,
-        transform: 'translateX(-50%) translateY(-100%)'
-      }}
-    >
-      <Card className="border shadow-lg bg-white max-w-xs">
-        <CardContent className="p-3">
-          {shotName && (
-            <div className="text-xs font-medium text-gray-900 mb-2">
-              {shotName}
-            </div>
-          )}
-          <div className="space-y-1">
-            {comments.map((comment, index) => (
-              <div 
-                key={index} 
-                className="text-xs text-gray-600 p-2 bg-blue-50 rounded border-l-2 border-blue-200"
-              >
-                {comment}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="h-4 w-4 text-gray-400 hover:text-gray-600 cursor-help" />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className="max-w-xs">{content}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };

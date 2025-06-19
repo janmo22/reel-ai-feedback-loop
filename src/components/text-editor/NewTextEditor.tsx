@@ -3,13 +3,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSimpleEditor } from '@/hooks/use-simple-editor';
 import { AdvancedTextEditor } from './AdvancedTextEditor';
 import { CreativeZone } from './CreativeZone';
-import { GlobalShotsSummary } from './GlobalShotsSummary';
+import { ShotSummary } from './ShotSummary';
 import { useAdvancedEditor } from '@/hooks/use-advanced-editor';
 import { useSupabaseAutosave } from '@/hooks/use-supabase-autosave';
-import { useSectionShots } from '@/hooks/use-section-shots';
+import { useSharedShots } from '@/hooks/use-shared-shots';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Layout, Save, Camera } from 'lucide-react';
+import { FileText, Layout, Save, Camera, BarChart3 } from 'lucide-react';
 
 interface NewTextEditorProps {
   onContentChange?: (content: string) => void;
@@ -33,11 +33,12 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
   const {
     sections,
     getAllContent,
-    updateSectionContent
+    updateSectionContent,
+    hasContent
   } = useSimpleEditor();
 
-  // Get section shots for free mode (when using single section)
-  const { clearSectionShots } = useSectionShots(contextId, 'free-mode');
+  // Use shared shots system to get global shots for this video context
+  const { shots: globalShots } = useSharedShots(contextId);
 
   const {
     creativeItems,
@@ -52,11 +53,10 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
   useEffect(() => {
     if (clearOnMount) {
       clearEditorState();
-      clearSectionShots();
       setFreeContent('');
       console.log('Editor limpiado para nuevo video con contexto:', contextId);
     }
-  }, [clearOnMount, clearEditorState, clearSectionShots, contextId]);
+  }, [clearOnMount, clearEditorState, contextId]);
 
   // Track content changes
   useEffect(() => {
@@ -83,7 +83,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       const sectionsToSave = sections.map(section => ({
         sectionId: section.id,
         content: section.content,
-        shots: [], // Shots are now managed per section
+        shots: globalShots,
         title: section.title
       }));
       await saveAllSections(sectionsToSave);
@@ -91,15 +91,18 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       await saveAllSections([{
         sectionId: 'free-mode',
         content: freeContent,
-        shots: [], // Shots are now managed per section
+        shots: globalShots,
         title: 'Guión Libre'
       }]);
     }
   };
 
-  const hasContent = editorMode === 'structured' 
-    ? sections.some(section => section.content.trim().length > 0)
-    : freeContent.trim().length > 0;
+  console.log('🎬 NewTextEditor renderizado:', {
+    editorMode,
+    sectionsCount: sections.length,
+    globalShotsCount: globalShots.length,
+    contextId
+  });
 
   return (
     <div className="space-y-6">
@@ -110,6 +113,15 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
             <p className="text-gray-600 text-sm">
               Elige cómo quieres organizar tu contenido
             </p>
+            {/* Show global shots count indicator */}
+            {globalShots.length > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                <Camera className="h-4 w-4 text-flow-blue" />
+                <span className="text-sm text-flow-blue font-medium">
+                  {globalShots.length} toma{globalShots.length !== 1 ? 's' : ''} total{globalShots.length !== 1 ? 'es' : ''}
+                </span>
+              </div>
+            )}
             {/* Debug info - remove in production */}
             <p className="text-xs text-gray-400 mt-1">
               Contexto: {contextId}
@@ -136,7 +148,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
             </Button>
             <Button
               onClick={handleSaveAll}
-              disabled={saveState.isSaving || !hasContent}
+              disabled={saveState.isSaving}
               className="bg-flow-blue hover:bg-flow-blue/90 flex items-center gap-2"
             >
               {saveState.isSaving ? (
@@ -166,6 +178,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
               placeholder={section.placeholder}
               content={section.content}
               onContentChange={(content) => {
+                console.log(`Actualizando contenido de sección ${section.id}:`, content.length, 'caracteres');
                 updateSectionContent(section.id, content);
               }}
               showCreativeZone={false}
@@ -199,9 +212,22 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
         description="Ideas, referencias e inspiración para todo tu video"
       />
 
-      {/* Global shots summary - only show if there's content */}
-      {hasContent && (
-        <GlobalShotsSummary videoContextId={contextId} />
+      {/* Resumen global de tomas al final */}
+      {hasContent && globalShots.length > 0 && (
+        <Card className="border-flow-blue/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-flow-blue">
+              <BarChart3 className="h-5 w-5" />
+              Resumen Global de Tomas ({globalShots.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-4">
+              Todas las tomas creadas en este video, organizadas por tipo y frecuencia.
+            </p>
+            <ShotSummary shots={globalShots} />
+          </CardContent>
+        </Card>
       )}
     </div>
   );
