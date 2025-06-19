@@ -27,6 +27,8 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
     if (!user) return null;
 
     try {
+      console.log('Guardando sección:', sectionId, 'para video context:', videoContextId);
+      
       const sectionData = {
         user_id: user.id,
         section_id: sectionId,
@@ -45,7 +47,10 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
         .eq('video_context_id', videoContextId)
         .maybeSingle();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('Error al buscar sección existente:', fetchError);
+        throw fetchError;
+      }
 
       if (existingSection) {
         // Update existing section
@@ -54,11 +59,16 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
           .update({
             content,
             shots: JSON.stringify(sectionShots),
-            title: title || 'Sección sin título'
+            title: title || 'Sección sin título',
+            updated_at: new Date().toISOString()
           })
           .eq('id', existingSection.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error al actualizar sección:', error);
+          throw error;
+        }
+        console.log('Sección actualizada correctamente');
       } else {
         // Create new section
         const { data, error } = await supabase
@@ -67,10 +77,13 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
           .select('id')
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error al crear sección:', error);
+          throw error;
+        }
+        console.log('Nueva sección creada:', data?.id);
       }
 
-      console.log('Sección guardada en Supabase para video context:', videoContextId);
       return true;
 
     } catch (error: any) {
@@ -88,10 +101,14 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
       title: string;
     }>
   ) => {
-    if (!user || sections.length === 0) return false;
+    if (!user || sections.length === 0) {
+      console.log('No hay usuario o secciones para guardar');
+      return false;
+    }
 
     try {
       setSaveState(prev => ({ ...prev, isSaving: true }));
+      console.log('Iniciando guardado de', sections.length, 'secciones para video context:', videoContextId);
 
       // Save all sections sequentially
       for (const section of sections) {
@@ -109,6 +126,7 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
         description: "Todas las secciones han sido guardadas correctamente.",
       });
 
+      console.log('Guardado completado exitosamente');
       return true;
 
     } catch (error: any) {
@@ -122,13 +140,15 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
       });
       return false;
     }
-  }, [user, saveSection, toast]);
+  }, [user, saveSection, toast, videoContextId]);
 
   // Load section from Supabase with video context
   const loadSection = useCallback(async (sectionId: string) => {
     if (!user) return null;
 
     try {
+      console.log('Cargando sección:', sectionId, 'para video context:', videoContextId);
+      
       const { data, error } = await supabase
         .from('section_drafts')
         .select('*')
@@ -137,7 +157,10 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
         .eq('video_context_id', videoContextId)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error al cargar sección:', error);
+        throw error;
+      }
 
       if (data) {
         // Parse shots safely
@@ -157,6 +180,7 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
           parsedShots = [];
         }
 
+        console.log('Sección cargada correctamente:', data.title);
         return {
           id: data.id,
           title: data.title || 'Sección sin título',

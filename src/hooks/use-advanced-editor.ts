@@ -49,13 +49,32 @@ export const PRESET_COLORS = [
   '#F97316'  // Orange
 ];
 
+// Global shots storage per video context
+const globalShotsStorage: { [videoContextId: string]: Shot[] } = {};
+
 export const useAdvancedEditor = (initialContent = '', videoContextId: string = 'default') => {
   const [content, setContent] = useState(initialContent);
-  const [shots, setShots] = useState<Shot[]>([]);
+  // Use global shots storage to share shots across all sections
+  const [shots, setShotsState] = useState<Shot[]>(() => globalShotsStorage[videoContextId] || []);
   const [selectedText, setSelectedText] = useState('');
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
   const [creativeItems, setCreativeItems] = useState<CreativeItem[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Sync local shots with global storage
+  const setShots = useCallback((newShots: Shot[] | ((prev: Shot[]) => Shot[])) => {
+    setShotsState(prevShots => {
+      const updatedShots = typeof newShots === 'function' ? newShots(prevShots) : newShots;
+      globalShotsStorage[videoContextId] = updatedShots;
+      console.log('Tomas actualizadas globalmente para video context:', videoContextId, updatedShots.length);
+      return updatedShots;
+    });
+  }, [videoContextId]);
+
+  // Update global storage when shots change
+  useEffect(() => {
+    globalShotsStorage[videoContextId] = shots;
+  }, [shots, videoContextId]);
 
   // Autosave functionality with video context
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -122,7 +141,11 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
       if (saved) {
         const editorState = JSON.parse(saved);
         setContent(editorState.content || '');
-        setShots(editorState.shots || []);
+        // Load shots into global storage
+        if (editorState.shots && Array.isArray(editorState.shots)) {
+          globalShotsStorage[videoContextId] = editorState.shots;
+          setShotsState(editorState.shots);
+        }
         setCreativeItems(editorState.creativeItems || []);
         console.log('Autoguardado cargado para video context:', videoContextId);
         return true;
@@ -146,9 +169,11 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
     setCreativeItems([]);
     setSelectedText('');
     setSelectionRange(null);
+    // Clear global storage for this video context
+    delete globalShotsStorage[videoContextId];
     clearAutosave();
     console.log('Estado del editor limpiado para nuevo video');
-  }, [clearAutosave]);
+  }, [clearAutosave, videoContextId, setShots]);
 
   // Helper function to check if text contains only whitespace
   const isOnlyWhitespace = useCallback((text: string) => {
@@ -259,7 +284,7 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
         }).filter(segment => segment !== null)
       })).filter(shot => shot.textSegments.length > 0);
     });
-  }, [shots, isOnlyWhitespace]);
+  }, [shots, isOnlyWhitespace, setShots]);
 
   // Update content function with improved shot segment handling
   const updateContent = useCallback((newContent: string) => {
@@ -350,7 +375,7 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
     setSelectionRange(null);
     
     return newShot;
-  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments, content]);
+  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments, content, setShots]);
 
   const assignToExistingShot = useCallback((shotId: string) => {
     if (!selectedText || !selectionRange || isOnlyWhitespace(selectedText)) return;
@@ -424,7 +449,7 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
     // Clear selection
     setSelectedText('');
     setSelectionRange(null);
-  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments, content]);
+  }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments, content, setShots]);
 
   const toggleTextStrikethrough = useCallback((segmentId: string) => {
     setShots(prev => prev.map(shot => ({
@@ -435,7 +460,7 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
           : segment
       )
     })));
-  }, []);
+  }, [setShots]);
 
   // New functions for handling multiple comments
   const addSegmentComment = useCallback((segmentId: string, commentText: string) => {
@@ -456,7 +481,7 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
           : segment
       )
     })));
-  }, []);
+  }, [setShots]);
 
   const updateSegmentComment = useCallback((segmentId: string, commentId: string, commentText: string) => {
     setShots(prev => prev.map(shot => ({
@@ -474,7 +499,7 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
           : segment
       )
     })));
-  }, []);
+  }, [setShots]);
 
   const removeSegmentComment = useCallback((segmentId: string, commentId: string) => {
     setShots(prev => prev.map(shot => ({
@@ -488,7 +513,7 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
           : segment
       )
     })));
-  }, []);
+  }, [setShots]);
 
   const handleTextSelection = useCallback(() => {
     if (!textareaRef.current) return;
@@ -543,8 +568,7 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
 
   // Add the missing getShotsBySection function
   const getShotsBySection = useCallback((sectionId: string): Shot[] => {
-    // For this implementation, we'll return all shots since we don't have section-specific filtering yet
-    // This can be enhanced later to filter shots by section if needed
+    // Return all shots since they are now shared globally across all sections
     return shots;
   }, [shots]);
 
