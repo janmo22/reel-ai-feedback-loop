@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
+import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
 import UploadPage from "./pages/UploadPage";
 import ResultsPage from "./pages/ResultsPage";
@@ -15,7 +16,6 @@ import SettingsPage from "./pages/SettingsPage";
 import StrategyPage from "./pages/StrategyPage";
 import CompetitorsPage from "./pages/CompetitorsPage";
 import MyProfileAnalysisPage from "./pages/MyProfileAnalysisPage";
-import MyProfilePage from "./pages/MyProfilePage";
 import CreateVideoPage from "./pages/CreateVideoPage";
 import VideosPage from "./pages/VideosPage";
 import NotFound from "./pages/NotFound";
@@ -31,8 +31,9 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
+            <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/" element={<AppLayout><Outlet /></AppLayout>}>
+            <Route path="/dashboard" element={<AppLayout><Outlet /></AppLayout>}>
               <Route index element={<Index />} />
               <Route path="create-video" element={<CreateVideoPage />} />
               <Route path="videos" element={<VideosPage />} />
@@ -43,9 +44,8 @@ const App = () => (
               <Route path="settings" element={<SettingsPage />} />
               <Route path="strategy" element={<StrategyPage />} />
               <Route path="competitors" element={<CompetitorsPage />} />
-              <Route path="my-profile" element={<MyProfilePage />} />
-              <Route path="my-profile-analysis/:profileId" element={<MyProfileAnalysisPage />} />
-              <Route path="/competitor-video/:videoId" element={<CompetitorVideoAnalysisPage />} />
+              <Route path="my-profile-analysis" element={<MyProfileAnalysisPage />} />
+              <Route path="competitor-video/:videoId" element={<CompetitorVideoAnalysisPage />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
