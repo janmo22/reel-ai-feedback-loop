@@ -45,7 +45,7 @@ const App = () => (
               <Route path="strategy" element={<StrategyPage />} />
               <Route path="competitors" element={<CompetitorsPage />} />
               <Route path="my-profile-analysis" element={<MyProfileAnalysisPage />} />
-              <Route path="competitor-video/:videoId" element={<CompetitorVideoAnalysisPage />} />
+              <Route path="/competitor-video/:videoId" element={<CompetitorVideoAnalysisPage />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
