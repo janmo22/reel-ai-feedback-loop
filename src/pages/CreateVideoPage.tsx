@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +30,9 @@ const CreateVideoPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const editVideoId = searchParams.get('edit');
+  const isEditing = Boolean(editVideoId);
   
   const [title, setTitle] = useState('');
   const [mainSMP, setMainSMP] = useState<SMP>({ id: 'main', text: '', completed: false });
@@ -37,11 +40,39 @@ const CreateVideoPage: React.FC = () => {
   const [selectedSeries, setSelectedSeries] = useState<string>('');
   const [scriptContent, setScriptContent] = useState('');
   const [editorSections, setEditorSections] = useState<any[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   // Generate unique video context ID for this session
   const videoContextId = useMemo(() => {
+    if (isEditing && editVideoId) {
+      return `edit-video-${editVideoId}`;
+    }
     return `new-video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }, []); // Empty dependency array means this will only be generated once per component mount
+  }, [isEditing, editVideoId]);
+
+  // Fetch video data for editing
+  const { data: videoData, isLoading: isLoadingVideo } = useQuery({
+    queryKey: ['video-data', editVideoId],
+    queryFn: async () => {
+      if (!editVideoId || !user) return null;
+      const { data, error } = await supabase
+        .from('created_videos')
+        .select(`
+          *,
+          content_series (
+            id,
+            name
+          )
+        `)
+        .eq('id', editVideoId)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: Boolean(editVideoId && user)
+  });
 
   // Fetch content series
   const { data: contentSeries = [] } = useQuery({
@@ -59,6 +90,35 @@ const CreateVideoPage: React.FC = () => {
     },
     enabled: !!user
   });
+
+  // Load video data when editing
+  useEffect(() => {
+    if (isEditing && videoData && !isDataLoaded) {
+      console.log('Cargando datos del video para edición:', videoData);
+      
+      setTitle(videoData.title || '');
+      setMainSMP({ 
+        id: 'main', 
+        text: videoData.main_smp || '', 
+        completed: false 
+      });
+      
+      if (videoData.secondary_smps && Array.isArray(videoData.secondary_smps)) {
+        const smps = videoData.secondary_smps.map((text: string, index: number) => ({
+          id: `secondary-${index}`,
+          text,
+          completed: false
+        }));
+        setSecondarySMPs(smps);
+      }
+      
+      if (videoData.content_series_id) {
+        setSelectedSeries(videoData.content_series_id);
+      }
+      
+      setIsDataLoaded(true);
+    }
+  }, [isEditing, videoData, isDataLoaded]);
 
   // Filter out series with invalid IDs
   const validSeries = contentSeries?.filter(series => {
@@ -141,49 +201,52 @@ const CreateVideoPage: React.FC = () => {
         }
       });
 
-      console.log('Guardando video con datos:', {
-        title,
-        hookContent,
-        buildupContent,
-        valueContent,
-        ctaContent,
-        shotsCount: allShots.length,
-        videoContextId
-      });
+      const videoData = {
+        user_id: user.id,
+        title: title.trim(),
+        main_smp: mainSMP.text.trim() || null,
+        secondary_smps: secondarySMPs.filter(smp => smp.text.trim() !== '').map(smp => smp.text),
+        hook: hookContent.trim() || null,
+        build_up: buildupContent.trim() || null,
+        value_add: valueContent.trim() || null,
+        call_to_action: ctaContent.trim() || null,
+        shots: allShots,
+        content_series_id: selectedSeries === 'no-series' ? null : selectedSeries || null,
+        script_annotations: {
+          videoContextId,
+          editorMode: 'structured',
+          sectionsData: editorSections
+        }
+      };
 
-      const { error } = await supabase
-        .from('created_videos')
-        .insert({
-          user_id: user.id,
-          title: title.trim(),
-          main_smp: mainSMP.text.trim() || null,
-          secondary_smps: secondarySMPs.filter(smp => smp.text.trim() !== '').map(smp => smp.text),
-          hook: hookContent.trim() || null,
-          build_up: buildupContent.trim() || null,
-          value_add: valueContent.trim() || null,
-          call_to_action: ctaContent.trim() || null,
-          shots: allShots,
-          content_series_id: selectedSeries === 'no-series' ? null : selectedSeries || null,
-          script_annotations: {
-            videoContextId,
-            editorMode: 'structured',
-            sectionsData: editorSections
-          }
-        });
+      console.log('Guardando video con datos:', videoData);
+
+      let error;
+      if (isEditing && editVideoId) {
+        // Update existing video
+        const result = await supabase
+          .from('created_videos')
+          .update(videoData)
+          .eq('id', editVideoId)
+          .eq('user_id', user.id);
+        error = result.error;
+      } else {
+        // Create new video
+        const result = await supabase
+          .from('created_videos')
+          .insert(videoData);
+        error = result.error;
+      }
 
       if (error) throw error;
 
       toast({
-        title: isDraft ? "Borrador guardado" : "Video guardado",
-        description: `Tu ${isDraft ? 'borrador' : 'video'} ha sido guardado correctamente.`,
+        title: isEditing ? "Video actualizado" : (isDraft ? "Borrador guardado" : "Video guardado"),
+        description: `Tu ${isDraft ? 'borrador' : 'video'} ha sido ${isEditing ? 'actualizado' : 'guardado'} correctamente.`,
       });
 
-      // Reset form and navigate to a new clean page
-      // We navigate away and back to ensure a completely fresh context
+      // Navigate back to videos page
       navigate('/videos');
-      setTimeout(() => {
-        navigate('/create-video');
-      }, 100);
 
     } catch (error: any) {
       console.error('Error guardando video:', error);
@@ -195,7 +258,26 @@ const CreateVideoPage: React.FC = () => {
     }
   };
 
-  console.log('🎬 CreateVideoPage renderizado con contexto:', videoContextId);
+  if (isEditing && isLoadingVideo) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex justify-center items-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-flow-blue mx-auto"></div>
+            <p className="mt-2 text-gray-600">Cargando video...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('🎬 CreateVideoPage renderizado:', { 
+    isEditing, 
+    videoContextId, 
+    isDataLoaded,
+    title,
+    editVideoId 
+  });
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -204,15 +286,19 @@ const CreateVideoPage: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/videos')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="h-4 w-4" />
             Volver
           </Button>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Crear Nuevo Video</h1>
-        <p className="text-gray-600">Planifica y estructura tu contenido de manera profesional</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          {isEditing ? 'Editar Video' : 'Crear Nuevo Video'}
+        </h1>
+        <p className="text-gray-600">
+          {isEditing ? 'Modifica tu contenido de manera profesional' : 'Planifica y estructura tu contenido de manera profesional'}
+        </p>
       </div>
 
       <div className="space-y-8">
@@ -340,7 +426,14 @@ const CreateVideoPage: React.FC = () => {
         <NewTextEditor
           onContentChange={handleEditorContentChange}
           videoContextId={videoContextId}
-          clearOnMount={true} // Always start clean for new videos
+          clearOnMount={!isEditing} // Solo limpiar para videos nuevos
+          initialData={isEditing && videoData ? {
+            hook: videoData.hook || '',
+            build_up: videoData.build_up || '',
+            value_add: videoData.value_add || '',
+            call_to_action: videoData.call_to_action || '',
+            shots: videoData.shots || []
+          } : undefined}
         />
 
         {/* Botones de acción */}
@@ -350,7 +443,7 @@ const CreateVideoPage: React.FC = () => {
             className="flex-1 bg-flow-blue hover:bg-flow-blue/90"
           >
             <Save className="h-4 w-4 mr-2" />
-            Guardar Borrador
+            {isEditing ? 'Actualizar Borrador' : 'Guardar Borrador'}
           </Button>
           <Button 
             onClick={() => saveVideo(false)}
@@ -358,7 +451,7 @@ const CreateVideoPage: React.FC = () => {
             className="flex-1"
           >
             <Eye className="h-4 w-4 mr-2" />
-            Guardar Video
+            {isEditing ? 'Actualizar Video' : 'Guardar Video'}
           </Button>
         </div>
       </div>

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileVideo, Edit, Trash2, Calendar, Plus, Video } from 'lucide-react';
+import { FileVideo, Edit, Trash2, Calendar, Plus, Video, Camera } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,9 +23,10 @@ interface CreatedVideo {
   build_up: string | null;
   value_add: string | null;
   call_to_action: string | null;
-  shots: string[] | null;
+  shots: any[] | null;
   content_series_id: string | null;
   created_at: string;
+  script_annotations: any | null;
   content_series?: {
     name: string;
   };
@@ -101,6 +102,26 @@ const VideosPage: React.FC = () => {
     navigate(`/create-video${queryParam}`);
   };
 
+  const handleEditVideo = (videoId: string) => {
+    navigate(`/create-video?edit=${videoId}`);
+  };
+
+  const getContentCount = (video: CreatedVideo) => {
+    let count = 0;
+    if (video.hook?.trim()) count++;
+    if (video.build_up?.trim()) count++;
+    if (video.value_add?.trim()) count++;
+    if (video.call_to_action?.trim()) count++;
+    return count;
+  };
+
+  const getShotsCount = (video: CreatedVideo) => {
+    if (video.shots && Array.isArray(video.shots)) {
+      return video.shots.length;
+    }
+    return 0;
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-6">
@@ -145,92 +166,93 @@ const VideosPage: React.FC = () => {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {videos.map((video) => (
-            <Card key={video.id} className="hover:shadow-lg transition-all duration-200 border-0 shadow-sm">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg line-clamp-2 text-gray-900">{video.title}</CardTitle>
-                  <div className="flex gap-1 ml-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="h-8 w-8 text-gray-500 hover:text-gray-700"
-                      onClick={() => navigate(`/create-video?edit=${video.id}`)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => handleDelete(video.id)}
-                      className="h-8 w-8 text-gray-500 hover:text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <Calendar className="h-4 w-4" />
-                  {format(parseISO(video.created_at), "d 'de' MMMM, yyyy", { locale: es })}
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                {video.content_series && (
-                  <Badge variant="secondary" className="text-xs bg-flow-blue/10 text-flow-blue border-flow-blue/20">
-                    {video.content_series.name}
-                  </Badge>
-                )}
-                
-                {video.main_smp && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">SMP Principal:</p>
-                    <p className="text-sm text-gray-600 line-clamp-2">{video.main_smp}</p>
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${video.hook ? 'bg-emerald-500' : 'bg-gray-300'}`}></div>
-                    <span className="text-xs text-gray-600">Hook</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${video.build_up ? 'bg-amber-500' : 'bg-gray-300'}`}></div>
-                    <span className="text-xs text-gray-600">Build-up</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${video.value_add ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                    <span className="text-xs text-gray-600">Valor</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${video.call_to_action ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
-                    <span className="text-xs text-gray-600">CTA</span>
-                  </div>
-                </div>
-                
-                {video.shots && video.shots.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-700 mb-2">
-                      Planos ({video.shots.length})
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {video.shots.slice(0, 3).map((shot, index) => (
-                        <Badge key={index} variant="outline" className="text-xs py-0 px-2 bg-gray-50">
-                          {shot}
-                        </Badge>
-                      ))}
-                      {video.shots.length > 3 && (
-                        <Badge variant="outline" className="text-xs py-0 px-2 bg-gray-50">
-                          +{video.shots.length - 3}
-                        </Badge>
-                      )}
+          {videos.map((video) => {
+            const contentCount = getContentCount(video);
+            const shotsCount = getShotsCount(video);
+            
+            return (
+              <Card key={video.id} className="hover:shadow-lg transition-all duration-200 border-0 shadow-sm">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <CardTitle className="text-lg line-clamp-2 text-gray-900 pr-2">
+                      {video.title || 'Video sin título'}
+                    </CardTitle>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        className="h-8 w-8 text-gray-500 hover:text-gray-700"
+                        onClick={() => handleEditVideo(video.id)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleDelete(video.id)}
+                        className="h-8 w-8 text-gray-500 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Calendar className="h-4 w-4" />
+                    {format(parseISO(video.created_at), "d 'de' MMMM, yyyy", { locale: es })}
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="space-y-4">
+                  {video.content_series && (
+                    <Badge variant="secondary" className="text-xs bg-flow-blue/10 text-flow-blue border-flow-blue/20">
+                      {video.content_series.name}
+                    </Badge>
+                  )}
+                  
+                  {video.main_smp && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-1">SMP Principal:</p>
+                      <p className="text-sm text-gray-600 line-clamp-2">{video.main_smp}</p>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${video.hook?.trim() ? 'bg-emerald-500' : 'bg-gray-300'}`}></div>
+                      <span className="text-xs text-gray-600">Hook</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${video.build_up?.trim() ? 'bg-amber-500' : 'bg-gray-300'}`}></div>
+                      <span className="text-xs text-gray-600">Build-up</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${video.value_add?.trim() ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                      <span className="text-xs text-gray-600">Valor</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${video.call_to_action?.trim() ? 'bg-purple-500' : 'bg-gray-300'}`}></div>
+                      <span className="text-xs text-gray-600">CTA</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <div className="flex items-center gap-1 text-xs text-gray-600">
+                      <FileVideo className="h-3 w-3" />
+                      <span>{contentCount}/4 secciones</span>
+                    </div>
+                    
+                    {shotsCount > 0 && (
+                      <div className="flex items-center gap-1 text-xs text-flow-blue">
+                        <Camera className="h-3 w-3" />
+                        <span>{shotsCount} toma{shotsCount !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 

@@ -11,19 +11,30 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Layout, Save, Camera } from 'lucide-react';
 
+interface InitialData {
+  hook?: string;
+  build_up?: string;
+  value_add?: string;
+  call_to_action?: string;
+  shots?: any[];
+}
+
 interface NewTextEditorProps {
   onContentChange?: (content: string, sections?: any[]) => void;
   videoContextId?: string; // Optional prop, will generate one if not provided
   clearOnMount?: boolean; // New prop to control if editor should start clean
+  initialData?: InitialData; // New prop for loading existing data
 }
 
 const NewTextEditor: React.FC<NewTextEditorProps> = ({ 
   onContentChange, 
   videoContextId,
-  clearOnMount = false 
+  clearOnMount = false,
+  initialData
 }) => {
   const [editorMode, setEditorMode] = useState<'structured' | 'free'>('structured');
   const [freeContent, setFreeContent] = useState('');
+  const [isInitialDataLoaded, setIsInitialDataLoaded] = useState(false);
 
   // Generate unique video context ID if not provided
   const contextId = useMemo(() => {
@@ -33,11 +44,12 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
   const {
     sections,
     getAllContent,
-    updateSectionContent
+    updateSectionContent,
+    loadInitialContent
   } = useSimpleEditor();
 
   // Use shared shots system to get global shots for this video context
-  const { shots: globalShots } = useSharedShots(contextId);
+  const { shots: globalShots, addShot: addGlobalShot } = useSharedShots(contextId);
 
   const {
     creativeItems,
@@ -49,11 +61,41 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
 
   const { saveState, saveAllSections } = useSupabaseAutosave(contextId);
 
+  // Load initial data when editing
+  useEffect(() => {
+    if (initialData && !isInitialDataLoaded && !clearOnMount) {
+      console.log('Cargando datos iniciales en editor:', initialData);
+      
+      // Load section content
+      if (typeof loadInitialContent === 'function') {
+        loadInitialContent(initialData);
+      } else {
+        // Fallback: Update sections manually
+        if (initialData.hook) updateSectionContent('hook', initialData.hook);
+        if (initialData.build_up) updateSectionContent('buildup', initialData.build_up);
+        if (initialData.value_add) updateSectionContent('value', initialData.value_add);
+        if (initialData.call_to_action) updateSectionContent('cta', initialData.call_to_action);
+      }
+      
+      // Load shots
+      if (initialData.shots && Array.isArray(initialData.shots)) {
+        initialData.shots.forEach(shot => {
+          if (shot && shot.name) {
+            addGlobalShot(shot.name, shot.color || '#3B82F6', shot);
+          }
+        });
+      }
+      
+      setIsInitialDataLoaded(true);
+    }
+  }, [initialData, isInitialDataLoaded, clearOnMount, loadInitialContent, updateSectionContent, addGlobalShot]);
+
   // Clear editor state when starting a new video
   useEffect(() => {
     if (clearOnMount) {
       clearEditorState();
       setFreeContent('');
+      setIsInitialDataLoaded(false);
       console.log('Editor limpiado para nuevo video con contexto:', contextId);
     }
   }, [clearOnMount, clearEditorState, contextId]);

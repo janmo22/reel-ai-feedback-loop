@@ -59,6 +59,27 @@ export const useSimpleEditor = () => {
     ));
   }, []);
 
+  const loadInitialContent = useCallback((initialData: any) => {
+    setSections(prev => prev.map(section => {
+      let content = '';
+      switch(section.id) {
+        case 'hook':
+          content = initialData.hook || '';
+          break;
+        case 'buildup':
+          content = initialData.build_up || '';
+          break;
+        case 'value':
+          content = initialData.value_add || '';
+          break;
+        case 'cta':
+          content = initialData.call_to_action || '';
+          break;
+      }
+      return { ...section, content };
+    }));
+  }, []);
+
   const addShot = useCallback((name: string, color: string) => {
     const newShot: Shot = {
       id: `shot-${Date.now()}`,
@@ -77,6 +98,7 @@ export const useSimpleEditor = () => {
     sections,
     shots,
     updateSectionContent,
+    loadInitialContent,
     addShot,
     getAllContent
   };
