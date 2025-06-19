@@ -33,8 +33,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
   const {
     sections,
     getAllContent,
-    updateSectionContent,
-    hasContent
+    updateSectionContent
   } = useSimpleEditor();
 
   // Use shared shots system to get global shots for this video context
@@ -83,7 +82,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       const sectionsToSave = sections.map(section => ({
         sectionId: section.id,
         content: section.content,
-        shots: globalShots,
+        shots: globalShots, // Use global shots for all sections
         title: section.title
       }));
       await saveAllSections(sectionsToSave);
@@ -91,18 +90,15 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       await saveAllSections([{
         sectionId: 'free-mode',
         content: freeContent,
-        shots: globalShots,
+        shots: globalShots, // Use global shots
         title: 'Guión Libre'
       }]);
     }
   };
 
-  console.log('🎬 NewTextEditor renderizado:', {
-    editorMode,
-    sectionsCount: sections.length,
-    globalShotsCount: globalShots.length,
-    contextId
-  });
+  const hasContent = editorMode === 'structured' 
+    ? sections.some(section => section.content.trim().length > 0)
+    : freeContent.trim().length > 0;
 
   return (
     <div className="space-y-6">
@@ -148,7 +144,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
             </Button>
             <Button
               onClick={handleSaveAll}
-              disabled={saveState.isSaving}
+              disabled={saveState.isSaving || !hasContent}
               className="bg-flow-blue hover:bg-flow-blue/90 flex items-center gap-2"
             >
               {saveState.isSaving ? (
@@ -178,11 +174,10 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
               placeholder={section.placeholder}
               content={section.content}
               onContentChange={(content) => {
-                console.log(`Actualizando contenido de sección ${section.id}:`, content.length, 'caracteres');
                 updateSectionContent(section.id, content);
               }}
               showCreativeZone={false}
-              hideEmptyShots={false}
+              hideEmptyShots={!hasContent}
               sectionId={section.id}
               showSaveButton={false}
               videoContextId={contextId}
@@ -197,7 +192,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
           content={freeContent}
           onContentChange={setFreeContent}
           showCreativeZone={false}
-          hideEmptyShots={false}
+          hideEmptyShots={!hasContent}
           sectionId="free-mode"
           showSaveButton={false}
           videoContextId={contextId}

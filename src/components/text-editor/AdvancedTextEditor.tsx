@@ -8,7 +8,7 @@ import { Save, Camera, MessageSquare } from 'lucide-react';
 import { Shot, TextSegment, useAdvancedEditor, PRESET_COLORS } from '@/hooks/use-advanced-editor';
 import { useSectionShots } from '@/hooks/use-section-shots';
 import { ShotSelector } from './ShotSelector';
-import { SingleShotDisplay } from './SingleShotDisplay';
+import { ShotDisplay } from './ShotDisplay';
 import { CreativeZone } from './CreativeZone';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -130,7 +130,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   }, [selectedText, selectionRange, sectionShots, updateShot]);
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    console.log('📝 Cambio en textarea:', e.target.value.length, 'caracteres');
     handleContentChange(e.target.value);
   };
 
@@ -146,12 +145,10 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     return {};
   }, [getShotForText]);
 
-  console.log('🎨 AdvancedTextEditor renderizado:', {
-    sectionId,
-    title,
-    contentLength: content.length,
-    shotsCount: sectionShots.length
-  });
+  // Don't show section if content is empty and hideEmptyShots is true
+  if (hideEmptyShots && content.trim() === '' && sectionShots.length === 0) {
+    return null;
+  }
 
   return (
     <Card className="border-0 shadow-sm">
@@ -217,7 +214,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
               Tomas de esta sección
             </h4>
             {sectionShots.map((shot) => (
-              <SingleShotDisplay
+              <ShotDisplay
                 key={shot.id}
                 shot={shot}
                 onToggleStrikethrough={toggleTextStrikethrough}
@@ -244,8 +241,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
         <ShotSelector
           selectedText={selectedText}
           existingShots={sectionShots}
-          onCreateShot={createNewShot}
-          onAssignToShot={assignToExistingShot}
+          onCreateNew={createNewShot}
+          onAssignExisting={assignToExistingShot}
           onClose={() => setShowShotSelector(false)}
         />
       )}

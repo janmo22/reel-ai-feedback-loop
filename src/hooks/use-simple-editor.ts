@@ -1,82 +1,83 @@
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 
-interface Section {
+export interface Shot {
   id: string;
+  name: string;
+  color: string;
+}
+
+export interface Section {
+  id: string;
+  type: 'hook' | 'buildup' | 'value' | 'cta';
   title: string;
   description: string;
   placeholder: string;
   content: string;
 }
 
-const DEFAULT_SECTIONS: Section[] = [
+export const SECTIONS = [
   {
     id: 'hook',
-    title: 'Hook',
-    description: 'Gancho inicial para captar la atención en los primeros segundos',
-    placeholder: 'Escribe un gancho que capture inmediatamente la atención de tu audiencia...',
-    content: ''
+    type: 'hook' as const,
+    title: 'Hook (Ruptura de patrón)',
+    description: 'Invita al usuario a quedarse en el video con una ruptura de patrón',
+    placeholder: 'Ejemplo: "Si haces esto, nunca más tendrás problemas con..."'
   },
   {
-    id: 'build-up',
-    title: 'Desarrollo',
-    description: 'Desarrollo del contenido principal y construcción del valor',
-    placeholder: 'Desarrolla tu contenido principal, aporta valor y mantén el interés...',
-    content: ''
+    id: 'buildup',
+    type: 'buildup' as const,
+    title: 'Build-up',
+    description: 'Explica el problema que soluciona tu video',
+    placeholder: 'Explica el problema o situación que vas a resolver...'
   },
   {
-    id: 'value-add',
-    title: 'Valor Añadido',
-    description: 'Información valiosa, tips o conocimientos únicos',
-    placeholder: 'Comparte conocimientos valiosos, tips únicos o información útil...',
-    content: ''
+    id: 'value',
+    type: 'value' as const,
+    title: 'Aporte de valor',
+    description: 'Aquí vas con todo, explicas la solución',
+    placeholder: 'Comparte tu conocimiento y la solución al problema...'
   },
   {
-    id: 'call-to-action',
-    title: 'Call to Action',
-    description: 'Llamada a la acción para involucrar a la audiencia',
-    placeholder: 'Invita a tu audiencia a interactuar: comentar, seguir, compartir...',
-    content: ''
+    id: 'cta',
+    type: 'cta' as const,
+    title: 'Call to action',
+    description: 'Llamada a la acción que aporte valor',
+    placeholder: 'Invita a tu audiencia a actuar: seguirte, comentar, etc...'
   }
 ];
 
 export const useSimpleEditor = () => {
-  const [sections, setSections] = useState<Section[]>(DEFAULT_SECTIONS);
+  const [sections, setSections] = useState<Section[]>(
+    SECTIONS.map(s => ({ ...s, content: '' }))
+  );
+  const [shots, setShots] = useState<Shot[]>([]);
 
   const updateSectionContent = useCallback((sectionId: string, content: string) => {
     setSections(prev => prev.map(section => 
-      section.id === sectionId 
-        ? { ...section, content }
-        : section
+      section.id === sectionId ? { ...section, content } : section
     ));
   }, []);
 
-  const getAllContent = useCallback(() => {
-    return sections
-      .filter(section => section.content.trim().length > 0)
-      .map(section => `${section.title}:\n${section.content}`)
-      .join('\n\n');
-  }, [sections]);
-
-  const clearAllContent = useCallback(() => {
-    setSections(DEFAULT_SECTIONS.map(section => ({ ...section, content: '' })));
+  const addShot = useCallback((name: string, color: string) => {
+    const newShot: Shot = {
+      id: `shot-${Date.now()}`,
+      name,
+      color
+    };
+    setShots(prev => [...prev, newShot]);
+    return newShot;
   }, []);
 
-  const getSectionContent = useCallback((sectionId: string) => {
-    const section = sections.find(s => s.id === sectionId);
-    return section?.content || '';
-  }, [sections]);
-
-  const hasContent = useMemo(() => {
-    return sections.some(section => section.content.trim().length > 0);
+  const getAllContent = useCallback(() => {
+    return sections.map(section => section.content).join('\n\n');
   }, [sections]);
 
   return {
     sections,
+    shots,
     updateSectionContent,
-    getAllContent,
-    clearAllContent,
-    getSectionContent,
-    hasContent
+    addShot,
+    getAllContent
   };
 };
