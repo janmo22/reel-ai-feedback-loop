@@ -15,6 +15,7 @@ import SettingsPage from "./pages/SettingsPage";
 import StrategyPage from "./pages/StrategyPage";
 import CompetitorsPage from "./pages/CompetitorsPage";
 import MyProfileAnalysisPage from "./pages/MyProfileAnalysisPage";
+import MyProfilePage from "./pages/MyProfilePage";
 import CreateVideoPage from "./pages/CreateVideoPage";
 import VideosPage from "./pages/VideosPage";
 import NotFound from "./pages/NotFound";
@@ -42,7 +43,8 @@ const App = () => (
               <Route path="settings" element={<SettingsPage />} />
               <Route path="strategy" element={<StrategyPage />} />
               <Route path="competitors" element={<CompetitorsPage />} />
-              <Route path="my-profile-analysis" element={<MyProfileAnalysisPage />} />
+              <Route path="my-profile" element={<MyProfilePage />} />
+              <Route path="my-profile-analysis/:profileId" element={<MyProfileAnalysisPage />} />
               <Route path="/competitor-video/:videoId" element={<CompetitorVideoAnalysisPage />} />
               <Route path="*" element={<NotFound />} />
             </Route>
