@@ -130,6 +130,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   }, [selectedText, selectionRange, sectionShots, updateShot]);
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    console.log('📝 Cambio en textarea:', e.target.value.length, 'caracteres');
     handleContentChange(e.target.value);
   };
 
@@ -149,6 +150,13 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
   if (hideEmptyShots && content.trim() === '' && sectionShots.length === 0) {
     return null;
   }
+
+  console.log('🎨 AdvancedTextEditor renderizado:', {
+    sectionId,
+    title,
+    contentLength: content.length,
+    shotsCount: sectionShots.length
+  });
 
   return (
     <Card className="border-0 shadow-sm">

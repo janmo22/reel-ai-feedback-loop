@@ -33,7 +33,8 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
   const {
     sections,
     getAllContent,
-    updateSectionContent
+    updateSectionContent,
+    hasContent
   } = useSimpleEditor();
 
   // Use shared shots system to get global shots for this video context
@@ -82,7 +83,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       const sectionsToSave = sections.map(section => ({
         sectionId: section.id,
         content: section.content,
-        shots: globalShots, // Use global shots for all sections
+        shots: globalShots,
         title: section.title
       }));
       await saveAllSections(sectionsToSave);
@@ -90,15 +91,18 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       await saveAllSections([{
         sectionId: 'free-mode',
         content: freeContent,
-        shots: globalShots, // Use global shots
+        shots: globalShots,
         title: 'Guión Libre'
       }]);
     }
   };
 
-  const hasContent = editorMode === 'structured' 
-    ? sections.some(section => section.content.trim().length > 0)
-    : freeContent.trim().length > 0;
+  console.log('🎬 NewTextEditor renderizado:', {
+    editorMode,
+    sectionsCount: sections.length,
+    globalShotsCount: globalShots.length,
+    contextId
+  });
 
   return (
     <div className="space-y-6">
@@ -174,6 +178,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
               placeholder={section.placeholder}
               content={section.content}
               onContentChange={(content) => {
+                console.log(`Actualizando contenido de sección ${section.id}:`, content.length, 'caracteres');
                 updateSectionContent(section.id, content);
               }}
               showCreativeZone={false}
