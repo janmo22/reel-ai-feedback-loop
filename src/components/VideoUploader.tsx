@@ -42,8 +42,8 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
   const { user } = useAuth();
   
   const MAX_FILE_SIZE = 500 * 1024 * 1024;
-  // Updated webhook URL for creator reel analysis
-  const WEBHOOK_URL = "https://analizaconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
+  // Updated webhook URL for creator reel analysis - PRODUCTION
+  const WEBHOOK_URL = "https://analizaconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -257,7 +257,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
         // Continuar con el webhook incluso si falla Supabase
       }
       
-      console.log("Enviando datos al webhook:", WEBHOOK_URL);
+      console.log("Enviando datos al webhook PRODUCCIÓN:", WEBHOOK_URL);
       
       const formData = new FormData();
       formData.append("videoId", videoId);
@@ -268,7 +268,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       formData.append("mainMessage", mainMessage);
       formData.append("videoUrl", videoUrl);
       
-      console.log("Enviando metadatos al webhook con URL del video:", videoUrl);
+      console.log("Enviando metadatos al webhook PRODUCCIÓN con URL del video:", videoUrl);
       
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
@@ -276,7 +276,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
       });
       
       if (response.ok) {
-        console.log("Datos enviados correctamente al webhook");
+        console.log("Datos enviados correctamente al webhook PRODUCCIÓN");
         
         toast({
           title: "¡Video enviado!",
@@ -292,7 +292,7 @@ const VideoUploader = ({ onUploadComplete }: VideoUploaderProps) => {
           response: { success: true, videoId },
         });
       } else {
-        console.error("Error en la respuesta del webhook:", response.status);
+        console.error("Error en la respuesta del webhook PRODUCCIÓN:", response.status);
         throw new Error(`Error en el servidor: ${response.status}`);
       }
     } catch (error: any) {

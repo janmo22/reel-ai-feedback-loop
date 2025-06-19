@@ -2,8 +2,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CompetitorVideo, CompetitorData } from "@/hooks/use-competitor-scraping";
 
-// Updated webhook URL for competitor analysis
-const COMPETITOR_ANALYSIS_WEBHOOK_URL = "https://analizaconflow.app.n8n.cloud/webhook-test/d21a77de-3dfb-4a00-8872-1047fa550e57";
+// Updated webhook URL for competitor analysis - PRODUCTION
+const COMPETITOR_ANALYSIS_WEBHOOK_URL = "https://analizaconflow.app.n8n.cloud/webhook/d21a77de-3dfb-4a00-8872-1047fa550e57";
 
 export interface StartAnalysisParams {
   video: CompetitorVideo;
@@ -11,7 +11,7 @@ export interface StartAnalysisParams {
 }
 
 export const startCompetitorVideoAnalysis = async ({ video, competitor }: StartAnalysisParams) => {
-  console.log("Sending data to competitor analysis webhook:", COMPETITOR_ANALYSIS_WEBHOOK_URL);
+  console.log("Sending data to competitor analysis webhook PRODUCCIÓN:", COMPETITOR_ANALYSIS_WEBHOOK_URL);
 
   try {
     // Primero, creamos un registro de análisis pendiente en la base de datos
@@ -82,11 +82,11 @@ export const startCompetitorVideoAnalysis = async ({ video, competitor }: StartA
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Error from analysis webhook:", errorText);
+      console.error("Error from analysis webhook PRODUCCIÓN:", errorText);
       throw new Error(`Error from webhook (${response.status}): ${errorText || response.statusText}`);
     }
 
-    console.log("Response from analysis webhook:", await response.json());
+    console.log("Response from analysis webhook PRODUCCIÓN:", await response.json());
 
     return { success: true, message: "Analysis started successfully." };
 

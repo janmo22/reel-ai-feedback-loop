@@ -11,8 +11,8 @@ export interface UploadVideoParams {
   mainMessage: string;
 }
 
-// Updated webhook URL for creator reel analysis
-export const WEBHOOK_URL = "https://analizaconflow.app.n8n.cloud/webhook-test/69fef48e-0c7e-4130-b420-eea7347e1dab";
+// Updated webhook URL for creator reel analysis - PRODUCTION
+export const WEBHOOK_URL = "https://analizaconflow.app.n8n.cloud/webhook/69fef48e-0c7e-4130-b420-eea7347e1dab";
 
 /**
  * Fetch user mission data from the database
@@ -108,7 +108,7 @@ export const uploadVideoToWebhook = async (params: {
   missions: string[];
   mainMessage: string;
 }): Promise<VideoUploadResponse> => {
-  console.log("Enviando datos al webhook de n8n:", WEBHOOK_URL);
+  console.log("Enviando datos al webhook de n8n PRODUCCIÓN:", WEBHOOK_URL);
   
   // Get MIME type from the file
   const mimeType = params.videoFile.type;
@@ -165,7 +165,7 @@ export const uploadVideoToWebhook = async (params: {
     // Update video status to processing before sending to webhook
     await updateVideoStatus(params.videoId, 'processing');
     
-    console.log("Enviando petición al webhook de n8n...");
+    console.log("Enviando petición al webhook de n8n PRODUCCIÓN...");
     
     // Send to n8n webhook with timeout and proper error handling
     const controller = new AbortController();
@@ -183,10 +183,10 @@ export const uploadVideoToWebhook = async (params: {
     
     clearTimeout(timeoutId);
     
-    console.log(`Respuesta del webhook: ${response.status} ${response.statusText}`);
+    console.log(`Respuesta del webhook PRODUCCIÓN: ${response.status} ${response.statusText}`);
     
     if (response.ok) {
-      console.log("Datos enviados correctamente al webhook de n8n");
+      console.log("Datos enviados correctamente al webhook de n8n PRODUCCIÓN");
       
       let responseText = '';
       try {

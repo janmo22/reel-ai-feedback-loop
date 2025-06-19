@@ -54,8 +54,8 @@ const MyProfileVideoAnalysisModal: React.FC<MyProfileVideoAnalysisModalProps> = 
     setIsAnalyzing(true);
 
     try {
-      // Updated webhook URL for my profile analysis
-      const webhookUrl = "https://analizaconflow.app.n8n.cloud/webhook-test/my-profile-analysis";
+      // Updated webhook URL for my profile analysis - PRODUCTION
+      const webhookUrl = "https://analizaconflow.app.n8n.cloud/webhook/my-profile-analysis";
       
       const analysisData = {
         video_id: video.id,
@@ -75,7 +75,7 @@ const MyProfileVideoAnalysisModal: React.FC<MyProfileVideoAnalysisModalProps> = 
         is_my_profile: true
       };
 
-      console.log('Enviando mi video para análisis:', analysisData);
+      console.log('Enviando mi video para análisis a PRODUCCIÓN:', analysisData);
 
       const response = await fetch(webhookUrl, {
         method: 'POST',

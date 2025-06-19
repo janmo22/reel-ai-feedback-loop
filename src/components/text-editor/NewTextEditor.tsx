@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSimpleEditor } from '@/hooks/use-simple-editor';
 import { AdvancedTextEditor } from './AdvancedTextEditor';
@@ -49,7 +48,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
   } = useSimpleEditor();
 
   // Use shared shots system to get global shots for this video context
-  const { shots: globalShots, addShot: addGlobalShot } = useSharedShots(contextId);
+  const { shots: globalShots, setShots, initializeShots } = useSharedShots(contextId);
 
   const {
     creativeItems,
@@ -60,6 +59,19 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
   } = useAdvancedEditor('', contextId);
 
   const { saveState, saveAllSections } = useSupabaseAutosave(contextId);
+
+  // Helper function to add shots using setShots
+  const addGlobalShot = (name: string, color: string, shotData?: any) => {
+    const newShot = {
+      id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name,
+      color,
+      textSegments: [],
+      ...shotData
+    };
+    setShots(prev => [...prev, newShot]);
+    return newShot;
+  };
 
   // Load initial data when editing
   useEffect(() => {
@@ -79,16 +91,19 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       
       // Load shots
       if (initialData.shots && Array.isArray(initialData.shots)) {
-        initialData.shots.forEach(shot => {
-          if (shot && shot.name) {
-            addGlobalShot(shot.name, shot.color || '#3B82F6', shot);
-          }
-        });
+        const shotsToLoad = initialData.shots.map(shot => ({
+          id: shot.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: shot.name || 'Toma sin nombre',
+          color: shot.color || '#3B82F6',
+          textSegments: shot.textSegments || [],
+          ...shot
+        }));
+        initializeShots(shotsToLoad);
       }
       
       setIsInitialDataLoaded(true);
     }
-  }, [initialData, isInitialDataLoaded, clearOnMount, loadInitialContent, updateSectionContent, addGlobalShot]);
+  }, [initialData, isInitialDataLoaded, clearOnMount, loadInitialContent, updateSectionContent, initializeShots]);
 
   // Clear editor state when starting a new video
   useEffect(() => {
