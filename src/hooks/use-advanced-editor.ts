@@ -305,7 +305,9 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
     const start = selectionRange.start;
     const end = selectionRange.end - 1;
 
-    // Handle overlapping segments more intelligently
+    console.log('Creando nueva toma:', { name, selectedText, start, end, videoContextId });
+
+    // Handle overlapping segments
     const overlapping = findOverlappingSegments(start, end);
     if (overlapping.length > 0) {
       setShots(prevShots => 
@@ -317,19 +319,16 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
             
             // Handle partial selections within existing segments
             if (start > segment.startIndex && end < segment.endIndex) {
-              // Selection is completely within this segment - don't modify, let new shot overlap
               return segment;
             }
             
             // Check if the new selection completely covers this segment
             if (start <= segment.startIndex && end >= segment.endIndex) {
-              // Remove the entire segment
               return null;
             }
             
             // Partial overlap: adjust the segment
             if (start <= segment.startIndex && end < segment.endIndex) {
-              // Selection starts before or at segment start, ends within segment
               return {
                 ...segment,
                 startIndex: end + 1,
@@ -338,7 +337,6 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
             }
             
             if (start > segment.startIndex && end >= segment.endIndex) {
-              // Selection starts within segment, ends after or at segment end
               return {
                 ...segment,
                 endIndex: start - 1,
@@ -370,13 +368,14 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
     };
 
     newShot.textSegments.push(newSegment);
+    
+    console.log('Agregando nueva toma al estado global:', newShot);
     setShots(prev => [...prev, newShot]);
     
     // Clear selection
     setSelectedText('');
     setSelectionRange(null);
     
-    console.log('Nueva toma creada:', { name, id: newShot.id, videoContextId });
     return newShot;
   }, [selectedText, selectionRange, isOnlyWhitespace, findOverlappingSegments, content, setShots, videoContextId]);
 
@@ -386,7 +385,7 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
     const start = selectionRange.start;
     const end = selectionRange.end - 1;
 
-    // Handle overlapping segments more intelligently
+    // Handle overlapping segments
     const overlapping = findOverlappingSegments(start, end);
     if (overlapping.length > 0) {
       setShots(prevShots => 
@@ -398,19 +397,16 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
             
             // Handle partial selections within existing segments
             if (start > segment.startIndex && end < segment.endIndex) {
-              // Selection is completely within this segment - don't modify, let new shot overlap
               return segment;
             }
             
             // Check if the new selection completely covers this segment
             if (start <= segment.startIndex && end >= segment.endIndex) {
-              // Remove the entire segment
               return null;
             }
             
             // Partial overlap: adjust the segment
             if (start <= segment.startIndex && end < segment.endIndex) {
-              // Selection starts before or at segment start, ends within segment
               return {
                 ...segment,
                 startIndex: end + 1,
@@ -419,7 +415,6 @@ export const useAdvancedEditor = (initialContent = '', videoContextId: string = 
             }
             
             if (start > segment.startIndex && end >= segment.endIndex) {
-              // Selection starts within segment, ends after or at segment end
               return {
                 ...segment,
                 endIndex: start - 1,
