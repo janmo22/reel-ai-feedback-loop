@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,23 +29,17 @@ const CreateVideoPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
   
   const [title, setTitle] = useState('');
   const [mainSMP, setMainSMP] = useState<SMP>({ id: 'main', text: '', completed: false });
   const [secondarySMPs, setSecondarySMPs] = useState<SMP[]>([]);
   const [selectedSeries, setSelectedSeries] = useState<string>('');
   const [scriptContent, setScriptContent] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   // Generate unique video context ID for this session
   const videoContextId = useMemo(() => {
     return `new-video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }, []); // Empty dependency array means this will only be generated once per component mount
-
-  // Check if we're editing an existing video
-  const editVideoId = searchParams.get('edit');
-  const preselectedSeriesId = searchParams.get('series');
 
   // Fetch content series
   const { data: contentSeries = [] } = useQuery({
@@ -64,16 +57,6 @@ const CreateVideoPage: React.FC = () => {
     },
     enabled: !!user
   });
-
-  // Set preselected series if provided in URL
-  useEffect(() => {
-    if (preselectedSeriesId && contentSeries.length > 0) {
-      const validSeries = contentSeries.find(series => series.id === preselectedSeriesId);
-      if (validSeries) {
-        setSelectedSeries(preselectedSeriesId);
-      }
-    }
-  }, [preselectedSeriesId, contentSeries]);
 
   // Filter out series with invalid IDs
   const validSeries = contentSeries?.filter(series => {
@@ -129,60 +112,43 @@ const CreateVideoPage: React.FC = () => {
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      console.log('Guardando video:', {
-        title: title.trim(),
-        mainSMP: mainSMP.text.trim(),
-        selectedSeries,
-        contentLength: scriptContent.trim().length
-      });
-
-      const videoData = {
-        user_id: user.id,
-        title: title.trim(),
-        main_smp: mainSMP.text.trim() || null,
-        secondary_smps: secondarySMPs.filter(smp => smp.text.trim() !== '').map(smp => smp.text.trim()),
-        hook: null,
-        build_up: null,
-        value_add: scriptContent.trim() || null,
-        call_to_action: null,
-        shots: [],
-        content_series_id: selectedSeries && selectedSeries !== 'no-series' ? selectedSeries : null,
-        script_annotations: {}
-      };
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('created_videos')
-        .insert(videoData)
-        .select()
-        .single();
+        .insert({
+          user_id: user.id,
+          title: title.trim(),
+          main_smp: mainSMP.text.trim() || null,
+          secondary_smps: secondarySMPs.filter(smp => smp.text.trim() !== '').map(smp => smp.text),
+          hook: null,
+          build_up: null,
+          value_add: scriptContent.trim() || null,
+          call_to_action: null,
+          shots: [],
+          content_series_id: selectedSeries === 'no-series' ? null : selectedSeries || null,
+          script_annotations: {}
+        });
 
-      if (error) {
-        console.error('Error al guardar video:', error);
-        throw error;
-      }
-
-      console.log('Video guardado exitosamente:', data);
+      if (error) throw error;
 
       toast({
         title: isDraft ? "Borrador guardado" : "Video guardado",
         description: `Tu ${isDraft ? 'borrador' : 'video'} ha sido guardado correctamente.`,
       });
 
-      // Navigate to videos page to see the saved video
+      // Reset form and navigate to a new clean page
+      // We navigate away and back to ensure a completely fresh context
       navigate('/videos');
+      setTimeout(() => {
+        navigate('/create-video');
+      }, 100);
 
     } catch (error: any) {
-      console.error('Error completo al guardar:', error);
       toast({
         title: "Error al guardar",
-        description: error.message || "Ocurrió un error inesperado",
+        description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -265,7 +231,7 @@ const CreateVideoPage: React.FC = () => {
                 id="main-smp"
                 placeholder="¿Cuál es el mensaje principal de tu video?"
                 value={mainSMP.text}
-                onChange={(e) => setMainSMP(prev => ({ ...prev, text: e.target.value }))}
+                onChange={(e) => updateMainSMPText(e.target.value)}
                 className="mt-1"
                 rows={1}
               />
@@ -338,19 +304,13 @@ const CreateVideoPage: React.FC = () => {
         <div className="flex gap-3">
           <Button 
             onClick={() => saveVideo(true)}
-            disabled={isLoading}
             className="flex-1 bg-flow-blue hover:bg-flow-blue/90"
           >
-            {isLoading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            {isLoading ? 'Guardando...' : 'Guardar Borrador'}
+            <Save className="h-4 w-4 mr-2" />
+            Guardar Borrador
           </Button>
           <Button 
             onClick={() => saveVideo(false)}
-            disabled={isLoading}
             variant="outline" 
             className="flex-1"
           >
