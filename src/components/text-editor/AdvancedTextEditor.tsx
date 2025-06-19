@@ -146,11 +146,6 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
     return {};
   }, [getShotForText]);
 
-  // Don't show section if content is empty and hideEmptyShots is true
-  if (hideEmptyShots && content.trim() === '' && sectionShots.length === 0) {
-    return null;
-  }
-
   console.log('🎨 AdvancedTextEditor renderizado:', {
     sectionId,
     title,

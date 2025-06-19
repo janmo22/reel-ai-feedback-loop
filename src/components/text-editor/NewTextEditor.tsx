@@ -148,7 +148,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
             </Button>
             <Button
               onClick={handleSaveAll}
-              disabled={saveState.isSaving || !hasContent}
+              disabled={saveState.isSaving}
               className="bg-flow-blue hover:bg-flow-blue/90 flex items-center gap-2"
             >
               {saveState.isSaving ? (
@@ -182,7 +182,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
                 updateSectionContent(section.id, content);
               }}
               showCreativeZone={false}
-              hideEmptyShots={!hasContent}
+              hideEmptyShots={false}
               sectionId={section.id}
               showSaveButton={false}
               videoContextId={contextId}
@@ -197,7 +197,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
           content={freeContent}
           onContentChange={setFreeContent}
           showCreativeZone={false}
-          hideEmptyShots={!hasContent}
+          hideEmptyShots={false}
           sectionId="free-mode"
           showSaveButton={false}
           videoContextId={contextId}
