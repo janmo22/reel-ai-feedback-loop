@@ -42,7 +42,7 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
   const saveSection = useCallback(async (
     sectionId: string,
     content: string,
-    sectionShots: SimpleShot[],
+    sectionShots: any[], // Use any to avoid deep type instantiation
     title?: string
   ) => {
     if (!user) return null;
@@ -105,7 +105,7 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
     sections: Array<{
       sectionId: string;
       content: string;
-      shots: SimpleShot[];
+      shots: any[]; // Use any to avoid type issues
       title: string;
     }>
   ) => {
