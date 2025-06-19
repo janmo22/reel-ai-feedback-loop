@@ -67,7 +67,8 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
         hasBuildUp: !!initialData.build_up,
         hasValueAdd: !!initialData.value_add,
         hasCTA: !!initialData.call_to_action,
-        shotsCount: initialData.shots?.length || 0
+        shotsCount: initialData.shots?.length || 0,
+        shotsType: initialData.shots?.length > 0 ? typeof initialData.shots[0] : 'none'
       });
       
       // Load section content
@@ -80,22 +81,64 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
         if (initialData.call_to_action) updateSectionContent('cta', initialData.call_to_action);
       }
       
-      // Load shots with proper validation and text segments
+      // Load shots with improved parsing for both string and object formats
       if (initialData.shots && Array.isArray(initialData.shots)) {
         const validatedShots = initialData.shots.map((shot, index) => {
+          let processedShot;
+          
+          // Handle both string and object formats
+          if (typeof shot === 'string') {
+            try {
+              processedShot = JSON.parse(shot);
+              console.log(`📦 Toma ${index + 1} parseada desde string:`, processedShot.name);
+            } catch (error) {
+              console.warn(`❌ Error parseando toma ${index + 1}:`, error);
+              return null;
+            }
+          } else if (typeof shot === 'object' && shot !== null) {
+            processedShot = shot;
+            console.log(`📦 Toma ${index + 1} ya es objeto:`, processedShot.name);
+          } else {
+            console.warn(`❌ Formato de toma inválido ${index + 1}:`, typeof shot);
+            return null;
+          }
+
+          // Validate and build the shot
           const validatedShot = {
-            id: shot.id || `shot-${Date.now()}-${index}`,
-            name: shot.name || `Toma ${index + 1}`,
-            color: shot.color || '#3B82F6',
-            textSegments: Array.isArray(shot.textSegments) ? shot.textSegments.map((segment: any) => ({
-              id: segment.id || `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              text: segment.text || '',
-              shotId: shot.id,
-              startIndex: typeof segment.startIndex === 'number' ? segment.startIndex : 0,
-              endIndex: typeof segment.endIndex === 'number' ? segment.endIndex : 0,
-              isStrikethrough: Boolean(segment.isStrikethrough),
-              comments: Array.isArray(segment.comments) ? segment.comments : []
-            })) : []
+            id: processedShot.id || `shot-${Date.now()}-${index}`,
+            name: processedShot.name || `Toma ${index + 1}`,
+            color: processedShot.color || '#3B82F6',
+            textSegments: Array.isArray(processedShot.textSegments) ? processedShot.textSegments.map((segment: any) => {
+              let processedSegment;
+              
+              // Handle both string and object formats for segments too
+              if (typeof segment === 'string') {
+                try {
+                  processedSegment = JSON.parse(segment);
+                } catch (error) {
+                  console.warn('Error parseando segmento:', error);
+                  return null;
+                }
+              } else {
+                processedSegment = segment;
+              }
+              
+              if (!processedSegment) return null;
+
+              return {
+                id: processedSegment.id || `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                text: processedSegment.text || '',
+                shotId: processedShot.id,
+                startIndex: typeof processedSegment.startIndex === 'number' ? processedSegment.startIndex : 0,
+                endIndex: typeof processedSegment.endIndex === 'number' ? processedSegment.endIndex : 0,
+                isStrikethrough: Boolean(processedSegment.isStrikethrough),
+                comments: Array.isArray(processedSegment.comments) ? processedSegment.comments.map((comment: any) => ({
+                  id: comment.id || `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  text: comment.text || '',
+                  timestamp: comment.timestamp || Date.now()
+                })) : []
+              };
+            }).filter((segment: any) => segment !== null && segment?.text?.trim() !== '') : []
           };
 
           console.log(`📝 Toma validada ${index + 1}:`, {
@@ -106,7 +149,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
           });
 
           return validatedShot;
-        }).filter(shot => shot.textSegments.length > 0); // Solo mantener tomas con segmentos
+        }).filter(shot => shot !== null && shot.textSegments.length > 0); // Solo mantener tomas válidas con segmentos
 
         console.log('✅ Inicializando tomas validadas:', {
           originalCount: initialData.shots.length,
