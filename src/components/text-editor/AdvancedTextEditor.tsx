@@ -8,7 +8,7 @@ import { Save, Camera, MessageSquare } from 'lucide-react';
 import { Shot, TextSegment, useAdvancedEditor, PRESET_COLORS } from '@/hooks/use-advanced-editor';
 import { useSectionShots } from '@/hooks/use-section-shots';
 import { ShotSelector } from './ShotSelector';
-import { ShotDisplay } from './ShotDisplay';
+import { SingleShotDisplay } from './SingleShotDisplay';
 import { CreativeZone } from './CreativeZone';
 import { InfoTooltip } from './InfoTooltip';
 
@@ -214,7 +214,7 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
               Tomas de esta sección
             </h4>
             {sectionShots.map((shot) => (
-              <ShotDisplay
+              <SingleShotDisplay
                 key={shot.id}
                 shot={shot}
                 onToggleStrikethrough={toggleTextStrikethrough}
@@ -241,8 +241,8 @@ export const AdvancedTextEditor: React.FC<AdvancedTextEditorProps> = ({
         <ShotSelector
           selectedText={selectedText}
           existingShots={sectionShots}
-          onCreateNew={createNewShot}
-          onAssignExisting={assignToExistingShot}
+          onCreateShot={createNewShot}
+          onAssignToShot={assignToExistingShot}
           onClose={() => setShowShotSelector(false)}
         />
       )}
