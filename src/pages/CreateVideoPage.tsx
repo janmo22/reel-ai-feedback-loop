@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -167,7 +168,11 @@ const CreateVideoPage: React.FC = () => {
   const handleEditorContentChange = (content: string, sections: any[]) => {
     setScriptContent(content);
     setEditorSections(sections);
-    console.log('Contenido del editor actualizado con secciones completas:', sections);
+    console.log('📝 Contenido del editor actualizado:', { 
+      totalSections: sections.length,
+      sectionsWithShots: sections.filter(s => s.shots && s.shots.length > 0).length,
+      allShots: sections.flatMap(s => s.shots || [])
+    });
   };
 
   const saveVideo = async (isDraft = true) => {
@@ -187,30 +192,76 @@ const CreateVideoPage: React.FC = () => {
       const valueContent = editorSections.find(s => s.id === 'value')?.content || '';
       const ctaContent = editorSections.find(s => s.id === 'cta')?.content || '';
 
-      // Collect all shots from all sections with complete text segment data
-      const allShots: any[] = [];
-      editorSections.forEach(section => {
+      // Collect and process all shots from all sections
+      const processedShots: any[] = [];
+      const shotMap = new Map(); // Para evitar duplicados por ID
+
+      console.log('🎬 Procesando tomas de las secciones:', editorSections.length);
+
+      editorSections.forEach((section, sectionIndex) => {
+        console.log(`📋 Sección ${sectionIndex + 1} (${section.id}):`, {
+          hasShots: !!(section.shots && section.shots.length > 0),
+          shotsCount: section.shots?.length || 0,
+          content: section.content?.substring(0, 50) + '...'
+        });
+
         if (section.shots && Array.isArray(section.shots)) {
-          section.shots.forEach((shot: any) => {
-            const existingShot = allShots.find(s => s.id === shot.id);
-            if (!existingShot) {
-              // Ensure text segments include all necessary data
-              const completeShot = {
-                ...shot,
-                textSegments: shot.textSegments?.map((segment: any) => ({
-                  id: segment.id,
-                  text: segment.text || '',
-                  startIndex: segment.startIndex || 0,
-                  endIndex: segment.endIndex || 0,
-                  isStrikethrough: segment.isStrikethrough || false,
-                  comments: segment.comments || []
-                })) || []
+          section.shots.forEach((shot: any, shotIndex: number) => {
+            if (!shotMap.has(shot.id)) {
+              // Construir toma completa con validación de datos
+              const processedShot = {
+                id: shot.id,
+                name: shot.name || `Toma ${processedShots.length + 1}`,
+                color: shot.color || '#3B82F6',
+                textSegments: (shot.textSegments || []).map((segment: any) => {
+                  const processedSegment = {
+                    id: segment.id || `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    text: segment.text || '',
+                    shotId: shot.id,
+                    startIndex: typeof segment.startIndex === 'number' ? segment.startIndex : 0,
+                    endIndex: typeof segment.endIndex === 'number' ? segment.endIndex : 0,
+                    isStrikethrough: Boolean(segment.isStrikethrough),
+                    comments: Array.isArray(segment.comments) ? segment.comments.map((comment: any) => ({
+                      id: comment.id || `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                      text: comment.text || '',
+                      timestamp: comment.timestamp || Date.now()
+                    })) : []
+                  };
+                  
+                  console.log(`  📝 Segmento procesado:`, {
+                    id: processedSegment.id,
+                    text: processedSegment.text.substring(0, 30) + '...',
+                    startIndex: processedSegment.startIndex,
+                    endIndex: processedSegment.endIndex,
+                    isStrikethrough: processedSegment.isStrikethrough,
+                    commentsCount: processedSegment.comments.length
+                  });
+                  
+                  return processedSegment;
+                }).filter((segment: any) => segment.text.trim() !== '') // Filtrar segmentos vacíos
               };
-              allShots.push(completeShot);
-              console.log('Toma agregada con segmentos completos:', completeShot);
+
+              shotMap.set(shot.id, processedShot);
+              processedShots.push(processedShot);
+
+              console.log(`  🎯 Toma procesada:`, {
+                id: processedShot.id,
+                name: processedShot.name,
+                color: processedShot.color,
+                textSegmentsCount: processedShot.textSegments.length,
+                totalTextLength: processedShot.textSegments.reduce((acc: number, seg: any) => acc + seg.text.length, 0)
+              });
+            } else {
+              console.log(`  ⚠️ Toma duplicada omitida: ${shot.id}`);
             }
           });
         }
+      });
+
+      console.log('✅ Tomas finales a guardar:', {
+        totalShots: processedShots.length,
+        shotNames: processedShots.map(s => s.name),
+        totalSegments: processedShots.reduce((acc, shot) => acc + shot.textSegments.length, 0)
       });
 
       const videoData = {
@@ -222,20 +273,22 @@ const CreateVideoPage: React.FC = () => {
         build_up: buildupContent.trim() || null,
         value_add: valueContent.trim() || null,
         call_to_action: ctaContent.trim() || null,
-        shots: allShots,
+        shots: processedShots, // Usar las tomas procesadas
         content_series_id: selectedSeries === 'no-series' ? null : selectedSeries || null,
         script_annotations: {
           videoContextId,
           editorMode: 'structured',
-          sectionsData: editorSections
+          sectionsData: editorSections,
+          shotsProcessingTimestamp: Date.now()
         }
       };
 
-      console.log('Guardando video con tomas completas:', {
-        ...videoData,
-        shots: allShots.map(shot => ({
-          ...shot,
-          textSegmentsCount: shot.textSegments?.length || 0
+      console.log('💾 Guardando video con datos completos:', {
+        title: videoData.title,
+        shotsCount: videoData.shots.length,
+        shotsSample: videoData.shots.slice(0, 2).map(shot => ({
+          name: shot.name,
+          segmentsCount: shot.textSegments?.length || 0
         }))
       });
 
@@ -258,13 +311,13 @@ const CreateVideoPage: React.FC = () => {
 
       toast({
         title: isEditing ? "Video actualizado" : (isDraft ? "Borrador guardado" : "Video guardado"),
-        description: `Tu ${isDraft ? 'borrador' : 'video'} ha sido ${isEditing ? 'actualizado' : 'guardado'} correctamente.`,
+        description: `Tu ${isDraft ? 'borrador' : 'video'} ha sido ${isEditing ? 'actualizado' : 'guardado'} correctamente con ${processedShots.length} tomas.`,
       });
 
       navigate('/videos');
 
     } catch (error: any) {
-      console.error('Error guardando video:', error);
+      console.error('❌ Error guardando video:', error);
       toast({
         title: "Error al guardar",
         description: error.message,
@@ -291,7 +344,9 @@ const CreateVideoPage: React.FC = () => {
     videoContextId, 
     isDataLoaded,
     title,
-    editVideoId 
+    editVideoId,
+    sectionsCount: editorSections.length,
+    totalShots: editorSections.reduce((acc, section) => acc + (section.shots?.length || 0), 0)
   });
 
   return (

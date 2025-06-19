@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSimpleEditor } from '@/hooks/use-simple-editor';
 import { AdvancedTextEditor } from './AdvancedTextEditor';
@@ -63,7 +62,13 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
   // Load initial data when editing
   useEffect(() => {
     if (initialData && !isInitialDataLoaded && !clearOnMount) {
-      console.log('Cargando datos iniciales en editor:', initialData);
+      console.log('🔄 Cargando datos iniciales en editor:', {
+        hasHook: !!initialData.hook,
+        hasBuildUp: !!initialData.build_up,
+        hasValueAdd: !!initialData.value_add,
+        hasCTA: !!initialData.call_to_action,
+        shotsCount: initialData.shots?.length || 0
+      });
       
       // Load section content
       if (typeof loadInitialContent === 'function') {
@@ -75,17 +80,41 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
         if (initialData.call_to_action) updateSectionContent('cta', initialData.call_to_action);
       }
       
-      // Load shots with proper text segments
+      // Load shots with proper validation and text segments
       if (initialData.shots && Array.isArray(initialData.shots)) {
-        const shotsToLoad = initialData.shots.map(shot => ({
-          id: shot.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          name: shot.name || 'Toma sin nombre',
-          color: shot.color || '#3B82F6',
-          textSegments: shot.textSegments || [],
-          ...shot
-        }));
-        initializeShots(shotsToLoad);
-        console.log('Tomas cargadas con segmentos:', shotsToLoad);
+        const validatedShots = initialData.shots.map((shot, index) => {
+          const validatedShot = {
+            id: shot.id || `shot-${Date.now()}-${index}`,
+            name: shot.name || `Toma ${index + 1}`,
+            color: shot.color || '#3B82F6',
+            textSegments: Array.isArray(shot.textSegments) ? shot.textSegments.map((segment: any) => ({
+              id: segment.id || `segment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              text: segment.text || '',
+              shotId: shot.id,
+              startIndex: typeof segment.startIndex === 'number' ? segment.startIndex : 0,
+              endIndex: typeof segment.endIndex === 'number' ? segment.endIndex : 0,
+              isStrikethrough: Boolean(segment.isStrikethrough),
+              comments: Array.isArray(segment.comments) ? segment.comments : []
+            })) : []
+          };
+
+          console.log(`📝 Toma validada ${index + 1}:`, {
+            id: validatedShot.id,
+            name: validatedShot.name,
+            textSegmentsCount: validatedShot.textSegments.length,
+            hasValidSegments: validatedShot.textSegments.some(seg => seg.text.trim() !== '')
+          });
+
+          return validatedShot;
+        }).filter(shot => shot.textSegments.length > 0); // Solo mantener tomas con segmentos
+
+        console.log('✅ Inicializando tomas validadas:', {
+          originalCount: initialData.shots.length,
+          validatedCount: validatedShots.length,
+          totalSegments: validatedShots.reduce((acc, shot) => acc + shot.textSegments.length, 0)
+        });
+
+        initializeShots(validatedShots);
       }
       
       setIsInitialDataLoaded(true);
@@ -98,11 +127,11 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       clearEditorState();
       setFreeContent('');
       setIsInitialDataLoaded(false);
-      console.log('Editor limpiado para nuevo video con contexto:', contextId);
+      console.log('🧹 Editor limpiado para nuevo video con contexto:', contextId);
     }
   }, [clearOnMount, clearEditorState, contextId]);
 
-  // Track content changes and provide section data to parent
+  // Track content changes and provide comprehensive section data to parent
   useEffect(() => {
     const currentContent = editorMode === 'structured' ? getAllContent() : freeContent;
     
@@ -110,23 +139,38 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       // Get all shots with complete text segments data
       const allCurrentShots = getAllShots();
       
-      // Provide detailed section information with shots that include text segments
-      const sectionsWithShots = sections.map(section => {
-        // Get shots specific to this section
+      console.log('📊 Actualizando contenido estructurado:', {
+        sectionsCount: sections.length,
+        totalShots: allCurrentShots.length,
+        shotsWithSegments: allCurrentShots.filter(shot => shot.textSegments && shot.textSegments.length > 0).length
+      });
+
+      // Provide detailed section information with shots that include complete text segments
+      const sectionsWithCompleteShots = sections.map(section => {
+        // Get shots specific to this section (in this case, all global shots)
         const sectionShots = getShotsBySection(section.id);
         
-        // Ensure each shot has complete text segment data including strikethrough state
-        const completeShots = sectionShots.map(shot => ({
-          ...shot,
-          textSegments: shot.textSegments?.map(segment => ({
-            id: segment.id,
-            text: segment.text,
-            startIndex: segment.startIndex,
-            endIndex: segment.endIndex,
-            isStrikethrough: segment.isStrikethrough || false,
-            comments: segment.comments || []
-          })) || []
-        }));
+        // Ensure each shot has complete text segment data
+        const completeShots = sectionShots.map(shot => {
+          const completeShot = {
+            ...shot,
+            textSegments: Array.isArray(shot.textSegments) ? shot.textSegments.map(segment => ({
+              id: segment.id,
+              text: segment.text || '',
+              shotId: shot.id,
+              startIndex: typeof segment.startIndex === 'number' ? segment.startIndex : 0,
+              endIndex: typeof segment.endIndex === 'number' ? segment.endIndex : 0,
+              isStrikethrough: Boolean(segment.isStrikethrough),
+              comments: Array.isArray(segment.comments) ? segment.comments.map(comment => ({
+                id: comment.id,
+                text: comment.text || '',
+                timestamp: comment.timestamp || Date.now()
+              })) : []
+            })) : []
+          };
+
+          return completeShot;
+        }).filter(shot => shot.textSegments.length > 0); // Solo incluir tomas con segmentos válidos
         
         return {
           ...section,
@@ -134,26 +178,34 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
         };
       });
       
-      console.log('Enviando datos de secciones con tomas completas:', sectionsWithShots);
-      onContentChange?.(currentContent, sectionsWithShots);
+      console.log('📤 Enviando datos de secciones al padre:', {
+        sectionsCount: sectionsWithCompleteShots.length,
+        sectionsWithShots: sectionsWithCompleteShots.filter(s => s.shots.length > 0).length,
+        totalShotsInSections: sectionsWithCompleteShots.reduce((acc, s) => acc + s.shots.length, 0)
+      });
+      
+      onContentChange?.(currentContent, sectionsWithCompleteShots);
     } else {
       // For free mode, get all shots with complete data
       const allCurrentShots = getAllShots();
+      const completeShots = allCurrentShots.map(shot => ({
+        ...shot,
+        textSegments: Array.isArray(shot.textSegments) ? shot.textSegments.map(segment => ({
+          id: segment.id,
+          text: segment.text || '',
+          shotId: shot.id,
+          startIndex: typeof segment.startIndex === 'number' ? segment.startIndex : 0,
+          endIndex: typeof segment.endIndex === 'number' ? segment.endIndex : 0,
+          isStrikethrough: Boolean(segment.isStrikethrough),
+          comments: Array.isArray(segment.comments) ? segment.comments : []
+        })) : []
+      })).filter(shot => shot.textSegments.length > 0);
+
       const freeModeSection = [{
         id: 'free-mode',
         title: 'Guión Libre',
         content: freeContent,
-        shots: allCurrentShots.map(shot => ({
-          ...shot,
-          textSegments: shot.textSegments?.map(segment => ({
-            id: segment.id,
-            text: segment.text,
-            startIndex: segment.startIndex,
-            endIndex: segment.endIndex,
-            isStrikethrough: segment.isStrikethrough || false,
-            comments: segment.comments || []
-          })) || []
-        }))
+        shots: completeShots
       }];
       onContentChange?.(currentContent, freeModeSection);
     }
@@ -174,21 +226,23 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
   };
 
   const handleSaveAll = async () => {
+    const allCurrentShots = getAllShots();
+    
     if (editorMode === 'structured') {
       const sectionsToSave = sections.map(section => {
         const sectionShots = getShotsBySection(section.id);
-        // Ensure complete shot data with text segments
         const completeSectionShots = sectionShots.map(shot => ({
           ...shot,
-          textSegments: shot.textSegments?.map(segment => ({
+          textSegments: Array.isArray(shot.textSegments) ? shot.textSegments.map(segment => ({
             id: segment.id,
-            text: segment.text,
-            startIndex: segment.startIndex,
-            endIndex: segment.endIndex,
-            isStrikethrough: segment.isStrikethrough || false,
-            comments: segment.comments || []
-          })) || []
-        }));
+            text: segment.text || '',
+            shotId: shot.id,
+            startIndex: typeof segment.startIndex === 'number' ? segment.startIndex : 0,
+            endIndex: typeof segment.endIndex === 'number' ? segment.endIndex : 0,
+            isStrikethrough: Boolean(segment.isStrikethrough),
+            comments: Array.isArray(segment.comments) ? segment.comments : []
+          })) : []
+        })).filter(shot => shot.textSegments.length > 0);
         
         return {
           sectionId: section.id,
@@ -199,18 +253,18 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       });
       await saveAllSections(sectionsToSave);
     } else {
-      const allCurrentShots = getAllShots();
       const completeFreeShots = allCurrentShots.map(shot => ({
         ...shot,
-        textSegments: shot.textSegments?.map(segment => ({
+        textSegments: Array.isArray(shot.textSegments) ? shot.textSegments.map(segment => ({
           id: segment.id,
-          text: segment.text,
-          startIndex: segment.startIndex,
-          endIndex: segment.endIndex,
-          isStrikethrough: segment.isStrikethrough || false,
-          comments: segment.comments || []
-        })) || []
-      }));
+          text: segment.text || '',
+          shotId: shot.id,
+          startIndex: typeof segment.startIndex === 'number' ? segment.startIndex : 0,
+          endIndex: typeof segment.endIndex === 'number' ? segment.endIndex : 0,
+          isStrikethrough: Boolean(segment.isStrikethrough),
+          comments: Array.isArray(segment.comments) ? segment.comments : []
+        })) : []
+      })).filter(shot => shot.textSegments.length > 0);
       
       await saveAllSections([{
         sectionId: 'free-mode',
@@ -239,6 +293,11 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
                 <Camera className="h-4 w-4 text-flow-blue" />
                 <span className="text-sm text-flow-blue font-medium">
                   {globalShots.length} toma{globalShots.length !== 1 ? 's' : ''} creada{globalShots.length !== 1 ? 's' : ''}
+                  {globalShots.reduce((acc, shot) => acc + (shot.textSegments?.length || 0), 0) > 0 && (
+                    <span className="ml-1 text-xs text-gray-500">
+                      ({globalShots.reduce((acc, shot) => acc + (shot.textSegments?.length || 0), 0)} segmentos)
+                    </span>
+                  )}
                 </span>
               </div>
             )}
