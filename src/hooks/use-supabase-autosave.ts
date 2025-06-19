@@ -9,27 +9,6 @@ interface SaveState {
   lastSaved: Date | null;
 }
 
-// Simplified interfaces to avoid deep type instantiation
-interface SimpleComment {
-  id: string;
-  text: string;
-}
-
-interface SimpleTextSegment {
-  id: string;
-  startIndex: number;
-  endIndex: number;
-  isStrikethrough?: boolean;
-  comments?: SimpleComment[];
-}
-
-interface SimpleShot {
-  id: string;
-  name: string;
-  color: string;
-  textSegments: SimpleTextSegment[];
-}
-
 export const useSupabaseAutosave = (videoContextId: string = 'default') => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -42,7 +21,7 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
   const saveSection = useCallback(async (
     sectionId: string,
     content: string,
-    sectionShots: any[], // Use any to avoid deep type instantiation
+    sectionShots: any[],
     title?: string
   ) => {
     if (!user) return null;
@@ -105,7 +84,7 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
     sections: Array<{
       sectionId: string;
       content: string;
-      shots: any[]; // Use any to avoid type issues
+      shots: any[];
       title: string;
     }>
   ) => {
@@ -161,31 +140,16 @@ export const useSupabaseAutosave = (videoContextId: string = 'default') => {
       if (error) throw error;
 
       if (data) {
-        // Parse shots safely with proper type handling
-        let parsedShots: SimpleShot[] = [];
+        // Parse shots safely
+        let parsedShots: any[] = [];
         try {
           if (data.shots) {
             const shotsData = typeof data.shots === 'string' 
               ? JSON.parse(data.shots) 
               : data.shots;
             
-            // Ensure the parsed data matches our SimpleShot structure
             if (Array.isArray(shotsData)) {
-              parsedShots = shotsData.map((shot: any) => ({
-                id: shot.id || '',
-                name: shot.name || '',
-                color: shot.color || '',
-                textSegments: Array.isArray(shot.textSegments) ? shot.textSegments.map((segment: any) => ({
-                  id: segment.id || '',
-                  startIndex: segment.startIndex || 0,
-                  endIndex: segment.endIndex || 0,
-                  isStrikethrough: segment.isStrikethrough || false,
-                  comments: Array.isArray(segment.comments) ? segment.comments.map((comment: any) => ({
-                    id: comment.id || '',
-                    text: comment.text || ''
-                  })) : []
-                })) : []
-              }));
+              parsedShots = shotsData;
             }
           }
         } catch (parseError) {

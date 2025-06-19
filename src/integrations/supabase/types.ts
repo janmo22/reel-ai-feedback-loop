@@ -493,6 +493,7 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          video_context_id: string | null
         }
         Insert: {
           content?: string | null
@@ -503,6 +504,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id: string
+          video_context_id?: string | null
         }
         Update: {
           content?: string | null
@@ -513,6 +515,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          video_context_id?: string | null
         }
         Relationships: []
       }
