@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +36,7 @@ const CreateVideoPage: React.FC = () => {
   const [secondarySMPs, setSecondarySMPs] = useState<SMP[]>([]);
   const [selectedSeries, setSelectedSeries] = useState<string>('');
   const [scriptContent, setScriptContent] = useState('');
+  const [editorSections, setEditorSections] = useState<any[]>([]);
 
   // Generate unique video context ID for this session
   const videoContextId = useMemo(() => {
@@ -102,6 +104,12 @@ const CreateVideoPage: React.FC = () => {
     setSecondarySMPs(prev => prev.filter(smp => smp.id !== id));
   };
 
+  // Handler to receive structured content from the editor
+  const handleEditorContentChange = (content: string, sections: any[]) => {
+    setScriptContent(content);
+    setEditorSections(sections);
+  };
+
   const saveVideo = async (isDraft = true) => {
     if (!user || !title.trim()) {
       toast({
@@ -113,6 +121,36 @@ const CreateVideoPage: React.FC = () => {
     }
 
     try {
+      // Extract content from sections
+      const hookContent = editorSections.find(s => s.id === 'hook')?.content || '';
+      const buildupContent = editorSections.find(s => s.id === 'buildup')?.content || '';
+      const valueContent = editorSections.find(s => s.id === 'value')?.content || '';
+      const ctaContent = editorSections.find(s => s.id === 'cta')?.content || '';
+
+      // Collect all shots from all sections
+      const allShots: any[] = [];
+      editorSections.forEach(section => {
+        if (section.shots && Array.isArray(section.shots)) {
+          section.shots.forEach((shot: any) => {
+            // Avoid duplicates by checking if shot already exists
+            const existingShot = allShots.find(s => s.id === shot.id);
+            if (!existingShot) {
+              allShots.push(shot);
+            }
+          });
+        }
+      });
+
+      console.log('Guardando video con datos:', {
+        title,
+        hookContent,
+        buildupContent,
+        valueContent,
+        ctaContent,
+        shotsCount: allShots.length,
+        videoContextId
+      });
+
       const { error } = await supabase
         .from('created_videos')
         .insert({
@@ -120,13 +158,17 @@ const CreateVideoPage: React.FC = () => {
           title: title.trim(),
           main_smp: mainSMP.text.trim() || null,
           secondary_smps: secondarySMPs.filter(smp => smp.text.trim() !== '').map(smp => smp.text),
-          hook: null,
-          build_up: null,
-          value_add: scriptContent.trim() || null,
-          call_to_action: null,
-          shots: [],
+          hook: hookContent.trim() || null,
+          build_up: buildupContent.trim() || null,
+          value_add: valueContent.trim() || null,
+          call_to_action: ctaContent.trim() || null,
+          shots: allShots,
           content_series_id: selectedSeries === 'no-series' ? null : selectedSeries || null,
-          script_annotations: {}
+          script_annotations: {
+            videoContextId,
+            editorMode: 'structured',
+            sectionsData: editorSections
+          }
         });
 
       if (error) throw error;
@@ -144,6 +186,7 @@ const CreateVideoPage: React.FC = () => {
       }, 100);
 
     } catch (error: any) {
+      console.error('Error guardando video:', error);
       toast({
         title: "Error al guardar",
         description: error.message,
@@ -295,7 +338,7 @@ const CreateVideoPage: React.FC = () => {
 
         {/* Editor de texto principal con contexto único */}
         <NewTextEditor
-          onContentChange={setScriptContent}
+          onContentChange={handleEditorContentChange}
           videoContextId={videoContextId}
           clearOnMount={true} // Always start clean for new videos
         />

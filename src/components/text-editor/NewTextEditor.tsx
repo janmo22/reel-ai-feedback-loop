@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Layout, Save, Camera } from 'lucide-react';
 
 interface NewTextEditorProps {
-  onContentChange?: (content: string) => void;
+  onContentChange?: (content: string, sections?: any[]) => void;
   videoContextId?: string; // Optional prop, will generate one if not provided
   clearOnMount?: boolean; // New prop to control if editor should start clean
 }
@@ -58,11 +58,28 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
     }
   }, [clearOnMount, clearEditorState, contextId]);
 
-  // Track content changes
+  // Track content changes and provide section data to parent
   useEffect(() => {
     const currentContent = editorMode === 'structured' ? getAllContent() : freeContent;
-    onContentChange?.(currentContent);
-  }, [sections, freeContent, editorMode, onContentChange, getAllContent]);
+    
+    if (editorMode === 'structured') {
+      // Provide detailed section information
+      const sectionsWithShots = sections.map(section => ({
+        ...section,
+        shots: getShotsBySection(section.id)
+      }));
+      onContentChange?.(currentContent, sectionsWithShots);
+    } else {
+      // For free mode, create a single section
+      const freeModeSection = [{
+        id: 'free-mode',
+        title: 'Guión Libre',
+        content: freeContent,
+        shots: globalShots
+      }];
+      onContentChange?.(currentContent, freeModeSection);
+    }
+  }, [sections, freeContent, editorMode, onContentChange, getAllContent, getShotsBySection, globalShots]);
 
   const switchMode = (mode: 'structured' | 'free') => {
     if (mode === 'free' && editorMode === 'structured') {
@@ -83,7 +100,7 @@ const NewTextEditor: React.FC<NewTextEditorProps> = ({
       const sectionsToSave = sections.map(section => ({
         sectionId: section.id,
         content: section.content,
-        shots: globalShots, // Use global shots for all sections
+        shots: getShotsBySection(section.id), // Use section-specific shots
         title: section.title
       }));
       await saveAllSections(sectionsToSave);
