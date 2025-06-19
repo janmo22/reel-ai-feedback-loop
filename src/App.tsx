@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
-import LandingPage from "./pages/LandingPage";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import UploadPage from "./pages/UploadPage";
@@ -31,9 +30,8 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
-            <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/dashboard" element={<AppLayout><Outlet /></AppLayout>}>
+            <Route path="/" element={<AppLayout><Outlet /></AppLayout>}>
               <Route index element={<Index />} />
               <Route path="create-video" element={<CreateVideoPage />} />
               <Route path="videos" element={<VideosPage />} />
